@@ -161,7 +161,7 @@ const ClubScreen: React.FC = () => {
       return () => {
         cancelled = true;
       };
-    }, [clubId, fetchClubById]),
+    }, [clubId, fetchClubById, currentUser?.userId]),
   );
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { Alert, FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -153,11 +153,16 @@ const ClubRemoveMembers = () => {
           setSelectedMember(null);
         }}
         onConfirm={async (reason: string) => {
-          await removeClubMember({
-            clubId,
-            userId: selectedMember?.userId ?? "",
-            reason,
-          });
+          try {
+            await removeClubMember({
+              clubId,
+              userId: selectedMember?.userId ?? "",
+              reason,
+            });
+          } catch (error) {
+            console.error("Failed to remove club member:", error);
+            Alert.alert("Error", "Unable to remove this member.");
+          }
 
           await fetchClub();
           setModalVisible(false);

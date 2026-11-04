@@ -71,6 +71,11 @@ import {
   TeamStats,
   CompetitionOwner,
 } from "@shared";
+import {
+  removeClubMembership,
+  setClubAdmin,
+} from "../helpers/clubs/clubMembers";
+
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import {
@@ -1856,42 +1861,22 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const assignClubAdmin = async ({
+  const assignClubAdmin = ({
     clubId,
     user,
   }: {
     clubId: string;
     user: { userId: string; username: string };
-  }): Promise<void> => {
-    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-    const clubSnap = await getDoc(clubRef);
-    const clubData = clubSnap.data();
+  }): Promise<void> => setClubAdmin({ clubId, user, isAdmin: true });
 
-    const updatedAdmins: CompetitionAdmins[] = [
-      ...(clubData?.clubAdmins || []),
-      { userId: user.userId, username: user.username },
-    ];
-
-    await updateDoc(clubRef, { clubAdmins: updatedAdmins });
-  };
-
-  const revokeClubAdmin = async ({
+  const revokeClubAdmin = ({
     clubId,
     userId,
   }: {
     clubId: string;
     userId: string;
-  }): Promise<void> => {
-    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-    const clubSnap = await getDoc(clubRef);
-    const clubData = clubSnap.data();
-
-    const updatedAdmins = (clubData?.clubAdmins || []).filter(
-      (admin: CompetitionAdmins) => admin.userId !== userId,
-    );
-
-    await updateDoc(clubRef, { clubAdmins: updatedAdmins });
-  };
+  }): Promise<void> =>
+    setClubAdmin({ clubId, user: { userId, username: "" }, isAdmin: false });
 
   const removeClubMember = async ({
     clubId,
@@ -1902,34 +1887,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     userId: string;
     reason: string;
   }): Promise<void> => {
-    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-    const clubSnap = await getDoc(clubRef);
-    const clubData = clubSnap.data();
-
-    const participantRef = doc(
-      db,
-      COLLECTION_NAMES.clubs,
-      clubId,
-      "participants",
-      userId,
-    );
-
-    // Remove the participant doc and drop any admin role in one atomic write.
-    const batch = writeBatch(db);
-    batch.delete(participantRef);
-    batch.update(clubRef, {
-      clubAdmins: (clubData?.clubAdmins || []).filter(
-        (admin: CompetitionAdmins) => admin.userId !== userId,
-      ),
-    });
-    await batch.commit();
+    const club = await removeClubMembership({ clubId, userId });
+    if (!club) return;
 
     await sendNotification({
       ...notificationSchema,
       createdAt: new Date(),
       recipientId: userId,
-      senderId: clubData?.clubOwner?.userId,
-      message: `You have been removed from ${clubData?.clubName} for the following reason: ${reason}`,
+      senderId: club.clubOwner?.userId,
+      message: `You have been removed from ${club.clubName} for the following reason: ${reason}`,
       type: notificationTypes.INFORMATION.APP.TYPE,
       data: { clubId },
     });
