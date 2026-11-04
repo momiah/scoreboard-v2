@@ -39,8 +39,7 @@ onFlowStart:
 - inputText: ${MAESTRO_TEST_USER_PASSWORD}
 - tapOn: "Delete"
 - extendedWaitUntil:
-    visible:
-      id: "maestro-harness-unlock"
+    visible: "Browse Clubs"
     timeout: 30000
 
 # Gone from Home and the Clubs list

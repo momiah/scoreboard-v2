@@ -15,6 +15,9 @@ and a line in the table below. A PR without them isn't ready to merge.
 | Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
 | Clubs: create | `clubs-create`: the test user creates a club in `AddClubModal`; the club page shows the owner, one member and the creation in the feed; the club is in the Clubs list and on Home | `maestro/sections/clubs.tsx` (`maestro-clubs-reset`, `maestro-clubs-cleanup`), `maestro/seeds/clubs/seedClubs.ts` |
 | Clubs: invites and join requests | `clubs-invite-and-requests`: the test user invites two fixture users from `InvitePlayer`; one accepts, one declines (no invite left pending); two fixture users request to join and the owner accepts one and declines the other in `ClubPendingRequests` (handled requests leave the list); member count and the feed's joined events follow | `maestro-clubs-seed-owned-empty`, `maestro-clubs-respond-and-request` (fixture users act through `acceptClubInvite`, `declineClubInvite`, `requestToJoinClub`) |
+| Clubs: roles and settings | `clubs-roles-and-settings`: the owner sees every settings action; assigns, revokes and re-assigns an admin; removes a member with a reason (exactly one removal notice); edits the description, which shows on Summary | `maestro-clubs-seed-owned-members`, `maestro-clubs-count-nia-removal-notices` |
+| Clubs: joining as a member | `clubs-join-as-user`: a non-member sees no admin controls and requests to join; the fixture owner accepts through `acceptClubJoinRequest`; the test user is a participant, still without admin controls, and the joined event is in the feed | `maestro-clubs-seed-fixture-club`, `maestro-clubs-olive-accepts-test-user` |
+| Clubs: delete | `clubs-delete`: a wrong password keeps the club; the right one deletes it, returns Home, and the club is gone from Home and the Clubs list | `maestro-clubs-seed-owned-members` |
 
 ## Install
 
