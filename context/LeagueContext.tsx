@@ -67,6 +67,11 @@ import {
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import {
+  CompetitionClosedReason,
+  competitionClosedMessage,
+  getCompetitionDocClosedReason,
+} from "@/helpers/competitionEntry";
+import {
   APPROVAL_REFUSED_MESSAGES,
   approveCompetitionGame,
   findGameInCompetition,
@@ -686,7 +691,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
+      const isLeague = collectionName === COLLECTION_NAMES.leagues;
+      let closedReason: CompetitionClosedReason | null = null;
+
       await runTransaction(db, async (transaction) => {
+        closedReason = null;
         const competitionDoc = await transaction.get(competitionRef);
 
         if (!competitionDoc.exists()) {
@@ -709,6 +718,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        closedReason = getCompetitionDocClosedReason(competitionData, isLeague);
+        if (closedReason) return;
+
         const updatedPending = pendingInvites.filter(
           (inv: { userId: string }) => inv.userId !== userId,
         );
@@ -727,6 +739,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           response: notificationTypes.RESPONSE.ACCEPT,
         });
       });
+
+      if (closedReason) {
+        Alert.alert(
+          competitionClosedMessage(
+            closedReason,
+            isLeague ? "league" : "tournament",
+          ),
+        );
+        return;
+      }
 
       AppEventsLogger.logEvent("JoinedCompetition", {
         competition_type:
@@ -1200,27 +1222,49 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }) => {
     try {
       const collectionRef = doc(db, collectionName, competitionId);
-      const competitionSnap = await getDoc(collectionRef);
+      const isLeague = collectionName === COLLECTION_NAMES.leagues;
 
-      if (!competitionSnap.exists()) {
-        console.log("Competition does not exist");
+      const outcome = await runTransaction(db, async (transaction) => {
+        const competitionSnap = await transaction.get(collectionRef);
+        if (!competitionSnap.exists()) return "missing";
+
+        const competitionData = competitionSnap.data();
+        const pendingRequests = competitionData.pendingRequests || [];
+        const participants =
+          competitionData[
+            isLeague ? "leagueParticipants" : "tournamentParticipants"
+          ] || [];
+        const isListed = (list: { userId: string }[]) =>
+          list.some((entry) => entry.userId === currentUser.userId);
+        if (isListed(pendingRequests) || isListed(participants)) {
+          return "duplicate";
+        }
+
+        const closedReason = getCompetitionDocClosedReason(
+          competitionData,
+          isLeague,
+        );
+        if (closedReason) return closedReason;
+
+        transaction.update(collectionRef, {
+          pendingRequests: [...pendingRequests, { userId: currentUser.userId }],
+        });
+        return "requested";
+      });
+
+      if (outcome !== "requested") {
+        if (outcome !== "missing" && outcome !== "duplicate") {
+          Alert.alert(
+            competitionClosedMessage(
+              outcome,
+              isLeague ? "league" : "tournament",
+            ),
+          );
+        }
         return false;
       }
 
-      const competitionData = competitionSnap.data();
-      const pendingRequests = competitionData.pendingRequests || [];
-
-      const alreadyRequested = pendingRequests.some(
-        (r: { userId: string }) => r.userId === currentUser?.userId,
-      );
-      if (alreadyRequested) return false;
-
-      await updateDoc(collectionRef, {
-        pendingRequests: [...pendingRequests, { userId: currentUser?.userId }],
-      });
-
       const displayName = formatDisplayName(currentUser);
-      const isLeague = collectionName === COLLECTION_NAMES.leagues;
       const paramKey = isLeague ? "leagueId" : "tournamentId";
       const competitionType = isLeague ? "league" : "tournament";
       const notificationType = isLeague
@@ -1314,7 +1358,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
+      const isLeague = collectionName === COLLECTION_NAMES.leagues;
+      const competitionType = isLeague ? "league" : "tournament";
+      let closedReason: CompetitionClosedReason | null = null;
+      let joined = false;
+      let competitionName = "";
+
       await runTransaction(db, async (transaction) => {
+        closedReason = null;
+        joined = false;
         const competitionDoc = await transaction.get(competitionRef);
 
         if (!competitionDoc.exists()) {
@@ -1337,9 +1389,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        closedReason = getCompetitionDocClosedReason(competitionData, isLeague);
+        if (closedReason) return;
+
         const updatedPending = pendingRequests.filter(
           (pen: { userId: string }) => pen.userId !== senderId,
         );
+        competitionName =
+          competitionData[isLeague ? "leagueName" : "tournamentName"];
+        joined = true;
 
         transaction.update(competitionRef, {
           [participantsKey]: [
@@ -1376,6 +1434,23 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           isRead: true,
           response: notificationTypes.RESPONSE.ACCEPT,
         });
+      });
+
+      if (closedReason) {
+        Alert.alert(competitionClosedMessage(closedReason, competitionType));
+        return;
+      }
+      if (!joined) return;
+
+      await sendNotification({
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: senderId,
+        senderId: userId,
+        message: `Your request to join ${competitionName} has been accepted!`,
+        type: notificationTypes.INFORMATION[isLeague ? "LEAGUE" : "TOURNAMENT"]
+          .TYPE,
+        data: { [isLeague ? "leagueId" : "tournamentId"]: competitionId },
       });
 
       // If competition belongs to a club, also post a club feed event

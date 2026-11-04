@@ -1,13 +1,11 @@
 import React, {
   useState,
-  useContext,
   useMemo,
   useCallback,
   useRef,
   useEffect,
 } from "react";
 import styled from "styled-components/native";
-import { UserContext } from "../../context/UserContext";
 import {
   useNavigation,
   NavigationProp,
@@ -16,24 +14,28 @@ import {
 import { FlatList, View, ActivityIndicator, Animated } from "react-native";
 import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
+import {
+  CompetitionClosedReason,
+  hasCompetitionEnded,
+} from "../../helpers/competitionEntry";
 import { TeamColumn, ScoreDisplay } from "./ScoreboardAtoms";
 import GameGlow, { runGlow } from "./../GameCardGlow";
 import moment from "moment";
-import { LeagueContext } from "../../context/LeagueContext";
-import { CollectionName, Game, ScoreboardProfile } from "@shared/types";
-import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
+import { Game, ScoreboardProfile } from "@shared/types";
+import { COMPETITION_TYPES } from "@shared";
 
 interface ScoreboardProps {
   leagueGames?: Game[];
   leagueId: string;
   userRole?: string;
   leagueType: string;
-  leagueOwner: { userId: string; username: string };
   leagueStartDate: string;
   leagueEndDate: string;
   leagueName: string;
   leagueParticipants?: ScoreboardProfile[];
   isJoinRequestSending?: boolean;
+  onRequestToJoin?: () => void;
+  closedReason?: CompetitionClosedReason | null;
   scrollToGameId?: string;
 }
 
@@ -42,20 +44,18 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   leagueId,
   userRole = "user",
   leagueType,
-  leagueOwner,
   leagueStartDate,
   leagueEndDate,
   leagueName,
   leagueParticipants = [],
   isJoinRequestSending = false,
+  onRequestToJoin,
+  closedReason = null,
   scrollToGameId,
 }) => {
-  const { currentUser } = useContext(UserContext);
-  const { requestToJoinLeague } = useContext(LeagueContext);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [requestSend, setRequestSend] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [highlightedGameId, setHighlightedGameId] = useState<string | null>(
     null,
@@ -63,10 +63,9 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
 
   const currentDate = moment();
   const leagueStart = moment(leagueStartDate, "DD-MM-YYYY");
-  const leagueEnd = moment(leagueEndDate, "DD-MM-YYYY");
 
   const hasLeagueStarted = currentDate.isSameOrAfter(leagueStart);
-  const hasLeagueEnded = currentDate.isAfter(leagueEnd);
+  const hasLeagueEnded = hasCompetitionEnded(leagueEndDate);
   const leagueState = hasLeagueEnded
     ? "ended"
     : hasLeagueStarted
@@ -92,15 +91,8 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   }, [navigation]);
 
   const handleRequestSend = useCallback(() => {
-    setRequestSend(true);
-    requestToJoinLeague({
-      competitionId: leagueId,
-      currentUser: currentUser?.userId,
-      ownerId: leagueOwner.userId,
-      collectionName: COLLECTION_NAMES.leagues as CollectionName,
-    });
-    setRequestSend(false);
-  }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
+    onRequestToJoin?.();
+  }, [onRequestToJoin]);
 
   const handleGamePress = useCallback(
     (game: Game) => {
@@ -118,7 +110,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
     [navigation, leagueId, leagueName],
   );
 
-  const isSending = requestSend || isJoinRequestSending;
+  const isSending = isJoinRequestSending;
 
   const buttonConfig = useMemo(
     () =>
@@ -131,8 +123,10 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
         handleLogin,
         hasMinPlayers,
         minRequired,
+        closedReason,
       ),
     [
+      closedReason,
       userRole,
       leagueState,
       isSending,

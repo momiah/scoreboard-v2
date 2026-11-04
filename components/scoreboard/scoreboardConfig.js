@@ -7,7 +7,19 @@ export const getButtonConfig = (
   handleLogin,
   hasMinPlayers,
   minRequired,
+  closedReason,
 ) => {
+  const requestToJoin =
+    closedReason === "full"
+      ? { text: "League is full", disabled: true, action: null }
+      : {
+          text: requestSending
+            ? "Request sent successfully"
+            : "Request To Join",
+          disabled: requestSending,
+          action: () => handleRequestSend(),
+        };
+
   const baseConfig = {
     hide: {
       not_started: {
@@ -27,16 +39,8 @@ export const getButtonConfig = (
       },
     },
     user: {
-      not_started: {
-        text: requestSending ? "Request sent successfully" : "Request To Join",
-        disabled: requestSending,
-        action: () => handleRequestSend(),
-      },
-      started: {
-        text: requestSending ? "Request sent successfully" : "Request To Join",
-        disabled: requestSending,
-        action: () => handleRequestSend(),
-      },
+      not_started: requestToJoin,
+      started: requestToJoin,
       ended: {
         text: "League has ended",
         disabled: true,
