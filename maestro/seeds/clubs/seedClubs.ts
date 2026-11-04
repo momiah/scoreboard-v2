@@ -324,25 +324,46 @@ export const fixtureRequestToJoin = async ({
 
 export const fixtureOwnerAcceptsRequest = async ({
   services,
-  senderId,
+  requester,
 }: {
   services: ClubServices;
-  senderId: string;
+  requester: UserProfile;
 }) => {
   const clubId = CLUB_FIXTURE_IDS.fixtureClub;
   const ownerId = "maestroClubOwner";
   await services.acceptClubJoinRequest({
-    senderId,
+    senderId: requester.userId,
     clubId,
     userId: ownerId,
     notificationId: await findNotificationId({
       recipientId: ownerId,
       type: notificationTypes.ACTION.JOIN_REQUEST.CLUB,
       clubId,
-      senderId,
+      senderId: requester.userId,
     }),
   });
-  return { clubId, expected: await clubExpected(clubId) };
+  return {
+    clubId,
+    expected: {
+      ...(await clubExpected(clubId)),
+      clubJoinedMessage: `${requester.firstName ?? requester.username} joined the club`,
+    },
+  };
+};
+
+export const countRemovalNotices = async (userId: ClubFixtureUserId) => {
+  const snap = await getDocs(
+    query(
+      collection(db, "users", userId, "notifications"),
+      where("data.clubId", "==", CLUB_FIXTURE_IDS.ownedClub),
+    ),
+  );
+  const removalNotices = snap.docs.filter((notification) =>
+    String(notification.data().message ?? "").startsWith(
+      "You have been removed from",
+    ),
+  ).length;
+  return { userId, expected: { clubRemovalNotices: removalNotices } };
 };
 
 const deleteTestUserClubNotifications = async (

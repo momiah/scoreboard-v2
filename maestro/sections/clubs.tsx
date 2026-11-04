@@ -5,6 +5,7 @@ import { SeedButton } from "../harness/HarnessButton";
 import {
   CLUB_FIXTURE_IDS,
   cleanupClubTestData,
+  countRemovalNotices,
   findTestUserClubId,
   fixtureOwnerAcceptsRequest,
   fixtureRequestToJoin,
@@ -143,11 +144,18 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
         }}
       />
       <SeedButton
+        id="maestro-clubs-count-nia-removal-notices"
+        label="Count Nia removal notices"
+        success="Checked"
+        failure="Check failed"
+        run={() => countRemovalNotices("maestroClubMember4")}
+      />
+      <SeedButton
         id="maestro-clubs-olive-accepts-test-user"
         label="Olive accepts test user"
         success="Resolved"
         run={() =>
-          fixtureOwnerAcceptsRequest({ services, senderId: currentUser.userId })
+          fixtureOwnerAcceptsRequest({ services, requester: currentUser })
         }
       />
     </>

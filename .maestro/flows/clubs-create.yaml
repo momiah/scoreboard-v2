@@ -14,6 +14,10 @@ onFlowStart:
 - tapOn: "Browse Clubs"
 - tapOn:
     id: "clubs-add-club"
+- extendedWaitUntil:
+    visible:
+      id: "add-club-clubName"
+    timeout: 15000
 - tapOn:
     id: "add-club-clubName"
 - inputText: "Maestro Flow Club"

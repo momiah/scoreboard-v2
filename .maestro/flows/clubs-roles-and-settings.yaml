@@ -1,0 +1,101 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-owned-members"
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "4 MEMBERS"
+
+# The owner sees every settings action
+- tapOn:
+    id: "club-settings-button"
+- assertVisible: ".*Edit Club.*"
+- assertVisible: ".*Pending Invites.*"
+- assertVisible: ".*Pending Requests.*"
+- assertVisible: ".*Assign Admin.*"
+- assertVisible: ".*Remove Members.*"
+- assertVisible: ".*Delete Club.*"
+
+# Make Ada an admin, revoke, and make her an admin again
+- tapOn: ".*Assign Admin.*"
+- tapOn:
+    id: "club-assign-admin-maestroClubMember1"
+- extendedWaitUntil:
+    visible:
+      id: "club-revoke-admin-maestroClubMember1"
+    timeout: 20000
+- tapOn:
+    id: "club-revoke-admin-maestroClubMember1"
+- extendedWaitUntil:
+    visible:
+      id: "club-assign-admin-maestroClubMember1"
+    timeout: 20000
+- tapOn:
+    id: "club-assign-admin-maestroClubMember1"
+- extendedWaitUntil:
+    visible:
+      id: "club-revoke-admin-maestroClubMember1"
+    timeout: 20000
+- runFlow: ../utilities/clubs/back.yaml
+
+# Remove Nia with a reason
+- tapOn: ".*Remove Members.*"
+- tapOn:
+    id: "club-remove-member-maestroClubMember4"
+- tapOn: "Choose reason.*"
+- tapOn: "Inactive player.*"
+- tapOn:
+    id: "remove-player-confirm"
+- extendedWaitUntil:
+    notVisible:
+      id: "club-remove-member-maestroClubMember4"
+    timeout: 20000
+- assertVisible:
+    id: "club-remove-member-maestroClubMember1"
+- runFlow: ../utilities/clubs/back.yaml
+
+# Edit the description
+- tapOn: ".*Edit Club.*"
+- tapOn: "Enter description"
+- inputText: "Edited by Maestro"
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn: "Update"
+- extendedWaitUntil:
+    visible: "Club updated!"
+    timeout: 20000
+- tapOn: "Close"
+- runFlow: ../utilities/clubs/back.yaml
+
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "3 MEMBERS"
+- tapOn: "Summary"
+- assertVisible: ".*Edited by Maestro.*"
+
+# Nia got exactly one removal notice
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-count-nia-removal-notices"
+- copyTextFrom:
+    id: "maestro-expected-clubRemovalNotices"
+- assertTrue: ${maestro.copiedText == "1"}
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

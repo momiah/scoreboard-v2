@@ -97,7 +97,10 @@ const ClubAssignAdmin = () => {
       !isOwner;
 
     return (
-      <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
+      <PlayerRow
+        accessible={false}
+        onPress={() => item.userId && goToProfile(item.userId)}
+      >
         <Player_>
           <Username>{item.username}</Username>
           {isUserAdmin && (
@@ -115,12 +118,18 @@ const ClubAssignAdmin = () => {
 
         <Action>
           {canAssign && (
-            <ActionButton onPress={() => handleAssign(item)}>
+            <ActionButton
+              testID={`club-assign-admin-${item.userId}`}
+              onPress={() => handleAssign(item)}
+            >
               <ButtonText>Assign</ButtonText>
             </ActionButton>
           )}
           {canRevoke && (
-            <RevokeButton onPress={() => handleRevoke(item.userId!)}>
+            <RevokeButton
+              testID={`club-revoke-admin-${item.userId}`}
+              onPress={() => handleRevoke(item.userId!)}
+            >
               <ButtonText>Revoke</ButtonText>
             </RevokeButton>
           )}

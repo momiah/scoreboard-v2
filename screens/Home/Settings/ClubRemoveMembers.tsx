@@ -79,7 +79,10 @@ const ClubRemoveMembers = () => {
       currentUser?.userId === club?.clubOwner?.userId && !isOwner && !isSelf;
 
     return (
-      <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
+      <PlayerRow
+        accessible={false}
+        onPress={() => item.userId && goToProfile(item.userId)}
+      >
         <Player_>
           <Username>{item.username}</Username>
           {isOwner && (
@@ -118,7 +121,10 @@ const ClubRemoveMembers = () => {
         </Player_>
 
         {canRemove && (
-          <RemoveButton onPress={() => handleRemove(item)}>
+          <RemoveButton
+            testID={`club-remove-member-${item.userId}`}
+            onPress={() => handleRemove(item)}
+          >
             <ButtonText>Remove</ButtonText>
           </RemoveButton>
         )}

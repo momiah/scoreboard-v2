@@ -157,6 +157,7 @@ const ClubSettings = () => {
               Enter your password to permanently delete this club
             </PasswordSubtitle>
             <PasswordInput
+              testID="delete-club-password"
               placeholder="Enter password"
               placeholderTextColor="#666"
               secureTextEntry
