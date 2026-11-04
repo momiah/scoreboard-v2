@@ -19,6 +19,10 @@ import {
 import { CollectionName, NormalizedCompetition } from "@shared/types";
 import type { Club } from "@shared/types";
 import { notificationTypes, COLLECTION_NAMES } from "@shared";
+import {
+  competitionClosedMessage,
+  getCompetitionClosedReason,
+} from "../../helpers/competitionEntry";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -74,10 +78,15 @@ const InviteActionModal = ({
     }
   };
 
-  const leagueFull =
-    !isClub &&
-    (competition?.participants?.length ?? 0) >=
-    (competition?.maxPlayers ?? Infinity);
+  const closedReason =
+    !isClub && competition
+      ? getCompetitionClosedReason({
+          participantCount: competition.participants?.length ?? 0,
+          maxPlayers: competition.maxPlayers,
+          endDate: competition.endDate,
+          fixturesGenerated: competition.fixturesGenerated,
+        })
+      : null;
 
   const alreadyInLeague =
     !isClub &&
@@ -181,7 +190,7 @@ const InviteActionModal = ({
     if (isClub) {
       if (isWithdrawn) readNotification(notificationId, currentUser.userId);
     } else {
-      if (leagueFull || isWithdrawn || alreadyInLeague) {
+      if (!!closedReason || isWithdrawn || alreadyInLeague) {
         readNotification(notificationId, currentUser.userId);
       }
     }
@@ -190,7 +199,7 @@ const InviteActionModal = ({
     competition,
     clubData,
     isRead,
-    leagueFull,
+    closedReason,
     isWithdrawn,
     alreadyInLeague,
     notificationId,
@@ -251,7 +260,8 @@ const InviteActionModal = ({
   };
 
   const competitionType = config?.navRoute ?? "Competition";
-  const actionBlocked = isWithdrawn || alreadyInLeague || leagueFull || isRead;
+  const actionBlocked =
+    isWithdrawn || alreadyInLeague || !!closedReason || isRead;
   const handleLinkPress = () => {
     const id = isClub ? clubData?.clubId : competition?.id;
     if (id) {
@@ -265,7 +275,7 @@ const InviteActionModal = ({
     isBusy ||
     (isClub
       ? isRead || isWithdrawn
-      : isRead || leagueFull || isWithdrawn || alreadyInLeague);
+      : isRead || !!closedReason || isWithdrawn || alreadyInLeague);
 
   const numberOfPlayers = !isClub
     ? `${competition?.participants?.length ?? 0} / ${competition?.maxPlayers}`
@@ -326,7 +336,9 @@ const InviteActionModal = ({
                       </Message>
                     ) : null}
 
-                    <View style={{ flexDirection: "row", gap: 5, marginTop: 15 }}>
+                    <View
+                      style={{ flexDirection: "row", gap: 5, marginTop: 15 }}
+                    >
                       <Tag name="Club" color="#FAB234" />
                       {clubData.clubOwner?.username ? (
                         <Tag
@@ -423,9 +435,12 @@ const InviteActionModal = ({
 
                 {withdrawnMessage ? (
                   <ErrorText>{withdrawnMessage}</ErrorText>
-                ) : leagueFull ? (
+                ) : closedReason && config ? (
                   <ErrorText>
-                    This invite has expired as the league is full
+                    {competitionClosedMessage(
+                      closedReason,
+                      config.competitionType,
+                    )}
                   </ErrorText>
                 ) : null}
 
