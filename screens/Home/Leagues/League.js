@@ -160,7 +160,6 @@ const League = () => {
     endDate,
     leagueType,
     maxPlayers,
-    games,
   } = leagueById || {};
 
   const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
@@ -191,7 +190,6 @@ const League = () => {
       case "Scoreboard":
         return (
           <Scoreboard
-            leagueGames={games || []}
             leagueType={leagueType}
             leagueId={leagueId}
             userRole={userRole}

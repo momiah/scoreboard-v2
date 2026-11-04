@@ -293,7 +293,6 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         leagueId={leagueId}
-        leagueGames={leagueGames}
         leagueType={leagueType}
         leagueName={leagueName}
       />
