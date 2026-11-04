@@ -39,16 +39,26 @@ onFlowStart:
 - copyTextFrom:
     id: "maestro-expected-clubWinnerMessage"
 - evalScript: ${output.winnerMessage = maestro.copiedText}
-- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
 
+# The prize function runs after the last approval; pull the feed until it posts
 - runFlow:
     file: ../utilities/clubs/open-club.yaml
     env:
       CLUB_NAME: "Maestro Seeded Club"
 - tapOn: "Feed"
-- extendedWaitUntil:
-    visible: ".*${output.winnerMessage}.*"
-    timeout: 20000
+- evalScript: ${output.tries = 0}
+- repeat:
+    while:
+      notVisible: ".*${output.winnerMessage}.*"
+    commands:
+      - assertTrue: ${output.tries < 20}
+      - swipe:
+          start: 50%, 45%
+          end: 50%, 85%
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 15000
+      - evalScript: ${output.tries = output.tries + 1}
 - assertVisible: ".*Competition winner.*"
 
 # The round-robin cleanup restores the test user's profile from the
