@@ -145,7 +145,9 @@ const InvitePlayer = () => {
         setClubMembers(members);
         // Only the club-competition checkbox list pre-populates suggestions.
         // Club context searches all users, so its list starts empty.
-        if (isClubCompetition) setSuggestions(members);
+        if (isClubCompetition) {
+          setSuggestions(members.filter((m) => !hasUserConflict(m.userId)));
+        }
       } catch (e) {
         console.error("Error fetching club members:", e);
         setClubMembersError(true);
@@ -414,12 +416,15 @@ const InvitePlayer = () => {
 
   /** Club mode: filter already-loaded club members, no Firestore call */
   const handleSearchClubMembers = (value: string) => {
+    const addableMembers = clubMembers.filter(
+      (member) => !hasUserConflict(member.userId),
+    );
     if (!value.trim()) {
-      setSuggestions(clubMembers);
+      setSuggestions(addableMembers);
       return;
     }
     const term = value.toLowerCase().trim();
-    const filtered = clubMembers.filter((user) => {
+    const filtered = addableMembers.filter((user) => {
       const first = (user.firstName ?? "").toLowerCase();
       const last = (user.lastName ?? "").toLowerCase();
       const full = `${first} ${last}`;
@@ -458,7 +463,12 @@ const InvitePlayer = () => {
             (u) => u.userId === user.userId,
           );
 
-          return matchesSearch && !isCurrentUser && !alreadySelected;
+          return (
+            matchesSearch &&
+            !isCurrentUser &&
+            !alreadySelected &&
+            !hasUserConflict(user.userId)
+          );
         });
 
         setSuggestions(filteredUsers);
