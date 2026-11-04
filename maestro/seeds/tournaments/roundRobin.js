@@ -257,19 +257,17 @@ const ownerProfiles = (owner) => ({
 // The court every scenario plays at, the one a flow picks in Select Court.
 const scenarioCourt = async (actions) => {
   const courts = await actions.getCourts();
-  // getLeagueLocationDetails matches on the court doc's own id field, so only
-  // courts that store it can be picked in Create Tournament.
-  const court = courts
-    .filter((c) => c.id && c.id === c.courtId)
-    .sort((a, b) => a.courtName.trim().localeCompare(b.courtName.trim()))[0];
+  const court = [...courts].sort((a, b) =>
+    a.courtName.trim().localeCompare(b.courtName.trim()),
+  )[0];
   if (!court) throw new Error("No courts to play at");
-  return { courts, court, courtsWithoutId: courts.filter((c) => c.id !== c.courtId).length };
+  return { courts, court };
 };
 
 // Mirrors AddTournamentModal's onSubmit, with the scenario's fixed id.
 const createScenarioTournament = async ({ key, scenario, owner, actions }) => {
   const { courts, court } = await scenarioCourt(actions);
-  const location = getLeagueLocationDetails(courts, { key: court.id });
+  const location = getLeagueLocationDetails(courts, { key: court.courtId });
   const tournamentId = seededId(key);
   await actions.addCompetition({
     data: {
@@ -398,7 +396,6 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions }) =
     expected: {
       tournamentName: scenario.name,
       courtName: (await scenarioCourt(actions)).court.courtName.trim(),
-      courtsWithoutId: String((await scenarioCourt(actions)).courtsWithoutId),
       ids: JSON.stringify({
         user: testUser.userId,
         ...Object.fromEntries(scenario.users.map((u, i) => [`f${i + 1}`, u.userId])),
