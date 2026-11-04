@@ -17,6 +17,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
 import UserRoleTag from "../../../components/UserRoleTag";
+import { getCompetitionClosedReason } from "../../../helpers/competitionEntry";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
@@ -164,6 +165,11 @@ const League = () => {
   } = leagueById || {};
 
   const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
+  const closedReason = getCompetitionClosedReason({
+    participantCount: leagueParticipants?.length ?? 0,
+    maxPlayers,
+    endDate,
+  });
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -197,11 +203,12 @@ const League = () => {
             userRole={userRole}
             leagueStartDate={startDate}
             leagueEndDate={endDate}
-            leagueOwner={leagueById?.leagueOwner}
             leagueName={leagueName}
             leagueParticipants={leagueParticipants || []}
             maxPlayers={maxPlayers}
             isJoinRequestSending={isJoinRequestSending}
+            onRequestToJoin={handleRequestToJoin}
+            closedReason={closedReason}
             scrollToGameId={scrollToGameId}
           />
         );
@@ -334,6 +341,7 @@ const League = () => {
                     onLoginPress={handleLogin}
                     onRequestJoinPress={handleRequestToJoin}
                     isJoining={isJoinRequestSending}
+                    closedReason={closedReason}
                   />
                 </View>
               </LeagueDetailsContainer>

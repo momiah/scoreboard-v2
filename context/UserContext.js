@@ -226,11 +226,7 @@ const UserProvider = ({ children }) => {
         return "hide";
       }
 
-      // 1) Tournament owner
-      if (competitionData[`${competitionType}Owner`] === userId) {
-        return "owner";
-      }
-      // 2) Admin
+      // 2) Admin (the owner is always an admin)
       if (
         competitionData[`${competitionType}Admins`].some(
           (a) => a.userId === userId,

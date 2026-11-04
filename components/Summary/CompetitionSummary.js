@@ -15,7 +15,11 @@ import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "@shared";
-import { calculateTournamentPrizePool } from "@shared/helpers";
+import {
+  calculateLeaguePrizePool,
+  calculateTournamentPrizePool,
+  TOURNAMENT_PRIZE_DISTRIBUTION,
+} from "@shared/helpers";
 import {
   sortPlayersByPlacement,
   sortTeamsByPlacement,
@@ -49,7 +53,7 @@ const PLACEHOLDER_TEAMS = Array.from({ length: 4 }, (_, index) => ({
   numberOfLosses: 0,
 }));
 
-const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
+const DISTRIBUTION = TOURNAMENT_PRIZE_DISTRIBUTION;
 
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
@@ -120,8 +124,10 @@ const CompetitionSummary = memo(
       // Prize pool calculation
       let prizePool;
       if (competitionType === COMPETITION_TYPES.LEAGUE) {
-        prizePool =
-          (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2;
+        prizePool = calculateLeaguePrizePool({
+          leagueParticipants: participants,
+          games,
+        });
       } else {
         const gameMode = competitionData?.type || "Singles";
         const tournamentPrizePool = calculateTournamentPrizePool(
@@ -139,7 +145,7 @@ const CompetitionSummary = memo(
         prizePool,
       };
     }, [
-      participants.length,
+      participants,
       games.length,
       games,
       competitionType,
@@ -266,9 +272,8 @@ const CompetitionSummary = memo(
             </ClubIconCircle>
             <ClubBadgeTextWrap>
               <ClubBadgeText>
-                This{" "}
-                <ClubBadgeHighlight>{competitionType}</ClubBadgeHighlight> is
-                managed by a club
+                This <ClubBadgeHighlight>{competitionType}</ClubBadgeHighlight>{" "}
+                is managed by a club
               </ClubBadgeText>
               {clubName ? (
                 <ClubBadgeSubtext>{clubName}</ClubBadgeSubtext>

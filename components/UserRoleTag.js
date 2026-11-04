@@ -2,13 +2,35 @@
 import React from "react";
 import Tag from "./Tag";
 
+const CLOSED_LABELS = {
+  ended: "Ended",
+  full: "Full",
+  fixtures: "Entries Closed",
+};
+
 const UserRoleTag = ({
   userRole,
   onInvitePress,
   onLoginPress,
   onRequestJoinPress,
   isJoining = false,
+  closedReason = null,
 }) => {
+  if (userRole === "user" && closedReason) {
+    return (
+      <Tag
+        name={CLOSED_LABELS[closedReason]}
+        color="#4a4a4aff"
+        iconColor="white"
+        iconSize={15}
+        icon="lock-closed-outline"
+        iconPosition="right"
+        disabled
+        bold
+      />
+    );
+  }
+
   switch (userRole) {
     case "participant":
       return (

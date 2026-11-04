@@ -12,6 +12,7 @@ import PlayerPerformance from "../../../components/performance/Player/PlayerPerf
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
 import UserRoleTag from "../../../components/UserRoleTag";
+import { getCompetitionClosedReason } from "../../../helpers/competitionEntry";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
@@ -331,6 +332,13 @@ const Tournament = () => {
                     onLoginPress={handleLogin}
                     onRequestJoinPress={handleRequestToJoin}
                     isJoining={isJoinRequestSending}
+                    closedReason={getCompetitionClosedReason({
+                      participantCount:
+                        tournamentById?.tournamentParticipants?.length ?? 0,
+                      maxPlayers: tournamentById?.maxPlayers,
+                      endDate: tournamentById?.endDate,
+                      fixturesGenerated,
+                    })}
                   />
                 </View>
               </TournamentDetailsContainer>
