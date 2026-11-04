@@ -127,6 +127,22 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
         />
       ))}
       <SeedButton
+        id="maestro-clubs-respond-and-request"
+        label="Ada+Dan respond, Rae+Nia request"
+        success="Resolved"
+        run={async () => {
+          const clubId = await findTestUserClubId(currentUser);
+          for (const { userId, accept } of INVITE_RESPONSES) {
+            await fixtureRespondToInvite({ services, clubId, userId, accept });
+          }
+          let outcome = {};
+          for (const { userId } of JOIN_REQUESTS) {
+            outcome = await fixtureRequestToJoin({ services, clubId, userId });
+          }
+          return outcome;
+        }}
+      />
+      <SeedButton
         id="maestro-clubs-olive-accepts-test-user"
         label="Olive accepts test user"
         success="Resolved"

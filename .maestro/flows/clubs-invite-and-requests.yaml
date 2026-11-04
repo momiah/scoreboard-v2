@@ -1,0 +1,100 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-owned-empty"
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "1 MEMBER"
+
+# The test user invites Ada and Dan
+- tapOn:
+    id: "club-invite-members"
+- tapOn: "Start typing to search players"
+- inputText: "Ada Accepts"
+- tapOn:
+    text: "Continue"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*maestroAda.*"
+    timeout: 20000
+- tapOn: ".*maestroAda.*"
+- tapOn: "Start typing to search players"
+- inputText: "Dan Declines"
+- tapOn:
+    text: "Continue"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*maestroDan.*"
+    timeout: 20000
+- tapOn: ".*maestroDan.*"
+- tapOn:
+    point: 50%, 55%
+- waitForAnimationToEnd
+- tapOn: "Invite \\(2\\)"
+- extendedWaitUntil:
+    visible: "Members invited successfully!"
+    timeout: 20000
+- tapOn: "Close"
+
+# Ada accepts, Dan declines, Rae and Nia ask to join
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-respond-and-request"
+- copyTextFrom:
+    id: "maestro-expected-clubMembers"
+- assertTrue: ${maestro.copiedText == "2"}
+
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "2 MEMBERS"
+- tapOn: "Feed"
+- assertVisible: ".*Ada joined the club.*"
+
+# No invites left pending: Ada joined, Dan declined
+- tapOn:
+    id: "club-settings-button"
+- tapOn: ".*Pending Invites.*"
+- assertVisible: "No pending invites.*"
+- runFlow: ../utilities/clubs/back.yaml
+
+# The owner accepts Rae and declines Nia
+- tapOn: ".*Pending Requests.*"
+- assertVisible: ".*Rae R has requested to join your club!.*"
+- assertVisible: ".*Nia N has requested to join your club!.*"
+- tapOn: ".*Rae R has requested to join your club!.*"
+- tapOn: "Accept"
+- extendedWaitUntil:
+    notVisible: ".*Rae R has requested to join your club!.*"
+    timeout: 20000
+- tapOn: ".*Nia N has requested to join your club!.*"
+- tapOn: "Decline"
+- extendedWaitUntil:
+    visible: "No pending requests yet.*"
+    timeout: 20000
+- runFlow: ../utilities/clubs/back.yaml
+- runFlow: ../utilities/clubs/back.yaml
+
+- extendedWaitUntil:
+    visible: "3 MEMBERS"
+    timeout: 20000
+- tapOn: "Feed"
+- assertVisible: ".*Rae joined the club.*"
+- assertNotVisible: ".*Nia joined the club.*"
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

@@ -13,6 +13,8 @@ and a line in the table below. A PR without them isn't ready to merge.
 | Feature | Flows | Seeds / harness section |
 |---|---|---|
 | Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
+| Clubs: create | `clubs-create`: the test user creates a club in `AddClubModal`; the club page shows the owner, one member and the creation in the feed; the club is in the Clubs list and on Home | `maestro/sections/clubs.tsx` (`maestro-clubs-reset`, `maestro-clubs-cleanup`), `maestro/seeds/clubs/seedClubs.ts` |
+| Clubs: invites and join requests | `clubs-invite-and-requests`: the test user invites two fixture users from `InvitePlayer`; one accepts, one declines (no invite left pending); two fixture users request to join and the owner accepts one and declines the other in `ClubPendingRequests` (handled requests leave the list); member count and the feed's joined events follow | `maestro-clubs-seed-owned-empty`, `maestro-clubs-respond-and-request` (fixture users act through `acceptClubInvite`, `declineClubInvite`, `requestToJoinClub`) |
 
 ## Install
 

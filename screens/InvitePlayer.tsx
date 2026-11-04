@@ -750,6 +750,7 @@ const InvitePlayer = () => {
                   data={suggestions}
                   keyExtractor={(item) => item.userId}
                   scrollEnabled={false}
+                  keyboardShouldPersistTaps="handled"
                   renderItem={({ item }) => {
                     const isAlreadySelected = inviteUsers.some(
                       (u) => u.userId === item.userId,
