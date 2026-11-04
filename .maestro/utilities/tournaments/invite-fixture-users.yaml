@@ -2,7 +2,7 @@
 # output.ids through Invite Players, and the fixture users accept.
 appId: com.courtchamp
 ---
-- tapOn: "Invite Players"
+- tapOn: ".*Invite Players.*"
 - evalScript: ${output.inviteKeys = Object.keys(output.ids).filter((k) => k !== 'user'); output.ii = 0}
 - repeat:
     while:

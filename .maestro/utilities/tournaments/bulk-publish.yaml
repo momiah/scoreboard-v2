@@ -8,7 +8,7 @@ appId: com.courtchamp
       TAB: "Fixtures"
 - tapOn:
     id: "tournament-menu"
-- tapOn: "Bulk Publish Fixtures"
+- tapOn: ".*Bulk Publish Fixtures.*"
 - extendedWaitUntil:
     notVisible: "Loading fixtures..."
     timeout: 30000

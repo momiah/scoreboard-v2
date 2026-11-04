@@ -8,7 +8,7 @@ appId: com.courtchamp
       TAB: "Fixtures"
 - tapOn:
     id: "tournament-menu"
-- tapOn: "Delete Fixtures"
+- tapOn: ".*Delete Fixtures.*"
 - runFlow:
     when:
       true: ${BLOCKED === 'true'}

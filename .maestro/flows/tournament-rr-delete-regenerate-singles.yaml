@@ -43,7 +43,7 @@ onFlowStart:
     file: ../utilities/tournaments/open-tournament.yaml
     env:
       TAB: "Fixtures"
-- tapOn: "Invite Players"
+- tapOn: ".*Invite Players.*"
 - extendedWaitUntil:
     visible:
       id: "invite-error"

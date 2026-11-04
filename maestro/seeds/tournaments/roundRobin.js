@@ -265,7 +265,7 @@ const scenarioCourt = async (actions) => {
 };
 
 // Mirrors AddTournamentModal's onSubmit, with the scenario's fixed id.
-const createScenarioTournament = async ({ key, scenario, owner, actions }) => {
+const createScenarioTournament = async ({ key, scenario, owner, actions, clubId }) => {
   const { courts, court } = await scenarioCourt(actions);
   const location = getLeagueLocationDetails(courts, { key: court.courtId });
   const tournamentId = seededId(key);
@@ -286,7 +286,7 @@ const createScenarioTournament = async ({ key, scenario, owner, actions }) => {
       location,
       countryCode: location.countryCode || "",
       tournamentId,
-      clubId: null,
+      clubId,
     },
     competitionType: COMPETITION_TYPES.TOURNAMENT,
     resetDelayMs: 0,
@@ -358,7 +358,9 @@ const generateScenarioFixtures = async ({ tournamentId, scenario, testUser, owne
   });
 };
 
-export const seedScenario = async ({ key, testUser, actions, fixtureActions }) => {
+// clubId puts the tournament in that club, as creating it from the club's
+// screen does; the club's own cleanup removes the feed events it causes.
+export const seedScenario = async ({ key, testUser, actions, fixtureActions, clubId = null }) => {
   const scenario = RR_SCENARIOS[key];
   await deleteTournaments(
     (await tournamentsNamed(scenario.name)).filter((t) => isFixtureOwned(t, testUser)),
@@ -375,7 +377,7 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions }) =
     const players = scenario.ownedByFixture
       ? [testUser, ...scenario.users.slice(1)]
       : scenario.users;
-    const tournamentId = await createScenarioTournament({ key, scenario, owner, actions });
+    const tournamentId = await createScenarioTournament({ key, scenario, owner, actions, clubId });
     await invitePlayers({
       tournamentId,
       tournamentName: scenario.name,
@@ -493,6 +495,22 @@ export const playGamesInOrder = async ({ gameNumbers, testUser, fixtureActions }
   return { played: gameNumbers };
 };
 
+// Plays every open game in fixture order (fixture users report and approve,
+// acting for the test user too) until the tournament completes. Returns the
+// expected prize winners by placement: [{ userId, xp, place, key }].
+export const playToCompletion = async ({ testUser, fixtureActions }) => {
+  const { tournament } = await loadActive(testUser);
+  const open = allGames(tournament).filter((g) => !isApproved(g)).map((g) => g.gameNumber);
+  await playGamesInOrder({ gameNumbers: open, testUser, fixtureActions });
+  const state = JSON.parse((await expectedState({ testUser })).expected.state);
+  if (!state.complete) throw new Error("Tournament did not complete");
+  return {
+    winners: Object.entries(state.prizes)
+      .map(([userId, prize]) => ({ userId, ...prize }))
+      .sort((a, b) => parseInt(a.place, 10) - parseInt(b.place, 10)),
+  };
+};
+
 // The report notification goes to every opponent and to nobody on the
 // reporter's side.
 export const checkReportNotifications = async ({ testUser }) => {
@@ -522,22 +540,71 @@ export const checkReportNotifications = async ({ testUser }) => {
 
 const sideKey = (team) => sideIds(team).sort().join("-");
 
+const permutationsOf = (items) =>
+  items.length <= 1
+    ? [items]
+    : items.flatMap((item, i) =>
+        permutationsOf([...items.slice(0, i), ...items.slice(i + 1)]).map((rest) => [item, ...rest]),
+      );
+
+// The most even court spread any court ordering per round can give these
+// pairings; null when there are too many orderings to try.
+const bestCourtSpread = (fixtures, sides, courtNumbers, spread) => {
+  const perRound = fixtures.map((round) => permutationsOf(courtNumbers).map((perm) => perm.slice(0, round.games.length)));
+  const combinations = perRound.reduce((n, options) => n * options.length, 1);
+  if (combinations > 50000) return null;
+  let best = Infinity;
+  const walk = (roundIdx, counts) => {
+    if (roundIdx === fixtures.length) {
+      best = Math.min(best, spread(counts));
+      return;
+    }
+    for (const perm of perRound[roundIdx]) {
+      const next = new Map([...counts].map(([s, perCourt]) => [s, new Map(perCourt)]));
+      fixtures[roundIdx].games.forEach((g, i) => {
+        for (const s of [sideKey(g.team1), sideKey(g.team2)]) {
+          next.get(s).set(perm[i], (next.get(s).get(perm[i]) ?? 0) + 1);
+        }
+      });
+      walk(roundIdx + 1, next);
+    }
+  };
+  walk(0, new Map(sides.map((s) => [s, new Map()])));
+  return best;
+};
+
+export const courtSpread = (fixtures) => {
+  const games = fixtures.flatMap((round) => round.games);
+  const sides = [...new Set(games.flatMap((g) => [sideKey(g.team1), sideKey(g.team2)]))];
+  const courtNumbers = [...new Set(games.map((g) => g.court))].sort();
+  const spread = (perSide) =>
+    [...perSide.values()].reduce((total, perCourt) => {
+      const counts = courtNumbers.map((c) => perCourt.get(c) ?? 0);
+      return total + Math.max(...counts) - Math.min(...counts);
+    }, 0);
+  const generatedCounts = new Map(sides.map((s) => [s, new Map()]));
+  games.forEach((g) => {
+    for (const s of [sideKey(g.team1), sideKey(g.team2)]) {
+      generatedCounts.get(s).set(g.court, (generatedCounts.get(s).get(g.court) ?? 0) + 1);
+    }
+  });
+  return {
+    generated: spread(generatedCounts),
+    best: bestCourtSpread(fixtures, sides, courtNumbers, spread),
+  };
+};
+
 export const checkFixtureFairness = async ({ testUser }) => {
   const { tournament } = await loadActive(testUser);
   const games = allGames(tournament);
   const sides = [...new Set(games.flatMap((g) => [sideKey(g.team1), sideKey(g.team2)]))];
   const pairs = new Map();
   const sitOuts = new Map(sides.map((s) => [s, 0]));
-  const courts = new Map(sides.map((s) => [s, new Map()]));
   const failures = [];
 
   for (const g of games) {
     const pair = [sideKey(g.team1), sideKey(g.team2)].sort().join(" v ");
     pairs.set(pair, (pairs.get(pair) ?? 0) + 1);
-    for (const s of [sideKey(g.team1), sideKey(g.team2)]) {
-      const perCourt = courts.get(s);
-      perCourt.set(g.court, (perCourt.get(g.court) ?? 0) + 1);
-    }
   }
   for (const round of tournament.fixtures) {
     const playing = new Set(round.games.flatMap((g) => [sideKey(g.team1), sideKey(g.team2)]));
@@ -553,11 +620,13 @@ export const checkFixtureFairness = async ({ testUser }) => {
   const sitOutCounts = [...sitOuts.values()];
   if (Math.max(...sitOutCounts) - Math.min(...sitOutCounts) > 1) failures.push(`sit-outs uneven: ${sitOutCounts.join(",")}`);
 
-  const courtNumbers = [...new Set(games.map((g) => g.court))];
-  courts.forEach((perCourt, s) => {
-    const counts = courtNumbers.map((c) => perCourt.get(c) ?? 0);
-    if (Math.max(...counts) - Math.min(...counts) > 1) failures.push(`${s} courts uneven: ${counts.join(",")}`);
-  });
+  // Courts can't always split evenly (four entrants over three rounds on two
+  // courts force someone onto one court three times), so the check is that no
+  // court assignment of these same pairings spreads them more evenly.
+  const { generated, best } = courtSpread(tournament.fixtures);
+  if (best !== null && generated > best) {
+    failures.push(`court spread ${generated}, an assignment of the same pairings gives ${best}`);
+  }
 
   if (failures.length) throw new Error(failures.join("; "));
   return {
