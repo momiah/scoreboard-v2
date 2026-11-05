@@ -18,7 +18,6 @@ import {
   getOrderedApprovedGames,
 } from "courtchamps-shared/helpers";
 
-import { getUserById } from "./helpers/firebaseHelpers";
 import {
   getGamePlayerIds,
   isDueForAutoApproval,
@@ -35,16 +34,16 @@ export const autoApproveTournamentGames = onSchedule(
         .where("prizesDistributed", "==", false)
         .get();
 
-      const tournaments = tournamentsSnapshot.docs.map((doc) => ({
-        tournamentId: doc.id,
-        tournamentRef: doc.ref,
-        tournamentData: doc.data() as Tournament,
-      }));
+      const dueTournamentRefs = tournamentsSnapshot.docs
+        .filter((doc) =>
+          ((doc.data() as Tournament).fixtures || [])
+            .flatMap((round) => round.games)
+            .some(isDueForAutoApproval),
+        )
+        .map((doc) => doc.ref);
 
       await Promise.all(
-        tournaments.map(({ tournamentId, tournamentRef, tournamentData }) =>
-          processTournament(db, tournamentId, tournamentRef, tournamentData),
-        ),
+        dueTournamentRefs.map((ref) => processTournament(db, ref)),
       );
     } catch (error) {
       console.log("❌ Auto-approval function failed:", error);
@@ -52,89 +51,113 @@ export const autoApproveTournamentGames = onSchedule(
   },
 );
 
-const processTournament = async (
+// Runs in a transaction so a player approving or reporting a game at the same
+// time is never overwritten, and a game approved meanwhile is not re-applied.
+// The user profiles commit with the tournament, so the prize function the
+// tournament write triggers can't have its increments overwritten.
+export const processTournament = async (
   db: admin.firestore.Firestore,
-  tournamentId: string,
   tournamentRef: admin.firestore.DocumentReference,
-  tournamentData: Tournament,
 ) => {
-  const fixtures = tournamentData.fixtures || [];
-  const allGames = fixtures.flatMap((round) => round.games);
+  const tournamentId = tournamentRef.id;
+  try {
+    const approvedCount = await db.runTransaction(async (transaction) => {
+      const tournamentSnap = await transaction.get(tournamentRef);
+      const tournamentData = tournamentSnap.data() as Tournament | undefined;
+      if (!tournamentData || tournamentData.prizesDistributed) return 0;
 
-  // ── 1. Find and validate games due for auto-approval ──
-  const gamesDueForApproval = allGames.filter((game) => {
-    if (!isDueForAutoApproval(game)) return false;
-    if (!game.result?.winner || !game.result?.loser) {
-      console.warn(`⚠️ Game ${game.gameId} missing result data, skipping`);
-      return false;
-    }
-    return true;
-  });
-
-  if (!gamesDueForApproval.length) {
-    console.log(
-      `⏭️ No games due for auto-approval in tournament ${tournamentId}`,
-    );
-    return;
-  }
-
-  const approvedGames = gamesDueForApproval.map(markGameApproved);
-  const approvedGamesById = new Map(approvedGames.map((g) => [g.gameId, g]));
-
-  const fixturesWithApprovedGames = fixtures.map((round) => ({
-    ...round,
-    games: round.games.map(
-      (game) => approvedGamesById.get(game.gameId) ?? game,
-    ),
-  }));
-
-  // ── 2. Fetch user docs once for all players across approved games ──
-  const uniquePlayerIds = [...new Set(approvedGames.flatMap(getGamePlayerIds))];
-  const fetchedUsers = await Promise.all(uniquePlayerIds.map(getUserById));
-  const users = fetchedUsers.filter((u): u is UserProfile => u !== null);
-
-  // ── 3. Compute participant + user + team updates ──
-  const isDoubles = tournamentData.tournamentType === "Doubles";
-  const isKnockout = tournamentData.tournamentMode === "Knockout";
-  const numberOfCourts = tournamentData.numberOfCourts || 1;
-
-  const { updatedFixtures, updatedParticipants, updatedTeams, usersToUpdate } =
-    isKnockout
-      ? await computeKnockoutUpdates({
-          approvedGames,
-          fixturesWithApprovedGames,
-          tournamentData,
-          users,
-          isDoubles,
-          numberOfCourts,
-        })
-      : await computeRoundRobinUpdates({
-          approvedGames,
-          fixturesWithApprovedGames,
-          tournamentData,
-          users,
-          isDoubles,
+      const fixtures = tournamentData.fixtures || [];
+      const gamesDueForApproval = fixtures
+        .flatMap((round) => round.games)
+        .filter((game) => {
+          if (!isDueForAutoApproval(game)) return false;
+          if (!game.result?.winner || !game.result?.loser) {
+            console.warn(
+              `⚠️ Game ${game.gameId} missing result data, skipping`,
+            );
+            return false;
+          }
+          return true;
         });
+      if (!gamesDueForApproval.length) return 0;
 
-  // ── 4. Write tournament doc + user docs ──
-  await tournamentRef.update({
-    fixtures: updatedFixtures,
-    tournamentParticipants: updatedParticipants,
-    ...(isDoubles && { tournamentTeams: updatedTeams }),
-    gamesCompleted: admin.firestore.FieldValue.increment(approvedGames.length),
-  });
+      const approvedGames = gamesDueForApproval.map(markGameApproved);
+      const approvedGamesById = new Map(
+        approvedGames.map((g) => [g.gameId, g]),
+      );
+      const fixturesWithApprovedGames = fixtures.map((round) => ({
+        ...round,
+        games: round.games.map(
+          (game) => approvedGamesById.get(game.gameId) ?? game,
+        ),
+      }));
 
-  await Promise.all(
-    usersToUpdate.map((user) =>
-      db.doc(`users/${user.userId}`).update({
-        profileDetail: user.profileDetail,
-      }),
-    ),
-  );
+      const uniquePlayerIds = [
+        ...new Set(approvedGames.flatMap(getGamePlayerIds)),
+      ];
+      const userSnaps = uniquePlayerIds.length
+        ? await transaction.getAll(
+            ...uniquePlayerIds.map((id) => db.collection("users").doc(id)),
+          )
+        : [];
+      const users = userSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as UserProfile);
 
-  console.log(
-    `✅ Auto-approved ${approvedGames.length} games in tournament ${tournamentId}`,
-  );
+      const isDoubles = tournamentData.tournamentType === "Doubles";
+      const isKnockout = tournamentData.tournamentMode === "Knockout";
+      const numberOfCourts = tournamentData.numberOfCourts || 1;
+
+      const {
+        updatedFixtures,
+        updatedParticipants,
+        updatedTeams,
+        usersToUpdate,
+      } = isKnockout
+        ? await computeKnockoutUpdates({
+            approvedGames,
+            fixturesWithApprovedGames,
+            tournamentData,
+            users,
+            isDoubles,
+            numberOfCourts,
+          })
+        : await computeRoundRobinUpdates({
+            approvedGames,
+            fixturesWithApprovedGames,
+            tournamentData,
+            users,
+            isDoubles,
+          });
+
+      transaction.update(tournamentRef, {
+        fixtures: updatedFixtures,
+        tournamentParticipants: updatedParticipants,
+        ...(isDoubles && { tournamentTeams: updatedTeams }),
+        gamesCompleted: admin.firestore.FieldValue.increment(
+          approvedGames.length,
+        ),
+      });
+      new Map(usersToUpdate.map((user) => [user.userId, user])).forEach(
+        (user) =>
+          transaction.update(db.collection("users").doc(user.userId), {
+            profileDetail: user.profileDetail,
+          }),
+      );
+      return approvedGames.length;
+    });
+
+    if (approvedCount) {
+      console.log(
+        `✅ Auto-approved ${approvedCount} games in tournament ${tournamentId}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ Error auto-approving games in tournament ${tournamentId}:`,
+      error,
+    );
+  }
 };
 
 // ── Knockout: delta per game, no replay, then advance bracket ──
