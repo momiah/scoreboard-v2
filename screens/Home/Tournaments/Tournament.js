@@ -203,7 +203,12 @@ const Tournament = () => {
       case "Fixtures":
       case "Brackets":
         return tournamentById?.tournamentMode === "Knockout" ? (
-          <Brackets tournament={tournamentById} userRole={userRole} />
+          <Brackets
+            tournament={tournamentById}
+            userRole={userRole}
+            scrollToGameId={scrollToGameId}
+            glowColor={glowColor}
+          />
         ) : (
           <Fixtures
             tournament={tournamentById}

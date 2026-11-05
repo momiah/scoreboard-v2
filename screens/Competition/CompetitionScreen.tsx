@@ -234,7 +234,9 @@ const CompetitionsScreen = memo(() => {
         ? "Summary"
         : isLeague
           ? "Scoreboard"
-          : "Fixtures";
+          : competition.mode === "Knockout"
+            ? "Brackets"
+            : "Fixtures";
 
       if (isLeague) {
         const firstPending = (competition.games || []).find(

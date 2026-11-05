@@ -756,7 +756,50 @@ export const checkBracket = async ({ testUser }) => {
     }
   });
   if (failures.length) throw new Error(failures.join("; "));
-  return { expected: { filledRounds: String(filledRounds) } };
+
+  // What each filled card on the Brackets tab shows: its round tab, every
+  // player's name and its status pill.
+  const statusLabel = (g) =>
+    isApproved(g) ? "Approved" : isPending(g) ? "Pending" : "Scheduled";
+  const cards = Object.fromEntries(
+    rounds.flatMap((round, i) =>
+      round.games
+        .filter((g) => sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0)
+        .map((g) => [
+          g.gameNumber,
+          {
+            tab: String(i),
+            names: [g.team1.player1, g.team1.player2, g.team2.player1, g.team2.player2]
+              .filter(Boolean)
+              .map(formatDisplayName),
+            status: statusLabel(g),
+          },
+        ]),
+    ),
+  );
+
+  // Where the Competitions screen lands the test user: their first game an
+  // opponent reported (orange glow), else their first unplayed game (blue).
+  const userGames = tournament.fixtures
+    .flatMap((round) => round.games)
+    .filter((g) => sideIds(g.team1).concat(sideIds(g.team2)).includes(testUser.userId));
+  const awaitingUser = userGames.find((g) => isPending(g) && g.reporter !== testUser.userId);
+  const target = awaitingUser ?? userGames.find((g) => !g.result);
+  const landing = target
+    ? {
+        gameNumber: String(target.gameNumber),
+        tab: String(rounds.findIndex((round) => round.games.some((g) => g.gameId === target.gameId))),
+        glow: awaitingUser ? "#FFA500" : "#00A2FF",
+      }
+    : null;
+
+  return {
+    expected: {
+      filledRounds: String(filledRounds),
+      cards: JSON.stringify(cards),
+      landing: JSON.stringify(landing),
+    },
+  };
 };
 
 // ── Expected numbers ────────────────────────────────────────────────────────

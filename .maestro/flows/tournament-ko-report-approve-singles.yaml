@@ -4,9 +4,12 @@
 # fixture users play the other semi. The bracket then holds the winners in the
 # final and the losers in the 3rd/4th playoff. In the final the opponent
 # reports and the test user approves from the notification; fixture users play
-# the playoff. After each round the standings and every entrant's global
-# profile match the app's own helpers, and the report notification reached only
-# the opponent. The last approval completes the tournament: the prize function
+# the playoff. Opening it from the Competitions screen lands on the Brackets
+# tab at the test user's next game and glows it: blue when it is unplayed,
+# orange once the opponent has reported it. After each round every bracket
+# card shows its players, the standings and every entrant's global profile
+# match the app's own helpers, and the report notification reached only the
+# opponent. The last approval completes the tournament: the prize function
 # notifies the winners and their profiles carry the prize CP and placement.
 appId: com.courtchamp
 onFlowStart:
@@ -30,6 +33,8 @@ onFlowStart:
     file: ../utilities/tournaments/assert-bracket.yaml
     env:
       FILLED_ROUNDS: "1"
+- runFlow: ../utilities/tournaments/assert-landing.yaml
+- assertTrue: ${output.landing.tab === '0'}
 - runFlow:
     file: ../utilities/tournaments/play-round.yaml
     env:
@@ -40,11 +45,19 @@ onFlowStart:
     env:
       FILLED_ROUNDS: "2"
 - assertTrue: ${!output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-landing.yaml
+- assertTrue: ${output.landing.glow === '#00A2FF'}
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-opponent-reports-round-2"
+- runFlow: ../utilities/tournaments/assert-landing.yaml
+- assertTrue: ${output.landing.glow === '#FFA500'}
 - runFlow:
     file: ../utilities/tournaments/play-round.yaml
     env:
       ROUND: "2"
-      OPPONENT_REPORTS: "true"
+      OPPONENT_REPORTS: "already"
 - assertTrue: ${output.exp.complete}
 - runFlow: ../utilities/tournaments/wait-for-prizes.yaml
 - runFlow: ../utilities/tournaments/assert-all-profiles.yaml

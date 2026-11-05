@@ -190,7 +190,11 @@ const AnimatedBracketCard = ({
         onPress={onPress}
       />
       {isHighlighted && (
-        <GameGlow glowAnim={glowAnim as never} color={glowColor} />
+        <GameGlow
+          glowAnim={glowAnim as never}
+          color={glowColor}
+          testID={`fixture-game-${game.gameNumber}-glow`}
+        />
       )}
     </Animated.View>
   );
@@ -532,7 +536,11 @@ const BracketTree = ({
                   onPress={() => onGamePress(playoffGame)}
                 />
                 {playoffGame.gameId === highlightedGameId && (
-                  <GameGlow glowAnim={glowAnim} color={glowColor} />
+                  <GameGlow
+                    glowAnim={glowAnim}
+                    color={glowColor}
+                    testID={`fixture-game-${playoffGame.gameNumber}-glow`}
+                  />
                 )}
               </PlayoffCardWrapper>
             </PlayoffSection>

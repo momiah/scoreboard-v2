@@ -1,13 +1,14 @@
 # One round of a report-and-approve tournament. The test user reports their own
 # game (or, with OPPONENT_REPORTS true, approves the score their opponent
-# reported from the notification), fixture users play the rest, then the
-# standings and every entrant's global profile are checked.
+# reported from the notification; "already" when the flow has had the opponent
+# report it), fixture users play the rest, then the standings and every
+# entrant's global profile are checked.
 appId: com.courtchamp
 ---
 - runFlow: expect.yaml
 - runFlow:
     when:
-      true: ${OPPONENT_REPORTS !== 'true'}
+      true: ${OPPONENT_REPORTS !== 'true' && OPPONENT_REPORTS !== 'already'}
     commands:
       - runFlow:
           file: report-user-game.yaml
@@ -29,6 +30,10 @@ appId: com.courtchamp
           file: ../harness.yaml
           env:
             BUTTON: "maestro-rr-opponent-reports-round-${ROUND}"
+- runFlow:
+    when:
+      true: ${OPPONENT_REPORTS === 'true' || OPPONENT_REPORTS === 'already'}
+    commands:
       - runFlow:
           file: ../harness.yaml
           env:
