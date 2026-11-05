@@ -54,13 +54,15 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "The Playoffs"
     timeout: 10000
+- assertVisible: "Playoff spots"
+- assertVisible: "In the money"
 - assertVisible:
-    id: "how-to-play-prize-table"
+    id: "how-to-play-playoff-highlight"
 - tapOn:
     id: "how-to-play-next"
 - extendedWaitUntil:
     visible: "Winning the Final"
     timeout: 10000
-- assertVisible: "Read the full rules"
+- assertVisible: ".*Read the full rules.*"
 - assertVisible:
     id: "how-to-play-invite-players"

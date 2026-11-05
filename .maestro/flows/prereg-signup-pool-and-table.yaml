@@ -64,7 +64,10 @@ onFlowStart:
     visible:
       id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
     timeout: 10000
-- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Community"
+    direction: UP
 - tapOn: "Community"
 - extendedWaitUntil:
     visible:

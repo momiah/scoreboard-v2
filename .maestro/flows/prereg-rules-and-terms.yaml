@@ -39,7 +39,7 @@ onFlowStart:
 - assertVisible:
     id: "ladder-pre-registration-terms"
 - runFlow: ../utilities/prereg/guide-to-end.yaml
-- tapOn: "Read the full rules"
+- tapOn: ".*Read the full rules.*"
 - extendedWaitUntil:
     visible: "Ladder Rules"
     timeout: 10000

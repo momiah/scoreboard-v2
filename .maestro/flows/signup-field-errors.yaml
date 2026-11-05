@@ -6,41 +6,44 @@ onFlowStart:
       env:
         SCENARIO: ""
 ---
+- evalScript: ${output.email = "maestro-signup-" + String(Date.now()).slice(-7) + "@example.com"}
 # 16. The sign-up form checks its fields when Create account / Continue is tapped:
 # an invalid email, an email already in use, a short password, mismatched
 # passwords, invalid and taken usernames, a one-word name and no location each
 # show their message, and nothing is created.
 - runFlow: ../utilities/signup/signed-out-home.yaml
 - runFlow: ../utilities/signup/open-signup.yaml
-- tapOn:
-    id: "signup-account-password-toggle"
-- tapOn:
-    id: "signup-account-email"
-- inputText: "not-an-email"
-- tapOn:
-    id: "signup-account-password"
-- inputText: ${MAESTRO_SIGNUP_PASSWORD}
-- tapOn:
-    id: "signup-account-confirm"
-- inputText: "Different-1"
-- tapOn: "One account for every game that counts\\."
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: "not-an-email"
+      PASSWORD: ${MAESTRO_SIGNUP_PASSWORD}
+      CONFIRM: "Different-1"
 - assertVisible: "Passwords don't match"
 - tapOn:
-    id: "signup-account-confirm"
-- eraseText: 30
-- inputText: ${MAESTRO_SIGNUP_PASSWORD}
-- tapOn: "One account for every game that counts\\."
+    id: "signup-account-create"
+- assertNotVisible:
+    id: "signup-profile-name"
+- runFlow: ../utilities/signup/restart-account.yaml
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: "not-an-email"
+      PASSWORD: ${MAESTRO_SIGNUP_PASSWORD}
+      CONFIRM: ${MAESTRO_SIGNUP_PASSWORD}
 - assertNotVisible: "Passwords don't match"
 - tapOn:
     id: "signup-account-create"
 - extendedWaitUntil:
     visible: "Invalid email format"
     timeout: 10000
-- tapOn:
-    id: "signup-account-email"
-- eraseText: 40
-- inputText: ${MAESTRO_TEST_USER_EMAIL}
-- tapOn: "One account for every game that counts\\."
+- runFlow: ../utilities/signup/restart-account.yaml
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: ${MAESTRO_TEST_USER_EMAIL}
+      PASSWORD: ${MAESTRO_SIGNUP_PASSWORD}
+      CONFIRM: ${MAESTRO_SIGNUP_PASSWORD}
 - tapOn:
     id: "signup-account-create"
 - extendedWaitUntil:
@@ -48,33 +51,25 @@ onFlowStart:
     timeout: 20000
 - assertNotVisible:
     id: "signup-profile-name"
-- tapOn:
-    id: "signup-account-email"
-- eraseText: 60
-- inputText: ${MAESTRO_SIGNUP_EMAIL}
-- tapOn:
-    id: "signup-account-password"
-- eraseText: 30
-- inputText: "12345"
-- tapOn:
-    id: "signup-account-confirm"
-- eraseText: 30
-- inputText: "12345"
-- tapOn: "One account for every game that counts\\."
+- runFlow: ../utilities/signup/restart-account.yaml
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: ${output.email}
+      PASSWORD: "12345"
+      CONFIRM: "12345"
 - tapOn:
     id: "signup-account-create"
 - extendedWaitUntil:
     visible: "Password must be at least 6 characters"
     timeout: 10000
-- tapOn:
-    id: "signup-account-password"
-- eraseText: 30
-- inputText: ${MAESTRO_SIGNUP_PASSWORD}
-- tapOn:
-    id: "signup-account-confirm"
-- eraseText: 30
-- inputText: ${MAESTRO_SIGNUP_PASSWORD}
-- tapOn: "One account for every game that counts\\."
+- runFlow: ../utilities/signup/restart-account.yaml
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: ${output.email}
+      PASSWORD: ${MAESTRO_SIGNUP_PASSWORD}
+      CONFIRM: ${MAESTRO_SIGNUP_PASSWORD}
 - tapOn:
     id: "signup-account-create"
 - extendedWaitUntil:
@@ -93,13 +88,15 @@ onFlowStart:
     timeout: 10000
 - tapOn:
     id: "signup-profile-username"
-- eraseText: 20
+    point: 92%,50%
+- eraseText: 60
 - inputText: "bad_name"
 - hideKeyboard
 - assertVisible: "Only letters, numbers, and dashes \\(-\\) are allowed"
 - tapOn:
     id: "signup-profile-username"
-- eraseText: 20
+    point: 92%,50%
+- eraseText: 60
 - inputText: "mpreg-01"
 - hideKeyboard
 - extendedWaitUntil:
@@ -108,6 +105,16 @@ onFlowStart:
 - tapOn:
     id: "signup-profile-continue"
 - assertVisible: "Enter your first and last name"
+- assertNotVisible: "Country and city are required"
+- tapOn:
+    id: "signup-profile-name"
+    point: 92%,50%
+- eraseText: 60
+- inputText: "Maestro Signup"
+- hideKeyboard
+- tapOn:
+    id: "signup-profile-continue"
+- assertNotVisible: "Enter your first and last name"
 - assertVisible: "Country and city are required"
 - assertNotVisible:
     id: "signup-welcome-explore"

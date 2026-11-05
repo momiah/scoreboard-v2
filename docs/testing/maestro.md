@@ -13,7 +13,7 @@ and a line in the table below. A PR without them isn't ready to merge.
 | Feature | Flows | Seeds / harness section |
 |---|---|---|
 | Ladder pre-registration | `prereg-banner-*` (1–4), `prereg-list-*` (5–8), `prereg-signup-pool-and-table` (9), `prereg-guide-*` (10), `prereg-pre-register-and-leave` (11), `prereg-signed-out-pre-register` (12), `prereg-share` (13), `prereg-rules-and-terms` (13b), `prereg-deep-link-join` / `-preview` (14a), `prereg-deep-link-not-open` (14b), `prereg-launch-notification` (18, slow: needs the scheduled job) | `maestro/sections/preRegistration.tsx`, `maestro/seeds/preRegistration/*`; flows that close the live pre-registrations restore them in `onFlowComplete` |
-| Sign-up and sign-in | `signup-new-account` (15), `signup-field-errors` (16), `signup-log-in-from-intro` (17) | account in `maestro/fixtures/signupFixtures.js` / `MAESTRO_SIGNUP_*`, deleted through the app's Delete Account |
+| Sign-up and sign-in | `signup-new-account` (15: through the welcome screen and the "verify your email" log-in refusal), `signup-field-errors` (16), `signup-log-in-from-intro` (17) | `maestro/sections/signup.tsx`; each run's account is `maestro-signup-<stamp>@example.com`, and `maestro-cleanup-signup-profiles` removes its profile doc. Its Auth account stays unverified and can't be deleted from the app |
 | Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
 
 ## Install
