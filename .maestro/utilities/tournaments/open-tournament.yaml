@@ -22,13 +22,17 @@ appId: com.courtchamp
 - tapOn:
     text: ".*${output.tournamentName}.*"
 - extendedWaitUntil:
-    visible: ${TAB}
+    visible: "Chat Room"
     timeout: 30000
-- scrollUntilVisible:
-    element:
-      text: ${TAB}
-    direction: RIGHT
-    centerElement: true
-    optional: true
+- repeat:
+    times: 4
+    while:
+      notVisible: ${TAB}
+    commands:
+      - swipe:
+          from:
+            id: "tournament-tabs"
+          direction: LEFT
+          duration: 400
 - tapOn: ${TAB}
 - waitForAnimationToEnd

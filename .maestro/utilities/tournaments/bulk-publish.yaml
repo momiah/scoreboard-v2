@@ -12,7 +12,7 @@ appId: com.courtchamp
 - extendedWaitUntil:
     notVisible: "Loading fixtures..."
     timeout: 30000
-- assertVisible: ${output.fixturesTab === 'Brackets' ? 'Bulk Publish Brackets' : 'Bulk Publish Fixtures'}
+- assertVisible: "${output.fixturesTab === 'Brackets' ? 'Bulk Publish Brackets' : 'Bulk Publish Fixtures'}"
 - evalScript: ${output.oi = 0}
 - repeat:
     while:
@@ -27,7 +27,15 @@ appId: com.courtchamp
           id: "bulk-score-${output.gn}"
       - inputText: ${output.exp.scores[output.gn].replace('-', '')}
       - evalScript: ${output.oi = output.oi + 1}
-- hideKeyboard
+- hideKeyboard:
+    optional: true
+- tapOn:
+    text: "Round \\d+"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "bulk-submit"
+    timeout: 10000
 - tapOn:
     id: "bulk-submit"
 - extendedWaitUntil:
@@ -37,5 +45,6 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "Successfully submitted ${output.exp.openGames.length} game results!"
     timeout: 60000
+- tapOn: "Close"
 - tapOn:
     id: "tab-home"

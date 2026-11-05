@@ -352,6 +352,7 @@ const Tournament = () => {
               style={{ bottom: -560 }}
             />
             <ScrollView
+              testID="tournament-tabs"
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 10 }}
