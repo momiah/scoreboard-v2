@@ -181,12 +181,12 @@ const InvitePlayerModal = ({
           },
         };
 
-        await sendNotification(payload);
-        await updatePendingInvites(
+        const invited = await updatePendingInvites(
           competition.id,
           user.userId,
           collectionName as CollectionName,
         );
+        if (invited) await sendNotification(payload);
       }
 
       handleShowPopup("Players invited successfully!");

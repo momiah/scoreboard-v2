@@ -1,0 +1,47 @@
+# Round robin doubles: the admin generates teams three ways. Mixed Doubles
+# Random puts every player in exactly one team; Balanced pairs the highest XP
+# with the lowest; Fixed Doubles uses the pairs the admin picks. Fixtures are
+# deleted between each.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "teamsDoubles"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Mixed Doubles"
+      GENERATION: "Random"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-teams-Random"
+- runFlow:
+    file: ../utilities/tournaments/delete-fixtures.yaml
+    env:
+      BLOCKED: "false"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Mixed Doubles"
+      GENERATION: "Balanced"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-teams-Balanced"
+- runFlow:
+    file: ../utilities/tournaments/delete-fixtures.yaml
+    env:
+      BLOCKED: "false"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Fixed Doubles"
+      GENERATION: ""
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-teams-Fixed"

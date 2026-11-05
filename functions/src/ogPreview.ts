@@ -99,6 +99,35 @@ const renderPreview = ({
 </html>`;
 };
 
+const PREVIEW_SOURCES: Record<
+  string,
+  {
+    collectionName: string;
+    fieldPrefix: string;
+    fallbackTitle: string;
+    fallbackDescription: string;
+  }
+> = {
+  league: {
+    collectionName: "leagues",
+    fieldPrefix: "league",
+    fallbackTitle: "Court Champs Competition",
+    fallbackDescription: "Join this competition on Court Champs 🏸",
+  },
+  tournament: {
+    collectionName: "tournaments",
+    fieldPrefix: "tournament",
+    fallbackTitle: "Court Champs Competition",
+    fallbackDescription: "Join this competition on Court Champs 🏸",
+  },
+  club: {
+    collectionName: "clubs",
+    fieldPrefix: "club",
+    fallbackTitle: "Court Champs Club",
+    fallbackDescription: "Join this club on Court Champs 🏸",
+  },
+};
+
 export const ogPreview = functions.https.onRequest(async (req, res) => {
   const parts = req.path.split("/").filter(Boolean);
 
@@ -240,11 +269,13 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  const collectionName = type === "league" ? "leagues" : "tournaments";
-  const nameField = type === "league" ? "leagueName" : "tournamentName";
-  const imageField = type === "league" ? "leagueImage" : "tournamentImage";
-  const descField =
-    type === "league" ? "leagueDescription" : "tournamentDescription";
+  const { collectionName, fieldPrefix, fallbackTitle, fallbackDescription } =
+    Object.prototype.hasOwnProperty.call(PREVIEW_SOURCES, type)
+      ? PREVIEW_SOURCES[type]
+      : PREVIEW_SOURCES.tournament;
+  const nameField = `${fieldPrefix}Name`;
+  const imageField = `${fieldPrefix}Image`;
+  const descField = `${fieldPrefix}Description`;
   const url = `${SITE_URL}/join/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
 
   try {
@@ -258,11 +289,8 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
     res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.send(
       renderPreview({
-        title: asText(data?.[nameField], "Court Champs Competition"),
-        description: asText(
-          data?.[descField],
-          "Join this competition on Court Champs 🏸",
-        ),
+        title: asText(data?.[nameField], fallbackTitle),
+        description: asText(data?.[descField], fallbackDescription),
         image: safeImage(data?.[imageField]),
         url,
         type: "website",

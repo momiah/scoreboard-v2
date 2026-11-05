@@ -32,13 +32,14 @@ const TeamPerformance = ({ leagueTeams }) => {
 
     return (
       <TableRow
+        testID={`performance-row-${team.teamKey}`}
         onPress={() => {
           setShowTeamDetails(true);
           setTeam(team);
         }}
       >
         <TableCell>
-          <Rank>
+          <Rank testID={`performance-rank-${team.teamKey}`}>
             {index + 1}
             {index === 0
               ? "st"
@@ -59,13 +60,18 @@ const TeamPerformance = ({ leagueTeams }) => {
         </TeamCell>
         <TableCell>
           <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+          <Stat
+            testID={`performance-pd-${team.teamKey}`}
+            style={{ color: pointDifference < 0 ? "red" : "green" }}
+          >
             {pointDifference}
           </Stat>
         </TableCell>
         <TableCell>
           <StatTitle>Wins</StatTitle>
-          <Stat>{team.numberOfWins}</Stat>
+          <Stat testID={`performance-wins-${team.teamKey}`}>
+            {team.numberOfWins}
+          </Stat>
         </TableCell>
       </TableRow>
     );

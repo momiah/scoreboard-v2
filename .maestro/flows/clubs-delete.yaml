@@ -1,0 +1,60 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-owned-members"
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+
+- tapOn:
+    id: "club-settings-button"
+- tapOn: ".*Delete Club.*"
+- tapOn: "Delete"
+
+# A wrong password keeps the club
+- tapOn:
+    id: "delete-club-password"
+- inputText: "not-the-password"
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn: "Delete"
+- extendedWaitUntil:
+    visible: "Incorrect password. Please try again."
+    timeout: 20000
+
+# The right password deletes it and returns Home
+- tapOn:
+    id: "delete-club-password"
+- eraseText: 40
+- inputText: ${MAESTRO_TEST_USER_PASSWORD}
+- tapOn: "Delete"
+- extendedWaitUntil:
+    visible: "Browse Clubs"
+    timeout: 30000
+
+# Gone from Home and the Clubs list
+- scrollUntilVisible:
+    element: "Browse Clubs"
+    direction: DOWN
+- assertNotVisible: ".*Maestro Seeded Club.*"
+- tapOn: "Browse Clubs"
+- extendedWaitUntil:
+    notVisible: ".*Maestro Seeded Club.*"
+    timeout: 20000
+
+# Deleting resets navigation to Home, which locks the harness again
+- runFlow: ../login.yaml
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

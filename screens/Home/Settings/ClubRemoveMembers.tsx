@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { Alert, FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -79,7 +79,10 @@ const ClubRemoveMembers = () => {
       currentUser?.userId === club?.clubOwner?.userId && !isOwner && !isSelf;
 
     return (
-      <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
+      <PlayerRow
+        accessible={false}
+        onPress={() => item.userId && goToProfile(item.userId)}
+      >
         <Player_>
           <Username>{item.username}</Username>
           {isOwner && (
@@ -118,7 +121,10 @@ const ClubRemoveMembers = () => {
         </Player_>
 
         {canRemove && (
-          <RemoveButton onPress={() => handleRemove(item)}>
+          <RemoveButton
+            testID={`club-remove-member-${item.userId}`}
+            onPress={() => handleRemove(item)}
+          >
             <ButtonText>Remove</ButtonText>
           </RemoveButton>
         )}
@@ -153,11 +159,16 @@ const ClubRemoveMembers = () => {
           setSelectedMember(null);
         }}
         onConfirm={async (reason: string) => {
-          await removeClubMember({
-            clubId,
-            userId: selectedMember?.userId ?? "",
-            reason,
-          });
+          try {
+            await removeClubMember({
+              clubId,
+              userId: selectedMember?.userId ?? "",
+              reason,
+            });
+          } catch (error) {
+            console.error("Failed to remove club member:", error);
+            Alert.alert("Error", "Unable to remove this member.");
+          }
 
           await fetchClub();
           setModalVisible(false);

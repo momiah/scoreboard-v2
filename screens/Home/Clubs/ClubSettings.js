@@ -106,7 +106,11 @@ const ClubSettings = () => {
 
       await deleteClub(clubId);
       setPasswordModalVisible(false);
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      navigation.popToTop();
+      navigation.navigate("Tabs", {
+        screen: "Home",
+        params: { screen: "HomeMain" },
+      });
     } catch (error) {
       if (
         error.code === "auth/wrong-password" ||
@@ -157,6 +161,7 @@ const ClubSettings = () => {
               Enter your password to permanently delete this club
             </PasswordSubtitle>
             <PasswordInput
+              testID="delete-club-password"
               placeholder="Enter password"
               placeholderTextColor="#666"
               secureTextEntry

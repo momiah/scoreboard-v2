@@ -3,26 +3,19 @@ import { Modal, ActivityIndicator, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import moment from "moment";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 import {
   GameTeam,
   Game,
-  GameResult,
   UserProfile,
   Teams,
   Player,
 } from "@shared/types";
-import { calculateWin } from "../../helpers/calculateWin";
+import { reportTournamentGame } from "../../helpers/Tournament/reportTournamentGame";
 import { UserContext } from "@/context/UserContext";
 import { PopupContext } from "@/context/PopupContext";
-import {
-  notificationSchema,
-  notificationTypes,
-  COMPETITION_TYPES,
-} from "@shared";
-import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { COMPETITION_TYPES } from "@shared";
 import { LeagueContext } from "@/context/LeagueContext";
 import VideoUploadModal from "./VideoUploadModal";
 
@@ -117,73 +110,19 @@ const AddTournamentGameModal = ({
 
     setLoading(true);
 
-    const team1: GameTeam = {
-      player1: game?.team1?.player1 ?? null,
-      player2: game?.team1?.player2 ?? null,
-      score: score1,
-    };
-
-    const team2: GameTeam = {
-      player1: game?.team2?.player1 ?? null,
-      player2: game?.team2?.player2 ?? null,
-      score: score2,
-    };
-
-    const result = calculateWin(team1, team2, tournamentType) as GameResult;
-    const gamescore = `${score1}-${score2}`;
-    const date = moment().format("DD-MM-YYYY");
-
-    const gameResult: Game = {
-      gameId: game.gameId,
-      gamescore,
-      date,
-      reportedAt: new Date(),
-      reportedTime: moment().format("HH:mm"),
-      team1,
-      team2,
-      result,
-      numberOfApprovals: 0,
-      numberOfDeclines: 0,
-      approvalStatus: "Pending",
-      reporter: currentUser?.userId || "",
-      court: game?.court,
-      gameNumber: game?.gameNumber,
-      createdAt: game?.createdAt,
-      createdTime: game?.createdTime,
-      approvers: game?.approvers || [],
-    };
-
-    const isCurrentUserTeam1 = [
-      team1.player1?.userId,
-      team1.player2?.userId,
-    ].includes(currentUser?.userId);
-
-    const opponentUserIds = isCurrentUserTeam1
-      ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
-      : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
-
-    const requestForOpponentApprovals = (await Promise.all(
-      opponentUserIds.map(getUserById),
-    )) as Array<{ userId: string; [key: string]: unknown }>;
-
-    for (const user of requestForOpponentApprovals) {
-      const payload = {
-        ...notificationSchema,
-        createdAt: new Date(),
-        recipientId: user.userId,
-        senderId: currentUser?.userId,
-        message: `${formatDisplayName(currentUser)} has just reported a score in ${tournamentName} tournament`,
-        type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
-        data: { tournamentId, gameId: game.gameId },
-      };
-      await sendNotification(payload);
-    }
-
+    let reported;
     try {
-      await updateTournamentGame({
+      reported = await reportTournamentGame({
+        game,
+        score1,
+        score2,
+        tournamentType,
+        tournamentName,
         tournamentId,
-        gameId: game.gameId,
-        updatedGame: gameResult,
+        reporter: currentUser as UserProfile,
+        getUserById,
+        sendNotification,
+        updateTournamentGame,
       });
     } catch (updateError: unknown) {
       const errorMessage =
@@ -200,6 +139,7 @@ const AddTournamentGameModal = ({
       );
       return;
     }
+    const { gameResult, gamescore, date, team1, team2 } = reported;
 
     if (onGameUpdated) {
       onGameUpdated(gameResult);
@@ -271,6 +211,7 @@ const AddTournamentGameModal = ({
           )}
 
           <SubmitButton
+            testID="add-game-submit"
             onPress={handleSubmit}
             disabled={loading || !areScoresEntered() || !canCurrentUserReport}
             style={{

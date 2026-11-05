@@ -118,7 +118,7 @@ interface GenerateFixturesModalProps {
   generatedFixtures: Fixtures[] | null;
 }
 
-const extractPlayersWithXp = async (
+export const extractPlayersWithXp = async (
   players: ScoreboardProfile[],
   getUserById: (id: string) => Promise<UserProfile | null>,
 ): Promise<PlayerWithXP[]> => {

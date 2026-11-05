@@ -1,0 +1,18 @@
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "tab-home"
+- scrollUntilVisible:
+    element: "Browse Clubs"
+    direction: DOWN
+- tapOn: "Browse Clubs"
+- scrollUntilVisible:
+    element: ".*${CLUB_NAME}.*"
+    direction: DOWN
+- tapOn: ".*${CLUB_NAME}.*"
+- extendedWaitUntil:
+    visible:
+      id: "club-member-count"
+    timeout: 30000
