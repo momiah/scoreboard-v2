@@ -77,6 +77,12 @@ export const reportTournamentGame = async ({
     ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
     : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
 
+  await updateTournamentGame({
+    tournamentId,
+    gameId: game.gameId,
+    updatedGame: gameResult,
+  });
+
   const requestForOpponentApprovals = (await Promise.all(
     opponentUserIds.map((userId) => getUserById(userId as string)),
   )) as Array<{ userId: string; [key: string]: unknown }>;
@@ -92,12 +98,6 @@ export const reportTournamentGame = async ({
       data: { tournamentId, gameId: game.gameId },
     });
   }
-
-  await updateTournamentGame({
-    tournamentId,
-    gameId: game.gameId,
-    updatedGame: gameResult,
-  });
 
   return { gameResult, gamescore, date, team1, team2 };
 };
