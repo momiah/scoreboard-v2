@@ -2,16 +2,23 @@ appId: com.courtchamp
 ---
 # One check of the launch job: taps the assert button; on "Check failed" waits a
 # minute so the caller can try again.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "maestro-harness-filter"
+          point: 98%,50%
+      - waitForAnimationToEnd
+      - eraseText: 120
+      - inputText: "maestro-assert-prereg-launch-notified"
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-harness-filter-applied"
+            text: "maestro-assert-prereg-launch-notified"
+          timeout: 8000
 - tapOn:
-    id: "maestro-harness-filter"
-    point: 98%,50%
-- eraseText: 120
-- inputText: "maestro-assert-prereg-launch-notified"
-- extendedWaitUntil:
-    visible:
-      id: "maestro-harness-filter-applied"
-      text: "maestro-assert-prereg-launch-notified"
-    timeout: 20000
+    id: "maestro-harness-filter-applied"
+- waitForAnimationToEnd
 - tapOn:
     id: "maestro-assert-prereg-launch-notified"
 - extendedWaitUntil:
