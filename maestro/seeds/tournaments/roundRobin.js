@@ -43,7 +43,7 @@ import {
   generateRoundRobinFixtures,
   generateSinglesRoundRobinFixtures,
 } from "../../../helpers/Tournament/roundRobin";
-import { generateKnockoutBrackets } from "../../../helpers/Tournament/knockout";
+import { generateTournamentKnockoutBrackets } from "../../../helpers/Tournament/knockout";
 
 // Doubles team keys are "<uid>-<uid>" and prizes split them on "-", so
 // fixture user ids must not contain a hyphen.
@@ -358,7 +358,7 @@ const generateScenarioFixtures = async ({ tournamentId, scenario, testUser, owne
           player2: byId.get(b),
         }));
   const result = isKnockout(scenario)
-    ? generateKnockoutBrackets({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId })
+    ? generateTournamentKnockoutBrackets({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId })
     : scenario.type === "Singles"
       ? generateSinglesRoundRobinFixtures({ players: participants, numberOfCourts: RR_COURTS, competitionId: tournamentId })
       : generateRoundRobinFixtures({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId });

@@ -48,7 +48,7 @@ onFlowStart:
 - tapOn:
     id: "empty-state-generate"
 - extendedWaitUntil:
-    visible: "Knockout tournaments need 4, 8, 16, 32(, 64)? teams. You currently have 3."
+    visible: "Knockout tournaments need 4, 8, 16, 32 teams. You currently have 3."
     timeout: 10000
 - tapOn: "OK"
 - tapOn:
