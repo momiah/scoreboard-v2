@@ -291,6 +291,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
         >
           <ScrollContainer
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
           >
@@ -341,6 +342,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
               rules={{ required: "Country is required" }}
               render={() => (
                 <LocationButton
+                  testID="add-club-location"
                   hasError={Boolean(errors.country || errors.city)}
                   onPress={() => setShowCountrySelector(true)}
                 >
@@ -374,6 +376,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
               </CancelButton>
 
               <CreateButton
+                testID="add-club-create"
                 disabled={!canCreate}
                 onPress={handleSubmit(onSubmit)}
               >
@@ -434,6 +437,7 @@ const FormField = ({
       render={({ field: { onChange, onBlur, value } }) =>
         multiline ? (
           <TextAreaInput
+            testID={`add-club-${name}`}
             placeholder={`Enter ${label.toLowerCase()}`}
             placeholderTextColor="#ccc"
             multiline
@@ -443,6 +447,8 @@ const FormField = ({
           />
         ) : (
           <Input
+            testID={`add-club-${name}`}
+            autoCorrect={false}
             placeholder={`Enter ${label.toLowerCase()}`}
             placeholderTextColor="#ccc"
             value={value}

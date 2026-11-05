@@ -4,6 +4,10 @@ import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext, useCallback } from "react";
+import {
+  competitionClosedMessage,
+  getCompetitionClosedReason,
+} from "../../helpers/competitionEntry";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { notificationTypes, COLLECTION_NAMES } from "@shared";
@@ -83,11 +87,15 @@ const JoinRequestModal = ({
     }
   };
 
-  const competitionFull =
-    !isClub &&
-    competition?.participants.length !== undefined &&
-    competition?.maxPlayers !== undefined &&
-    competition.participants.length >= competition.maxPlayers;
+  const closedReason =
+    !isClub && competition
+      ? getCompetitionClosedReason({
+          participantCount: competition.participants?.length ?? 0,
+          maxPlayers: competition.maxPlayers,
+          endDate: competition.endDate,
+          fixturesGenerated: competition.fixturesGenerated,
+        })
+      : null;
 
   const userAlreadyInCompetition =
     !isClub &&
@@ -161,9 +169,10 @@ const JoinRequestModal = ({
     if (!hasData) return;
 
     if (isClub) {
-      if (requestWithdrawn) readNotification(notificationId, currentUser?.userId);
+      if (requestWithdrawn)
+        readNotification(notificationId, currentUser?.userId);
     } else {
-      if (competitionFull || requestWithdrawn) {
+      if (!!closedReason || requestWithdrawn) {
         readNotification(notificationId, currentUser?.userId);
       }
     }
@@ -172,7 +181,7 @@ const JoinRequestModal = ({
     competition,
     clubData,
     isRead,
-    competitionFull,
+    closedReason,
     requestWithdrawn,
     notificationId,
     currentUser?.userId,
@@ -301,9 +310,7 @@ const JoinRequestModal = ({
                 <AntDesign name="close-circle" size={30} color="red" />
               </TouchableOpacity>
 
-              <Title>
-                {isClub ? "Club Join Request" : "Join Request"}
-              </Title>
+              <Title>{isClub ? "Club Join Request" : "Join Request"}</Title>
               <Message>
                 {isClub ? (
                   <>
@@ -346,9 +353,9 @@ const JoinRequestModal = ({
                 </DisabledText>
               )}
 
-              {!isClub && competitionFull && (
+              {closedReason && (
                 <DisabledText>
-                  This invite has expired as the {competitionType} is full
+                  {competitionClosedMessage(closedReason, competitionType)}
                 </DisabledText>
               )}
 
@@ -363,7 +370,7 @@ const JoinRequestModal = ({
                   style={{ backgroundColor: "red" }}
                   disabled={
                     isRead ||
-                    competitionFull ||
+                    !!closedReason ||
                     requestWithdrawn ||
                     userAlreadyInCompetition ||
                     joiningCompetition
@@ -376,7 +383,7 @@ const JoinRequestModal = ({
                   onPress={handleAcceptJoinRequest}
                   disabled={
                     isRead ||
-                    competitionFull ||
+                    !!closedReason ||
                     requestWithdrawn ||
                     userAlreadyInCompetition ||
                     joiningCompetition

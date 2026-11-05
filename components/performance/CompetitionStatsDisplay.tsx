@@ -24,9 +24,14 @@ interface CompetitionStatsDisplayProps {
 interface TrophyItemProps {
   imageSource: number;
   statValue: number;
+  testID: string;
 }
 
-const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
+const TrophyItem: React.FC<TrophyItemProps> = ({
+  imageSource,
+  statValue,
+  testID,
+}) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
   return (
@@ -41,7 +46,7 @@ const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
       </CircleSkeleton>
 
       <TextSkeleton show={!imageLoaded} height={14} width={30}>
-        <PrizeText style={{ opacity: imageLoaded ? 1 : 0 }}>
+        <PrizeText testID={testID} style={{ opacity: imageLoaded ? 1 : 0 }}>
           {statValue}
         </PrizeText>
       </TextSkeleton>
@@ -71,6 +76,7 @@ const CompetitionStatsDisplay: React.FC<CompetitionStatsDisplayProps> = ({
             key={key}
             imageSource={images[index]}
             statValue={stats?.[key] ?? 0}
+            testID={`${competitionType}-stats-${key}`}
           />
         ))}
       </PrizeRow>

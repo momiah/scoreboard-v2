@@ -81,7 +81,11 @@ const RemovePlayerModal = ({
               <CancelButton onPress={onClose}>
                 <ButtonText>Cancel</ButtonText>
               </CancelButton>
-              <RemoveButton disabled={!isValid} onPress={handleRemove}>
+              <RemoveButton
+                testID="remove-player-confirm"
+                disabled={!isValid}
+                onPress={handleRemove}
+              >
                 <ButtonText>Remove</ButtonText>
               </RemoveButton>
             </ButtonRow>

@@ -1,18 +1,15 @@
 // GameContext.js
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import {
-  getDoc,
   doc,
   collection,
   query,
   orderBy,
-  updateDoc,
   getDocs,
   setDoc,
 } from "firebase/firestore";
 import { AntDesign } from "@expo/vector-icons";
-import { AppEventsLogger } from "react-native-fbsdk-next";
 import { COLLECTION_NAMES } from "@shared";
 
 import { db } from "../services/firebase.config";
@@ -132,37 +129,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const addGame = async (newGame, gameId, leagueId) => {
-    try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueId);
-
-      // Get the existing league document
-      const leagueDoc = await getDoc(leagueDocRef);
-
-      if (leagueDoc.exists()) {
-        // Get the current games array from the league document
-        const currentGames = leagueDoc.data().games || [];
-
-        // Update the games array with the new game
-        const updatedGames = [...currentGames, newGame];
-
-        // Update the league document with the updated games array
-        await updateDoc(leagueDocRef, { games: updatedGames });
-
-        AppEventsLogger.logEvent("ReportedGame", {
-          league_id: leagueId,
-        });
-      } else {
-        console.error("League document not found.");
-        Alert.alert("Error", "League not found.");
-      }
-    } catch (error) {
-      console.error("Error saving game:", error);
-      Alert.alert("Error", "Error saving game data");
-    }
-  };
-
   const recordVideoUploadFailure = async ({
     gameId,
     competitionId,
@@ -195,7 +161,6 @@ const GameProvider = ({ children }) => {
       value={{
         games,
         setGames,
-        addGame,
         retrieveGames,
         recordVideoUploadFailure,
 

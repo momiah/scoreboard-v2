@@ -1,0 +1,30 @@
+# From the tournament screen, the test user invites every fixture user in
+# output.ids through Invite Players, and the fixture users accept.
+appId: com.courtchamp
+---
+- tapOn: ".*Invite Players.*"
+- evalScript: ${output.inviteKeys = Object.keys(output.ids).filter((k) => k !== 'user'); output.ii = 0}
+- repeat:
+    while:
+      true: ${output.ii < output.inviteKeys.length}
+    commands:
+      - tapOn:
+          id: "invite-search-input"
+      - eraseText: 40
+      - inputText: ${output.ids[output.inviteKeys[output.ii]]}
+      - tapOn: "@ ${output.ids[output.inviteKeys[output.ii]]}"
+      - evalScript: ${output.ii = output.ii + 1}
+- tapOn:
+    id: "invite-send"
+- extendedWaitUntil:
+    visible: "Players invited successfully!"
+    timeout: 60000
+- tapOn:
+    text: "(OK|Close|Done)"
+    optional: true
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-accept-invites"

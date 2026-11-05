@@ -161,7 +161,7 @@ const ClubScreen: React.FC = () => {
       return () => {
         cancelled = true;
       };
-    }, [clubId, fetchClubById]),
+    }, [clubId, fetchClubById, currentUser?.userId]),
   );
 
   useEffect(() => {
@@ -174,11 +174,7 @@ const ClubScreen: React.FC = () => {
     if (!club) return;
     try {
       setIsJoinRequestSending(true);
-      await requestToJoinClub({
-        clubId,
-        currentUser,
-        ownerId: club.clubOwner.userId,
-      });
+      await requestToJoinClub({ clubId, currentUser });
       await fetchClubById(clubId);
     } catch (e) {
       console.error("Error sending club join request:", e);
@@ -278,6 +274,7 @@ const ClubScreen: React.FC = () => {
                 <BackRow>
                   {canInvite ? (
                     <BackButton
+                      testID="club-settings-button"
                       onPress={() =>
                         navigation.navigate("ClubSettings", { clubId, club })
                       }
@@ -311,6 +308,7 @@ const ClubScreen: React.FC = () => {
                   <View style={{ flexDirection: "row", gap: 5 }}>
                     <Tag name="Club" color="#FAB234" />
                     <Tag
+                      testID="club-member-count"
                       name={`${memberCount} ${memberCount === 1 ? "Member" : "Members"}`}
                       color={"rgba(0, 0, 0, 0.7)"}
                       iconColor={"#00A2FF"}
@@ -355,6 +353,7 @@ const ClubScreen: React.FC = () => {
                 >
                   {canInvite ? (
                     <Tag
+                      testID="club-invite-members"
                       name="Invite Members"
                       color="#00A2FF"
                       icon="paper-plane-sharp"

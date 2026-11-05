@@ -1,0 +1,34 @@
+# Opens output.tournamentName from the Competitions tab, the way a player
+# reaches their own private tournament, on the tab TAB.
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "tab-competitions"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*${output.tournamentName}.*"
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*${output.tournamentName}.*"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: ".*${output.tournamentName}.*"
+          timeout: 30000
+- tapOn:
+    text: ".*${output.tournamentName}.*"
+- extendedWaitUntil:
+    visible: ${TAB}
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: ${TAB}
+    direction: RIGHT
+    centerElement: true
+    optional: true
+- tapOn: ${TAB}
+- waitForAnimationToEnd

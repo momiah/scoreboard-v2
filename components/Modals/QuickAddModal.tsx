@@ -372,7 +372,6 @@ const QuickAddModal = ({
           modalVisible={addGameModalVisible}
           setModalVisible={setAddGameModalVisible}
           leagueId={selectedCompetition.id}
-          leagueGames={selectedCompetition.games}
           leagueType={selectedCompetition.type}
           leagueName={selectedCompetition.name}
           onGameUpdated={handleGameUpdated}

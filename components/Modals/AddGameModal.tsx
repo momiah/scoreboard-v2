@@ -6,41 +6,27 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
-import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
-import { generateUniqueGameId } from "../../helpers/generateUniqueId";
 import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
 import { PopupContext } from "../../context/PopupContext";
+import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
 import {
-  notificationSchema,
-  notificationTypes,
-  COLLECTION_NAMES,
-  COMPETITION_TYPES,
-} from "@shared";
-import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
-import { calculateWin } from "../../helpers/calculateWin";
-import { formatDisplayName } from "../../helpers/formatDisplayName";
+  reportLeagueGame,
+  ReportLeagueGameResult,
+} from "../../helpers/League/reportLeagueGame";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import VideoUploadModal from "./VideoUploadModal";
-import {
-  GameTeam,
-  Game,
-  GameResult,
-  Player,
-  CollectionName,
-  Teams,
-} from "@shared/types";
+import { Game, Player, CollectionName, Teams } from "@shared/types";
 
 type AddGameModalProps = {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   leagueId: string;
-  leagueGames: Game[];
   leagueType: string;
   leagueName: string;
   onGameAdded?: (gameData: {
@@ -59,18 +45,15 @@ const AddGameModal = ({
   modalVisible,
   setModalVisible,
   leagueId,
-  leagueGames,
   leagueType,
   leagueName,
   onGameAdded,
   isBulkMode = false,
   onGameUpdated,
 }: AddGameModalProps) => {
-  const { addGame } = useContext(GameContext);
   const { fetchCompetitionById } = useContext(LeagueContext);
   const { showBottomToast } = useContext(PopupContext);
-  const { getUserById, currentUser, sendNotification } =
-    useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
 
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -157,108 +140,33 @@ const AddGameModal = ({
       return;
     }
 
-    if (!team1Score || !team2Score) {
-      setErrorText("Please enter scores for both teams.");
-      setLoading(false);
-      return;
-    }
-
-    const score1 = parseInt(team1Score);
-    const score2 = parseInt(team2Score);
-
-    const validationError = validateBadmintonScores(score1, score2);
-    if (validationError) {
-      setErrorText(validationError);
-      setLoading(false);
-      return;
-    }
-
-    const gameId = generateUniqueGameId({
-      existingGames: leagueGames,
-      competitionId: leagueId,
+    const reported = await reportLeagueGame({
+      leagueId,
+      team1Players: selectedPlayers.team1,
+      team2Players: selectedPlayers.team2,
+      score1: parseInt(team1Score),
+      score2: parseInt(team2Score),
+      reporter: currentUser,
+      sendNotification,
+    }).catch((error): ReportLeagueGameResult => {
+      console.error("Error reporting game:", error);
+      return { error: "Error saving game data. Please try again." };
     });
 
-    const team1: GameTeam = {
-      player1: selectedPlayers.team1[0],
-      player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
-      score: score1,
-    };
-
-    const team2: GameTeam = {
-      player1: selectedPlayers.team2[0],
-      player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
-      score: score2,
-    };
-
-    const result = calculateWin(team1, team2, leagueType) as GameResult;
-    const currentUserId = currentUser?.userId;
-
-    const playersInGame = [
-      team1.player1?.userId,
-      team1.player2?.userId,
-      team2.player1?.userId,
-      team2.player2?.userId,
-    ].filter(Boolean);
-
-    if (!playersInGame.includes(currentUserId)) {
-      setErrorText("You must be a participant in the game to report it.");
+    if (!reported.game) {
+      setErrorText(reported.error);
       setLoading(false);
       return;
     }
 
-    const gamescore = `${score1} - ${score2}`;
-    const date = moment().format("DD-MM-YYYY");
-
-    const newGame: Game = {
-      gameId,
-      gamescore,
-      createdAt: new Date(),
-      date,
-      createdTime: moment().format("HH:mm"),
-      team1,
-      team2,
-      result,
-      numberOfApprovals: 0,
-      numberOfDeclines: 0,
-      approvalStatus: "Pending",
-      reporter: currentUser?.userId || "",
-      approvers: [],
-    };
-
+    AppEventsLogger.logEvent("ReportedGame", { league_id: leagueId });
+    const { gameId, gamescore, date, team1, team2 } = reported.game;
     setErrorText("");
-
-    const isCurrentUserTeam1 = [
-      team1.player1?.userId,
-      team1.player2?.userId,
-    ].includes(currentUserId);
-
-    const opponentUserIds = isCurrentUserTeam1
-      ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
-      : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
-
-    const requestForOpponentApprovals = (await Promise.all(
-      opponentUserIds.map(getUserById),
-    )) as Array<{ userId: string; [key: string]: unknown }>;
-
-    for (const user of requestForOpponentApprovals) {
-      const payload = {
-        ...notificationSchema,
-        createdAt: new Date(),
-        recipientId: user.userId,
-        senderId: currentUserId,
-        message: `${formatDisplayName(currentUser)} has just reported a score in ${leagueName} league`,
-        type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
-        data: { leagueId, gameId },
-      };
-      await sendNotification(payload);
-    }
-
-    await addGame(newGame, gameId, leagueId);
     resetForm();
     setSubmittedGame({
       gameId,
       gamescore,
-      date,
+      date: date ?? "",
       teams: {
         team1: {
           player1: team1.player1 as Player,

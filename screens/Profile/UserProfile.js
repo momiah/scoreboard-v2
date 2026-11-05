@@ -328,8 +328,9 @@ const UserProfile = () => {
                   </Pressable>
                   <DetailColumn>
                     <PlayerName>{profile?.username}</PlayerName>
-                    <DetailText>{profileXp ?? 0} CP</DetailText>
+                    <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
                     <DetailText
+                      testID="profile-pd"
                       style={{
                         fontWeight: "bold",
                         color: pointDifference < 0 ? "red" : "green",
@@ -359,8 +360,9 @@ const UserProfile = () => {
                 </Pressable>
                 <DetailColumn>
                   <PlayerName>{profile?.username}</PlayerName>
-                  <DetailText>{profileXp ?? 0} CP</DetailText>
+                  <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
                   <DetailText
+                    testID="profile-pd"
                     style={{
                       fontWeight: "bold",
                       color: pointDifference < 0 ? "red" : "green",
@@ -441,6 +443,7 @@ const UserProfile = () => {
               }}
               renderItem={({ item: tab }) => (
                 <Tab
+                  testID={`profile-tab-${tab.component}`}
                   onPress={() => setSelectedTab(tab.component)}
                   isSelected={selectedTab === tab.component}
                 >

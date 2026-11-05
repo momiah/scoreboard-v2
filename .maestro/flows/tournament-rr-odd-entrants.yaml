@@ -1,0 +1,50 @@
+# Round robin with an odd number of entrants. Three singles players: the app
+# refuses to generate ("Please ensure an even number of participants.").
+# Six doubles players make three teams: the fixtures give each team one
+# sit-out, every pair meets once, the games are played and the standings,
+# completion and prizes follow (the 0-win team is unplaced).
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "oddSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- tapOn:
+    id: "empty-state-generate"
+- extendedWaitUntil:
+    visible: "Please ensure an even number of participants."
+    timeout: 10000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "oddDoubles"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Mixed Doubles"
+      GENERATION: "Random"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-fairness"
+- copyTextFrom:
+    id: "maestro-expected-sitOutsPerSide"
+- assertTrue: ${maestro.copiedText === '1'}
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-play-reverse"
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-standings.yaml
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
