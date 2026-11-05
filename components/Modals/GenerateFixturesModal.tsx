@@ -31,7 +31,7 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { generateKnockoutBrackets } from "../../helpers/Tournament/knockout";
+import { generateTournamentKnockoutBrackets } from "../../helpers/Tournament/knockout";
 import { generateInitialTeamStats } from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 
@@ -241,7 +241,7 @@ const GenerateFixturesModal = ({
           player1: player,
           player2: null,
         }));
-        const bracketResult = generateKnockoutBrackets({
+        const bracketResult = generateTournamentKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",
@@ -303,7 +303,7 @@ const GenerateFixturesModal = ({
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (tournamentMode === "Knockout") {
-        const bracketResult = generateKnockoutBrackets({
+        const bracketResult = generateTournamentKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",
