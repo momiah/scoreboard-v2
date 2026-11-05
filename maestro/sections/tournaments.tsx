@@ -9,6 +9,7 @@ import { useFixtureCompetitionActions } from "../seeds/competitions/fixtureActio
 import {
   RR_SCENARIOS,
   approveUserReports,
+  checkBracket,
   checkFixtureFairness,
   checkPrizeNotifications,
   checkReportNotifications,
@@ -139,6 +140,11 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
           run={() => checkTeams({ testUser, generation })}
         />
       ))}
+      <SeedButton
+        id="maestro-rr-check-bracket"
+        label="KO bracket"
+        run={() => checkBracket({ testUser })}
+      />
       <SeedButton
         id="maestro-rr-expect"
         label="RR expect"

@@ -21,6 +21,7 @@ import {
   prizeTypes,
 } from "@shared";
 import {
+  advanceBrackets,
   buildTournamentPrizeAllocations,
   calculatePlayerPerformance,
   calculateTournamentPrizePool,
@@ -42,6 +43,7 @@ import {
   generateRoundRobinFixtures,
   generateSinglesRoundRobinFixtures,
 } from "../../../helpers/Tournament/roundRobin";
+import { generateKnockoutBrackets } from "../../../helpers/Tournament/knockout";
 
 // Doubles team keys are "<uid>-<uid>" and prizes split them on "-", so
 // fixture user ids must not contain a hyphen.
@@ -83,7 +85,19 @@ export const RR_SCENARIOS = {
   gatesDoubles: { name: "Maestro RR Gates Doubles", type: "Doubles", users: doubles(7), seed: "participants" },
   memberSingles: { name: "Maestro RR Member Singles", type: "Singles", users: singles(3), seed: "participants", ownedByFixture: true },
   memberDoubles: { name: "Maestro RR Member Doubles", type: "Doubles", users: doubles(7), seed: "participants", ownedByFixture: true },
+  koSingles: { name: "Maestro KO Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "none", userFirst: true },
+  koDoubles: { name: "Maestro KO Doubles", mode: "Knockout", type: "Doubles", users: doubles(7), seed: "none" },
+  koBulkSingles: { name: "Maestro KO Bulk Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "fixtures" },
+  koBulkDoubles: { name: "Maestro KO Bulk Doubles", mode: "Knockout", type: "Doubles", users: doubles(7), seed: "fixtures", userFirst: true },
+  koGatesSingles: { name: "Maestro KO Gates Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "participants" },
+  koMemberSingles: { name: "Maestro KO Member Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "participants", ownedByFixture: true },
+  koOddSingles: { name: "Maestro KO Odd Singles", mode: "Knockout", type: "Singles", users: singles(2), seed: "participants" },
+  koSixSingles: { name: "Maestro KO Six Singles", mode: "Knockout", type: "Singles", users: doubles(5), seed: "participants" },
+  koThreeTeams: { name: "Maestro KO Three Teams", mode: "Knockout", type: "Doubles", users: doubles(5), seed: "participants" },
 };
+
+const modeOf = (scenario) => scenario.mode ?? "Round Robin";
+const isKnockout = (scenario) => modeOf(scenario) === "Knockout";
 
 export const RR_TOURNAMENT_PREFIX = "Maestro RR";
 const ACTIVE_KEY = "maestro:rr:active";
@@ -93,9 +107,10 @@ const RR_COURTS = 2;
 
 // Finishing order the scores follow: earlier wins. A doubles team plays as its
 // strongest player. The test user (and, in doubles, their partner f1) sits
-// second, behind f2, so they win some and lose one.
+// second, behind f2, so they win some and lose one; userFirst puts them first.
 const strengthOrder = (scenario, testUserId) => {
   const ids = scenario.users.map((u) => u.userId);
+  if (scenario.userFirst) return [testUserId, ...ids];
   return [ids[1], testUserId, ids[0], ...ids.slice(2)];
 };
 
@@ -277,7 +292,7 @@ const createScenarioTournament = async ({ key, scenario, owner, actions, clubId 
       startDate: moment().format("DD-MM-YYYY"),
       maxPlayers: 8,
       tournamentType: scenario.type,
-      tournamentMode: "Round Robin",
+      tournamentMode: modeOf(scenario),
       privacy: "Private",
       createdAt: new Date(),
       ...ownerProfiles(owner),
@@ -335,17 +350,18 @@ const generateScenarioFixtures = async ({ tournamentId, scenario, testUser, owne
     actions.getUserById,
   );
   const byId = new Map(participants.map((p) => [p.userId, p]));
-  const result =
+  const teams =
     scenario.type === "Singles"
+      ? participants.map((player) => ({ player1: player, player2: null }))
+      : fixedTeamsFor(scenario, testUser.userId).map(([a, b]) => ({
+          player1: byId.get(a),
+          player2: byId.get(b),
+        }));
+  const result = isKnockout(scenario)
+    ? generateKnockoutBrackets({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId })
+    : scenario.type === "Singles"
       ? generateSinglesRoundRobinFixtures({ players: participants, numberOfCourts: RR_COURTS, competitionId: tournamentId })
-      : generateRoundRobinFixtures({
-          teams: fixedTeamsFor(scenario, testUser.userId).map(([a, b]) => ({
-            player1: byId.get(a),
-            player2: byId.get(b),
-          })),
-          numberOfCourts: RR_COURTS,
-          competitionId: tournamentId,
-        });
+      : generateRoundRobinFixtures({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId });
   if (!result) throw new Error("Fixture generation returned nothing");
   await actions.addTournamentFixtures({
     tournamentId,
@@ -398,6 +414,8 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
   return {
     expected: {
       tournamentName: scenario.name,
+      tournamentMode: modeOf(scenario),
+      fixturesTab: isKnockout(scenario) ? "Brackets" : "Fixtures",
       courtName: (await scenarioCourt(actions)).court.courtName.trim(),
       ids: JSON.stringify({
         user: testUser.userId,
@@ -707,6 +725,40 @@ export const checkReplay = async ({ testUser }) => {
   return { games: ordered.length };
 };
 
+// ── Knockout brackets ───────────────────────────────────────────────────────
+
+// The stored bracket is what advanceBrackets makes of it (nothing left to
+// advance, courts assigned), and every round after a finished one is filled:
+// winners into the next round, the semi-final losers into the 3rd/4th playoff.
+export const checkBracket = async ({ testUser }) => {
+  const { tournament } = await loadActive(testUser);
+  const shape = (fixtures) =>
+    JSON.stringify(
+      fixtures.map((round) =>
+        round.games.map((g) => [sideIds(g.team1), sideIds(g.team2), g.court]),
+      ),
+    );
+  const failures = [];
+  const advanced = advanceBrackets({
+    fixtures: tournament.fixtures,
+    numberOfCourts: tournament.numberOfCourts || 1,
+  });
+  if (shape(advanced) !== shape(tournament.fixtures)) failures.push("bracket not advanced");
+
+  const rounds = [...tournament.fixtures].sort((a, b) => a.round - b.round);
+  let filledRounds = 0;
+  rounds.forEach((round, i) => {
+    const filled = round.games.every((g) => sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0);
+    if (filled) filledRounds = i + 1;
+    const previous = rounds[i - 1];
+    if (previous && previous.games.every(isApproved) && !filled) {
+      failures.push(`round ${round.round} not filled after round ${previous.round}`);
+    }
+  });
+  if (failures.length) throw new Error(failures.join("; "));
+  return { expected: { filledRounds: String(filledRounds) } };
+};
+
 // ── Expected numbers ────────────────────────────────────────────────────────
 
 const pdText = (pd) => `${pd > 0 ? "+" : ""}${formatNumber(pd)} PD`;
@@ -827,6 +879,9 @@ export const expectedState = async ({ testUser }) => {
         prizes,
         userGames,
         scores: Object.fromEntries(games.map((g) => [g.gameNumber, scoreFor(g, order).join("-")])),
+        openGames: games
+          .filter((g) => !isApproved(g) && sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0)
+          .map((g) => g.gameNumber),
         displayScores: Object.fromEntries(
           games.map((g) => {
             const [a, b] = scoreFor(g, order);

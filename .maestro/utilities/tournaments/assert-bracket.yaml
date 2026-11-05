@@ -1,0 +1,29 @@
+# The stored bracket is fully advanced and FILLED_ROUNDS rounds have both sides
+# of every game; the bracket shows the test user's latest game with both sides.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-bracket"
+- copyTextFrom:
+    id: "maestro-expected-filledRounds"
+- assertTrue: ${maestro.copiedText === FILLED_ROUNDS}
+- runFlow: expect.yaml
+- evalScript: ${output.game = output.exp.userGames[FILLED_ROUNDS]}
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn:
+    id: "bracket-round-${Number(FILLED_ROUNDS) - 1}"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "fixture-game-${output.game.gameNumber}"
+    centerElement: true
+- assertVisible:
+    id: "fixture-game-${output.game.gameNumber}"
+    text: ".*Scheduled.*"
+- tapOn:
+    id: "tab-home"

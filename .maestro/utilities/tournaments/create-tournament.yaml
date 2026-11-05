@@ -1,4 +1,4 @@
-# The test user creates output.tournamentName as a Private round robin of
+# The test user creates output.tournamentName as a Private output.tournamentMode of
 # TYPE (Singles / Doubles) from the Competitions tab.
 appId: com.courtchamp
 ---
@@ -20,7 +20,7 @@ appId: com.courtchamp
 - runFlow: ../pick-date.yaml
 - tapOn: "8"
 - tapOn: ${TYPE}
-- tapOn: "Round Robin"
+- tapOn: ${output.tournamentMode}
 - tapOn: "Private"
 - tapOn: "Create"
 - extendedWaitUntil:

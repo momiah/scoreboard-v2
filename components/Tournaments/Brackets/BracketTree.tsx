@@ -438,6 +438,7 @@ const BracketTree = ({
             onTabPress={handleTabPress}
             scrollable
             fontSize={isSmallScreen ? 12 : 14}
+            testIDPrefix="bracket-round"
           />
         </TabsWrapper>
       </HeaderRow>

@@ -1,12 +1,19 @@
-# The test user reports their round ROUND game from the Fixtures tab with the
-# score output.exp says the round should end with.
+# The test user reports their round ROUND game from the Fixtures (or Brackets)
+# tab with the score output.exp says the round should end with.
 appId: com.courtchamp
 ---
 - evalScript: ${output.game = output.exp.userGames[ROUND]}
 - runFlow:
     file: open-tournament.yaml
     env:
-      TAB: "Fixtures"
+      TAB: ${output.fixturesTab}
+- runFlow:
+    when:
+      true: ${output.fixturesTab === 'Brackets'}
+    commands:
+      - tapOn:
+          id: "bracket-round-${Number(ROUND) - 1}"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "fixture-game-${output.game.gameNumber}"
@@ -24,10 +31,23 @@ appId: com.courtchamp
     timeout: 30000
 - tapOn:
     id: "video-upload-modal-close"
-- extendedWaitUntil:
-    visible:
-      id: "fixture-game-${output.game.gameNumber}-status"
-      text: "Pending Approval"
-    timeout: 30000
+- runFlow:
+    when:
+      true: ${output.fixturesTab === 'Fixtures'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "fixture-game-${output.game.gameNumber}-status"
+            text: "Pending Approval"
+          timeout: 30000
+- runFlow:
+    when:
+      true: ${output.fixturesTab === 'Brackets'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "fixture-game-${output.game.gameNumber}"
+            text: ".*Pending.*"
+          timeout: 30000
 - tapOn:
     id: "tab-home"
