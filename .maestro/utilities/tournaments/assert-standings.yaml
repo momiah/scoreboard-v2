@@ -13,6 +13,13 @@ appId: com.courtchamp
       true: ${output.i < output.keys.length}
     commands:
       - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+      - runFlow:
+          when:
+            visible:
+              id: "player-details-close"
+          commands:
+            - tapOn:
+                id: "player-details-close"
       - scrollUntilVisible:
           element:
             id: "performance-row-${output.cur}"
@@ -38,6 +45,13 @@ appId: com.courtchamp
           direction: RIGHT
           centerElement: true
           optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "player-details-close"
+          commands:
+            - tapOn:
+                id: "player-details-close"
       - tapOn: "Team Performance"
       - evalScript: ${output.keys = Object.keys(output.exp.standings).filter((k) => k.indexOf('-') !== -1); output.i = 0}
       - repeat:
@@ -45,6 +59,13 @@ appId: com.courtchamp
             true: ${output.i < output.keys.length}
           commands:
             - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+            - runFlow:
+                when:
+                  visible:
+                    id: "player-details-close"
+                commands:
+                  - tapOn:
+                      id: "player-details-close"
             - scrollUntilVisible:
                 element:
                   id: "performance-row-${output.cur}"
@@ -60,5 +81,12 @@ appId: com.courtchamp
                 id: "performance-row-${output.cur}"
                 text: "${output.row.rank} .*"
             - evalScript: ${output.i = output.i + 1}
+- runFlow:
+    when:
+      visible:
+        id: "player-details-close"
+    commands:
+      - tapOn:
+          id: "player-details-close"
 - tapOn:
     id: "tab-home"

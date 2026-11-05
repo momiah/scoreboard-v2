@@ -23,6 +23,10 @@ appId: com.courtchamp
       true: ${output.ci < output.cardKeys.length}
     commands:
       - evalScript: ${output.cn = output.cardKeys[output.ci]; output.card = output.cards[output.cn]; output.ni = 0}
+      - scrollUntilVisible:
+          element:
+            id: "bracket-round-${output.card.tab}"
+          direction: UP
       - tapOn:
           id: "bracket-round-${output.card.tab}"
       - waitForAnimationToEnd
@@ -43,10 +47,6 @@ appId: com.courtchamp
                 id: "fixture-game-${output.cn}"
                 text: ".*${output.card.names[output.ni]}.*"
             - evalScript: ${output.ni = output.ni + 1}
-      - scrollUntilVisible:
-          element:
-            id: "bracket-round-0"
-          direction: UP
       - evalScript: ${output.ci = output.ci + 1}
 - tapOn:
     id: "tab-home"

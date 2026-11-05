@@ -10,7 +10,10 @@ appId: com.courtchamp
     id: "add-competition-tournament"
 - tapOn: "Enter tournament name"
 - inputText: ${output.tournamentName}
-- tapOn: "Select or Add Court"
+- hideKeyboard:
+    optional: true
+- tapOn: "Court Location"
+- tapOn: ".*Select or Add Court.*"
 - tapOn: "Search courts..."
 - inputText: ${output.courtName}
 - tapOn:

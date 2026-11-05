@@ -19,6 +19,10 @@ appId: com.courtchamp
       true: ${output.oi < output.exp.openGames.length}
     commands:
       - evalScript: ${output.gn = output.exp.openGames[output.oi]}
+      - tapOn:
+          text: "Round \\d+"
+          index: 0
+          optional: true
       - scrollUntilVisible:
           element:
             id: "bulk-score-${output.gn}"
