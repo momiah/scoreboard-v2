@@ -17,6 +17,7 @@ appId: com.courtchamp
     element:
       id: "competition-item-${output.tournamentName}"
     timeout: 30000
+    centerElement: true
 - tapOn:
     id: "competition-item-${output.tournamentName}"
 - extendedWaitUntil:
