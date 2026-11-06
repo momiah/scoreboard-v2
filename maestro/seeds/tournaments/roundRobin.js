@@ -424,6 +424,9 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
       teams: JSON.stringify(
         fixedTeamsFor(scenario, testUser.userId).map((team) => team.map((id) => nameOf.get(id))),
       ),
+      fullNames: JSON.stringify(
+        Object.fromEntries(scenario.users.map((u, i) => [`f${i + 1}`, `${u.firstName} ${u.lastName}`])),
+      ),
     },
   };
 };

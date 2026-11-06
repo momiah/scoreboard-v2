@@ -7,20 +7,12 @@ appId: com.courtchamp
 - tapOn:
     id: "tab-competitions"
 - waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: ".*${output.tournamentName}.*"
+- scrollUntilVisible:
+    element:
+      id: "competition-item-${output.tournamentName}"
     timeout: 30000
-    optional: true
-- runFlow:
-    when:
-      notVisible: ".*${output.tournamentName}.*"
-    commands:
-      - scrollUntilVisible:
-          element:
-            text: ".*${output.tournamentName}.*"
-          timeout: 30000
 - tapOn:
-    text: ".*${output.tournamentName}.*"
+    id: "competition-item-${output.tournamentName}"
 - extendedWaitUntil:
     visible: "Chat Room"
     timeout: 30000

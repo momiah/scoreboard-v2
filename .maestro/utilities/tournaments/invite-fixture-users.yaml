@@ -1,5 +1,6 @@
 # From the tournament screen, the test user invites every fixture user in
-# output.ids through Invite Players, and the fixture users accept.
+# output.ids through Invite Players (search matches first and last names, so
+# it types output.fullNames), and the fixture users accept.
 appId: com.courtchamp
 ---
 - tapOn: ".*Invite Players.*"
@@ -11,7 +12,7 @@ appId: com.courtchamp
       - tapOn:
           id: "invite-search-input"
       - eraseText: 40
-      - inputText: ${output.ids[output.inviteKeys[output.ii]]}
+      - inputText: ${output.fullNames[output.inviteKeys[output.ii]]}
       - tapOn: "@ ${output.ids[output.inviteKeys[output.ii]]}"
       - evalScript: ${output.ii = output.ii + 1}
 - tapOn:

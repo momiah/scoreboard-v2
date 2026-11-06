@@ -505,13 +505,16 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
         game.team2?.player1?.userId === userId ||
         game.team2?.player2?.userId === userId;
 
-      return (competition.games || []).reduce((count, game) => {
+      const games = isLeague
+        ? competition.games || []
+        : (competition.fixtures || []).flatMap((fixture) => fixture.games || []);
+      return games.reduce((count, game) => {
         const isPending =
           game.approvalStatus === "pending" ||
           game.approvalStatus === "Pending";
         return isUserInGame(game) && isPending ? count + 1 : count;
       }, 0);
-    }, [competition.games, userId]);
+    }, [isLeague, competition.games, competition.fixtures, userId]);
 
     const activityMessage = useMemo(() => {
       if (competition.prizesDistributed) {
@@ -579,6 +582,7 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 
     return (
       <ListItemContainer
+        testID={`competition-item-${competition.name}`}
         onPress={onPress}
         style={{ opacity: competition.isExpired ? 0.5 : 1 }}
       >

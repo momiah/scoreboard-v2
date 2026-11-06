@@ -28,5 +28,8 @@ appId: com.courtchamp
     id: "maestro-expected-courtName"
 - evalScript: ${output.courtName = maestro.copiedText}
 - copyTextFrom:
+    id: "maestro-expected-fullNames"
+- evalScript: ${output.fullNames = JSON.parse(maestro.copiedText)}
+- copyTextFrom:
     id: "maestro-expected-teams"
 - evalScript: ${output.teams = JSON.parse(maestro.copiedText)}

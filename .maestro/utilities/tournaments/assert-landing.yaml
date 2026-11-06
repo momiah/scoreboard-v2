@@ -19,10 +19,10 @@ appId: com.courtchamp
 - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
-      text: ".*${output.tournamentName}.*"
+      id: "competition-item-${output.tournamentName}"
     timeout: 30000
 - tapOn:
-    text: ".*${output.tournamentName}.*"
+    id: "competition-item-${output.tournamentName}"
 - extendedWaitUntil:
     visible:
       id: "fixture-game-${output.landing.gameNumber}-glow"
