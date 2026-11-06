@@ -38,7 +38,8 @@ appId: com.courtchamp
           commands:
             - scrollUntilVisible:
                 element:
-                  id: "fixtures-team-${output.ti + 1}-player1"
+                  id: "fixtures-team-${output.ti + 1}-player2"
+                centerElement: true
             - tapOn:
                 id: "fixtures-team-${output.ti + 1}-player1"
             - tapOn: ${output.teams[output.ti][0]}
