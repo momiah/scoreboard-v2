@@ -23,6 +23,7 @@ appId: com.courtchamp
 - tapOn:
     id: "add-game-score-input"
 - inputText: ${output.game.score.replace('-', '')}
+- hideKeyboard
 - tapOn:
     id: "add-game-submit"
 - extendedWaitUntil:
@@ -37,8 +38,8 @@ appId: com.courtchamp
     commands:
       - extendedWaitUntil:
           visible:
-            id: "fixture-game-${output.game.gameNumber}-status"
-            text: "Pending Approval"
+            id: "fixture-game-${output.game.gameNumber}"
+            text: ".*Pending Approval.*"
           timeout: 30000
 - runFlow:
     when:
