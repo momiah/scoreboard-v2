@@ -30,6 +30,11 @@ appId: com.courtchamp
             - tapOn:
                 id: "bulk-score-${output.gn}"
             - inputText: ${output.exp.scores[output.gn].replace('-', '')}
+            - swipe:
+                start: 50%, 62%
+                end: 50%, 58%
+                duration: 300
+            - waitForAnimationToEnd
             - assertVisible:
                 id: "bulk-score-${output.gn}"
                 text: ${output.exp.scores[output.gn]}
