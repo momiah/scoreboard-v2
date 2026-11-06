@@ -13,6 +13,14 @@ appId: com.courtchamp
           id: "invite-search-input"
       - inputText: ${output.fullNames[output.inviteKeys[output.ii]]}
       - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+      - runFlow:
+          when:
+            visible: "Invite \\(0\\)"
+          commands:
+            - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+      - extendedWaitUntil:
+          visible: "Invite \\(1\\)"
+          timeout: 10000
       - tapOn:
           id: "invite-send"
       - extendedWaitUntil:
