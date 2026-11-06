@@ -3,6 +3,12 @@ import { FlatList, ActivityIndicator, View, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
+import { COMPETITION_TYPES } from "@shared";
+import {
+  chatCompetitionId,
+  chatCompetitionName,
+  chatCompetitionType,
+} from "../helpers/chatSummaries";
 
 const Chats = () => {
   const { currentUser, chatSummaries, readChat } = useContext(UserContext);
@@ -20,18 +26,28 @@ const Chats = () => {
     return () => clearTimeout(timeout);
   }, [currentUser, navigation]);
 
-  const handleChatPress = (leagueId) => {
-    readChat(leagueId, currentUser?.userId);
-    navigation.navigate("League", {
-      leagueId,
-      tab: "Chat Room",
-    });
+  const handleChatPress = async (chat) => {
+    const competitionId = chatCompetitionId(chat);
+    readChat(chat.id, currentUser?.userId);
+    const competitionType = await chatCompetitionType(chat);
+    if (competitionType === COMPETITION_TYPES.TOURNAMENT) {
+      navigation.navigate("Tournament", {
+        tournamentId: competitionId,
+        tab: "Chat Room",
+      });
+    } else {
+      navigation.navigate("League", {
+        leagueId: competitionId,
+        tab: "Chat Room",
+      });
+    }
   };
 
   const renderChatRow = ({ item }) => {
     return (
       <ChatRow
-        onPress={() => handleChatPress(item.leagueId)}
+        testID={`chat-row-${chatCompetitionId(item)}`}
+        onPress={() => handleChatPress(item)}
         style={{
           backgroundColor: item.isRead
             ? "transparent"
@@ -39,7 +55,7 @@ const Chats = () => {
         }}
       >
         <ChatDetails>
-          <LeagueName>{item.leagueName || "Unknown League"}</LeagueName>
+          <LeagueName>{chatCompetitionName(item)}</LeagueName>
           <LastMessage numberOfLines={1}>{item.lastMessage}</LastMessage>
         </ChatDetails>
         {!item.isRead && (
@@ -72,8 +88,8 @@ const Chats = () => {
       {chatSummaries.length === 0 && (
         <LoadingContainer>
           <NoChatsText>
-            Here you can find all your league chats rooms. Create or join a
-            league to get involved! 🏟️💬
+            Here you can find all your league and tournament chat rooms. Create
+            or join one to get involved! 🏟️💬
           </NoChatsText>
         </LoadingContainer>
       )}
@@ -82,7 +98,7 @@ const Chats = () => {
           (a, b) => b.createdAt?.seconds - a.createdAt?.seconds,
         )}
         renderItem={renderChatRow}
-        keyExtractor={(item) => item.leagueId}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 30 }}
       />
     </Container>

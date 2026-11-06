@@ -21,15 +21,13 @@ import {
   query,
   orderBy,
   onSnapshot,
-  doc,
-  setDoc,
   Timestamp,
-  getDoc,
 } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { COMPETITION_TYPES } from "@shared";
+import { updateChatSummaries } from "../../helpers/chatSummaries";
 import moment from "moment";
 
 const ChatRoom = ({
@@ -126,40 +124,13 @@ const ChatRoom = ({
       (u) => u.userId !== currentUser?.userId,
     );
 
-    for (const recipient of recipients) {
-      const chatRef = doc(
-        db,
-        "users",
-        recipient.userId,
-        "chats",
-        competitionId,
-      );
-      const existing = await getDoc(chatRef);
-
-      if (existing.exists()) {
-        await setDoc(
-          chatRef,
-          {
-            isRead: false,
-            messageCount: (existing.data().messageCount || 0) + 1,
-            lastMessage: `${currentUser?.username}: ${newMessage.text}`,
-            createdAt: new Date(),
-            competitionName,
-          },
-          { merge: true },
-        );
-      } else {
-        await setDoc(chatRef, {
-          type: "chat",
-          isRead: false,
-          messageCount: 1,
-          competitionId,
-          lastMessage: `${currentUser?.username}: ${newMessage.text}`,
-          createdAt: new Date(),
-          competitionName,
-        });
-      }
-    }
+    await updateChatSummaries({
+      recipientIds: recipients.map((u) => u.userId),
+      competitionId,
+      competitionName,
+      competitionType,
+      lastMessage: `${currentUser?.username}: ${newMessage.text}`,
+    });
   };
 
   const formatDate = (date) => {

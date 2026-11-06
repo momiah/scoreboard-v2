@@ -1,0 +1,51 @@
+# Chats list: an opponent messages the tournament's Chat Room. The Chats tab
+# lists the chat under the tournament's name with the message and an unread
+# count, and the row opens that tournament on its Chat Room.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "chatSingles"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-opponent-sends-chat"
+- copyTextFrom:
+    id: "maestro-expected-tournamentId"
+- evalScript: ${output.chatId = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-text"
+- evalScript: ${output.chatText = maestro.copiedText}
+- tapOn:
+    id: "tab-chats"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible:
+      id: "chat-row-${output.chatId}"
+    timeout: 20000
+- assertVisible:
+    id: "chat-row-${output.chatId}"
+    text: "${output.tournamentName}.*${output.chatText}.*1"
+- assertNotVisible: ".*Unknown League.*"
+- tapOn:
+    id: "chat-row-${output.chatId}"
+- extendedWaitUntil:
+    visible: ${output.chatText}
+    timeout: 20000
+- assertVisible: "Chat Room"
+- assertVisible: ${output.tournamentName}
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible:
+      id: "chat-row-${output.chatId}"
+    timeout: 20000
+- assertNotVisible:
+    id: "chat-row-${output.chatId}"
+    text: ".*${output.chatText}.*1"
+- tapOn:
+    id: "tab-home"
