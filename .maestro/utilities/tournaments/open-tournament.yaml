@@ -2,11 +2,7 @@
 # reaches their own private tournament, on the tab TAB.
 appId: com.courtchamp
 ---
-- tapOn:
-    id: "tab-competitions"
-- tapOn:
-    id: "tab-competitions"
-- waitForAnimationToEnd
+- runFlow: competitions-list.yaml
 - scrollUntilVisible:
     element:
       id: "competition-item-${output.tournamentName}"

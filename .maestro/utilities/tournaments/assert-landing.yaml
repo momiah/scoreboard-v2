@@ -12,11 +12,7 @@ appId: com.courtchamp
     id: "maestro-expected-landing"
 - evalScript: ${output.landing = JSON.parse(maestro.copiedText)}
 - assertTrue: ${output.landing !== null}
-- tapOn:
-    id: "tab-competitions"
-- tapOn:
-    id: "tab-competitions"
-- waitForAnimationToEnd
+- runFlow: competitions-list.yaml
 - scrollUntilVisible:
     element:
       id: "competition-item-${output.tournamentName}"

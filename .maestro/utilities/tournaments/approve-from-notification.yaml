@@ -2,8 +2,7 @@
 # notification in the Competitions tab.
 appId: com.courtchamp
 ---
-- tapOn:
-    id: "tab-competitions"
+- runFlow: competitions-list.yaml
 - tapOn:
     id: "competitions-notifications"
 - scrollUntilVisible:

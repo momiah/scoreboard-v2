@@ -2,8 +2,7 @@
 # TYPE (Singles / Doubles) from the Competitions tab.
 appId: com.courtchamp
 ---
-- tapOn:
-    id: "tab-competitions"
+- runFlow: competitions-list.yaml
 - tapOn:
     id: "competitions-add"
 - tapOn:
