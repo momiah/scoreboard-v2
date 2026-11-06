@@ -19,13 +19,21 @@ appId: com.courtchamp
       true: ${output.oi < output.exp.openGames.length}
     commands:
       - evalScript: ${output.gn = output.exp.openGames[output.oi]}
-      - scrollUntilVisible:
-          element:
-            id: "bulk-score-${output.gn}"
-          centerElement: true
-      - tapOn:
-          id: "bulk-score-${output.gn}"
-      - inputText: ${output.exp.scores[output.gn].replace('-', '')}
+      - retry:
+          maxRetries: 2
+          commands:
+            - scrollUntilVisible:
+                element:
+                  id: "bulk-score-${output.gn}"
+                centerElement: true
+            - waitForAnimationToEnd
+            - tapOn:
+                id: "bulk-score-${output.gn}"
+            - inputText: ${output.exp.scores[output.gn].replace('-', '')}
+            - hideKeyboard
+            - assertVisible:
+                id: "bulk-score-${output.gn}"
+                text: ${output.exp.scores[output.gn]}
       - evalScript: ${output.oi = output.oi + 1}
 - swipe:
     from:
