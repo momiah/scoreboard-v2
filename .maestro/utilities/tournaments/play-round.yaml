@@ -50,4 +50,8 @@ appId: com.courtchamp
 - runFlow: expect.yaml
 - assertTrue: ${output.exp.approved === Number(ROUND) * (output.exp.numberOfGames / output.exp.rounds)}
 - runFlow: assert-standings.yaml
+- runFlow:
+    when:
+      true: ${output.exp.complete}
+    file: wait-for-prizes.yaml
 - runFlow: assert-all-profiles.yaml
