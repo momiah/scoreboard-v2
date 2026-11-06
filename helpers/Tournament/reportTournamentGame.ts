@@ -50,6 +50,7 @@ export const reportTournamentGame = async ({
   const date = moment().format("DD-MM-YYYY");
 
   const gameResult: Game = {
+    ...game,
     gameId: game.gameId,
     gamescore,
     date,
