@@ -30,7 +30,6 @@ appId: com.courtchamp
             - tapOn:
                 id: "bulk-score-${output.gn}"
             - inputText: ${output.exp.scores[output.gn].replace('-', '')}
-            - hideKeyboard
             - assertVisible:
                 id: "bulk-score-${output.gn}"
                 text: ${output.exp.scores[output.gn]}

@@ -23,7 +23,8 @@ appId: com.courtchamp
 - tapOn:
     id: "add-game-score-input"
 - inputText: ${output.game.score.replace('-', '')}
-- hideKeyboard
+- tapOn: "\\d{2}-\\d{2}-\\d{4}"
+- waitForAnimationToEnd
 - tapOn:
     id: "add-game-submit"
 - extendedWaitUntil:
