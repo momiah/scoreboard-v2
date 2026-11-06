@@ -28,6 +28,7 @@ import {
   generateInitialTeamStats,
   getOrderedApprovedGames,
   getTournamentPrizeWinnerIds,
+  isKnockoutComplete,
   recalculateParticipantsFromFixtures,
 } from "@shared/helpers";
 import { db } from "../../../services/firebase.config";
@@ -944,7 +945,11 @@ export const expectedState = async ({ testUser }) => {
 export const checkPrizeNotifications = async ({ testUser }) => {
   const { tournament } = await loadActive(testUser);
   const fresh = (await getDoc(doc(db, COLLECTION_NAMES.tournaments, tournament.tournamentId))).data();
-  if (!fresh.prizesDistributed) throw new Error("prizesDistributed is still false");
+  if (!fresh.prizesDistributed) {
+    throw new Error(
+      `Prizes not paid: prizesDistributed=${String(fresh.prizesDistributed)}, fixturesGenerated=${String(fresh.fixturesGenerated)}, tournamentMode=${String(fresh.tournamentMode)}, complete=${isKnockout({ mode: fresh.tournamentMode }) ? isKnockoutComplete(fresh.fixtures ?? []) : "n/a"}, final round: ${JSON.stringify((fresh.fixtures ?? []).at(-1)?.games?.map((g) => [g.gameNumber, g.approvalStatus, g.isThirdPlacePlayoff ?? null]))}`,
+    );
+  }
   const state = JSON.parse((await expectedState({ testUser })).expected.state);
   const failures = [];
   for (const [userId, prize] of Object.entries(state.prizes)) {
