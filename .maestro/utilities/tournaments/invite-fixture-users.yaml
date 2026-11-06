@@ -13,7 +13,7 @@ appId: com.courtchamp
           id: "invite-search-input"
       - eraseText: 40
       - inputText: ${output.fullNames[output.inviteKeys[output.ii]]}
-      - tapOn: "@ ${output.ids[output.inviteKeys[output.ii]]}"
+      - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
       - evalScript: ${output.ii = output.ii + 1}
 - tapOn:
     id: "invite-send"
