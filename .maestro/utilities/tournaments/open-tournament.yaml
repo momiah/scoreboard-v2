@@ -11,11 +11,19 @@ appId: com.courtchamp
     element:
       id: "competition-item-${output.tournamentName}"
     timeout: 30000
-- tapOn:
-    id: "competition-item-${output.tournamentName}"
-- extendedWaitUntil:
-    visible: "Chat Room"
-    timeout: 30000
+- repeat:
+    times: 3
+    while:
+      notVisible: "Chat Room"
+    commands:
+      - tapOn:
+          id: "competition-item-${output.tournamentName}"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Chat Room"
+          timeout: 10000
+          optional: true
+- assertVisible: "Chat Room"
 - repeat:
     times: 4
     while:
