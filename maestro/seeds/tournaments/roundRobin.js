@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -95,6 +96,7 @@ export const RR_SCENARIOS = {
   koOddSingles: { name: "Maestro KO Odd Singles", mode: "Knockout", type: "Singles", users: singles(2), seed: "participants" },
   koSixSingles: { name: "Maestro KO Six Singles", mode: "Knockout", type: "Singles", users: doubles(5), seed: "participants" },
   koThreeTeams: { name: "Maestro KO Three Teams", mode: "Knockout", type: "Doubles", users: doubles(5), seed: "participants" },
+  chatSingles: { name: "Maestro RR Chat Singles", type: "Singles", users: singles(3), seed: "participants" },
 };
 
 const modeOf = (scenario) => scenario.mode ?? "Round Robin";
@@ -188,6 +190,7 @@ const deleteNotificationsFor = async (userIds, tournamentIds) => {
 const deleteTournaments = async (tournaments, testUser) => {
   const ids = tournaments.map((t) => t.id);
   await deleteNotificationsFor([testUser.userId], ids);
+  await Promise.all(ids.map((id) => deleteDoc(doc(db, "users", testUser.userId, "chats", id))));
   await Promise.all(
     tournaments.map(async (t) => {
       const chat = await getDocs(collection(db, COLLECTION_NAMES.tournaments, t.id, "chat"));
@@ -993,6 +996,43 @@ export const checkProfiles = async ({ testUser }) => {
 };
 
 // ── Cleanup ─────────────────────────────────────────────────────────────────
+
+// An opponent sends a message from the tournament's Chat Room: the message,
+// then each other entrant's chat summary as ChatRoom's handleSend writes it.
+export const opponentSendsChatMessage = async ({ testUser, actions }) => {
+  const { scenario } = await getActiveScenario();
+  const tournament = await findScenarioTournament(scenario, testUser);
+  const sender = scenario.users[0];
+  const text = `Good luck, ${formatDisplayName(testUser)}!`;
+  await actions.sendChatMessage({
+    message: {
+      text,
+      createdAt: new Date(),
+      user: { _id: sender.userId, name: sender.username, avatar: "" },
+    },
+    competitionId: tournament.id,
+    competitionType: COMPETITION_TYPES.TOURNAMENT,
+  });
+  const lastMessage = `${sender.username}: ${text}`;
+  const recipients = (tournament.tournamentParticipants ?? [])
+    .map((p) => p.userId)
+    .filter((id) => id !== sender.userId);
+  await Promise.all(
+    recipients.map((id) =>
+      setDoc(doc(db, "users", id, "chats", tournament.id), {
+        type: "chat",
+        isRead: false,
+        messageCount: 1,
+        competitionId: tournament.id,
+        lastMessage,
+        createdAt: new Date(),
+        competitionName: tournament.tournamentName,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+      }),
+    ),
+  );
+  return { expected: { tournamentId: tournament.id, text } };
+};
 
 export const cleanupRoundRobinTestData = async ({ testUser }) => {
   const tournaments = await scenarioTournaments(testUser);
