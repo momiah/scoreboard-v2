@@ -10,6 +10,7 @@ import {
   RR_SCENARIOS,
   approveUserReports,
   checkBracket,
+  checkProfiles,
   checkFixtureFairness,
   checkPrizeNotifications,
   checkReportNotifications,
@@ -140,6 +141,11 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
           run={() => checkTeams({ testUser, generation })}
         />
       ))}
+      <SeedButton
+        id="maestro-rr-check-profiles"
+        label="RR profiles"
+        run={() => checkProfiles({ testUser })}
+      />
       <SeedButton
         id="maestro-rr-check-bracket"
         label="KO bracket"

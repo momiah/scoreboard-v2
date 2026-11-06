@@ -961,6 +961,32 @@ export const checkPrizeNotifications = async ({ testUser }) => {
   return { winners: Object.keys(state.prizes).length };
 };
 
+// Every entrant's stored profile against the expected one, listing each
+// difference, so a failed profile check says which number is off and by how
+// much.
+export const checkProfiles = async ({ testUser }) => {
+  const state = JSON.parse((await expectedState({ testUser })).expected.state);
+  const failures = [];
+  for (const [userId, want] of Object.entries(state.profiles)) {
+    const p = (await getDoc(doc(db, "users", userId))).data()?.profileDetail ?? {};
+    const have = {
+      cp: cpText(p.XP ?? 0),
+      pd: pdText(p.totalPointDifference || 0),
+      wins: formatNumber(p.numberOfWins || 0),
+      losses: formatNumber(p.numberOfLosses || 0),
+      first: String(p.tournamentStats?.first ?? 0),
+      second: String(p.tournamentStats?.second ?? 0),
+      third: String(p.tournamentStats?.third ?? 0),
+      fourth: String(p.tournamentStats?.fourth ?? 0),
+    };
+    Object.keys(want).forEach((key) => {
+      if (want[key] !== have[key]) failures.push(`${userId} ${key}: has ${have[key]}, wants ${want[key]}`);
+    });
+  }
+  if (failures.length) throw new Error(failures.join("; "));
+  return { checked: Object.keys(state.profiles).length };
+};
+
 // ── Cleanup ─────────────────────────────────────────────────────────────────
 
 export const cleanupRoundRobinTestData = async ({ testUser }) => {
