@@ -57,6 +57,15 @@ describe("reportTournamentGame", () => {
     });
   });
 
+  it("keeps the game's other fields, so a knockout 3rd/4th playoff stays one", async () => {
+    const game = { ...scheduledGame(["a"], ["b"]), isThirdPlacePlayoff: true } as Game;
+    const { run, update } = report({ game });
+    await run;
+    expect(update.mock.calls[0][0]).toMatchObject({
+      updatedGame: { isThirdPlacePlayoff: true, approvalStatus: "Pending" },
+    });
+  });
+
   it("doubles: notifies both opponents and never the reporter's partner", async () => {
     const { run, calls } = report({ game: scheduledGame(["a", "p"], ["c", "d"]) });
     await run;
