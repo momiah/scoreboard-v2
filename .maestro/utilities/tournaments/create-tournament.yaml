@@ -17,7 +17,7 @@ appId: com.courtchamp
 - tapOn: "Search courts..."
 - inputText: ${output.courtName}
 - tapOn:
-    text: ${output.courtName}
+    text: "${output.courtName}( .*)?"
     index: 1
 - tapOn: "Next"
 - runFlow: ../pick-date.yaml
