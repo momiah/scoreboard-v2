@@ -19,15 +19,15 @@ export const toMomentTimezone = (
 
 export { getGamePlayerIds } from "courtchamps-shared/helpers";
 
+// Counted from the report: a tournament game is created with its fixtures,
+// long before anyone reports it.
 export const isDueForAutoApproval = (game: Game): boolean => {
-  const gameCreatedAt = toMomentTimezone(game.createdAt);
-  if (!gameCreatedAt.isValid()) return false;
-  const hoursSinceCreation = moment
-    .tz(TIMEZONE)
-    .diff(gameCreatedAt, "hours", true);
+  const reportedAt = toMomentTimezone(game.reportedAt ?? game.createdAt);
+  if (!reportedAt.isValid()) return false;
+  const hoursSinceReport = moment.tz(TIMEZONE).diff(reportedAt, "hours", true);
   return (
     game.approvalStatus?.toLowerCase() === "pending" &&
-    hoursSinceCreation >= LEAGUE_AUTO_APPROVE_HOURS &&
+    hoursSinceReport >= LEAGUE_AUTO_APPROVE_HOURS &&
     (game.numberOfDeclines || 0) === 0
   );
 };
