@@ -76,7 +76,7 @@ export const RR_SCENARIOS = {
   doubles: { name: "Maestro RR Doubles", type: "Doubles", users: doubles(7), seed: "none" },
   bulkSingles: { name: "Maestro RR Bulk Singles", type: "Singles", users: singles(3), seed: "fixtures" },
   bulkDoubles: { name: "Maestro RR Bulk Doubles", type: "Doubles", users: doubles(7), seed: "fixtures" },
-  replaySingles: { name: "Maestro RR Replay Singles", type: "Singles", users: singles(3), seed: "fixtures" },
+  replaySingles: { name: "Maestro RR Replay Singles", type: "Singles", users: singles(3), seed: "fixtures", userFirst: true },
   replayDoubles: { name: "Maestro RR Replay Doubles", type: "Doubles", users: doubles(7), seed: "fixtures" },
   fairSingles: { name: "Maestro RR Fair Singles", type: "Singles", users: singles(3), seed: "participants" },
   fairDoubles: { name: "Maestro RR Fair Doubles", type: "Doubles", users: doubles(7), seed: "participants" },
@@ -111,7 +111,7 @@ const RR_COURTS = 2;
 // Finishing order the scores follow: earlier wins. A doubles team plays as its
 // strongest player. The test user (and, in doubles, their partner f1) sits
 // second, behind f2, so they win some and lose one; userFirst puts them first.
-const strengthOrder = (scenario, testUserId) => {
+export const strengthOrder = (scenario, testUserId) => {
   const ids = scenario.users.map((u) => u.userId);
   if (scenario.userFirst) return [testUserId, ...ids];
   return [ids[1], testUserId, ids[0], ...ids.slice(2)];
@@ -696,40 +696,65 @@ export const checkTeams = async ({ testUser, generation }) => {
   return { generationMode: tournament.generationMode, generationType: tournament.generationType, teams };
 };
 
+const replayRows = (entrants, key) =>
+  [...entrants]
+    .sort((a, b) => String(a[key]).localeCompare(String(b[key])))
+    .map((e) => {
+      const streak = typeof e.currentStreak === "object" ? [e.currentStreak?.type, e.currentStreak?.count] : e.currentStreak;
+      return JSON.stringify([e[key], e.numberOfWins, e.totalPointDifference, e.resultLog, streak, e.highestWinStreak]);
+    });
+
+const replayShape = (entrants, key) => replayRows(entrants, key).join();
+
+const replayDiff = (stored, replayed, key) => {
+  const want = replayRows(replayed, key);
+  return replayRows(stored, key)
+    .map((row, i) => (row === want[i] ? null : `has ${row}, wants ${want[i]}`))
+    .filter(Boolean)
+    .join("; ");
+};
+
+// The standings a fixture-order replay and a reverse-order (approval order)
+// replay of the approved games give. With every entrant's results reading the
+// same both ways (a strict finishing order whose top two meet in the middle
+// round does that), the two are equal and a replay run proves nothing.
+export const replayStandings = async ({ fixtures, participants, teams, isDoubles }) => {
+  const ordered = getOrderedApprovedGames(fixtures);
+  const replay = (games) =>
+    recalculateParticipantsFromFixtures(games, clone(participants), clone(teams ?? []), isDoubles);
+  const fixtureOrder = await replay(ordered);
+  const approvalOrder = await replay([...ordered].reverse());
+  return {
+    games: ordered.length,
+    fixtureOrder,
+    orderMatters:
+      replayShape(fixtureOrder.updatedParticipants, "userId") !==
+      replayShape(approvalOrder.updatedParticipants, "userId"),
+  };
+};
+
 // After games approved in reverse fixture order, the stored standings are the
 // fixture-order replay: results logs and streaks included, which a fold in
 // approval order would get wrong.
 export const checkReplay = async ({ testUser }) => {
   const { scenario, tournament } = await loadActive(testUser);
   const isDoubles = scenario.type === "Doubles";
-  const ordered = getOrderedApprovedGames(tournament.fixtures);
-  const replay = async (games) =>
-    recalculateParticipantsFromFixtures(
-      games,
-      clone(tournament.tournamentParticipants),
-      clone(tournament.tournamentTeams ?? []),
-      isDoubles,
-    );
-  const fixtureOrder = await replay(ordered);
-  const approvalOrder = await replay([...ordered].reverse());
-  const shape = (entrants, key) =>
-    JSON.stringify(
-      [...entrants]
-        .sort((a, b) => String(a[key]).localeCompare(String(b[key])))
-        .map((e) => [e[key], e.numberOfWins, e.totalPointDifference, e.resultLog, e.currentStreak, e.highestWinStreak]),
-    );
+  const { games, fixtureOrder, orderMatters } = await replayStandings({
+    fixtures: tournament.fixtures,
+    participants: tournament.tournamentParticipants,
+    teams: tournament.tournamentTeams,
+    isDoubles,
+  });
   const failures = [];
-  if (shape(tournament.tournamentParticipants, "userId") !== shape(fixtureOrder.updatedParticipants, "userId")) {
-    failures.push("stored players are not the fixture-order replay");
-  }
-  if (isDoubles && shape(tournament.tournamentTeams, "teamKey") !== shape(fixtureOrder.updatedTeams, "teamKey")) {
-    failures.push("stored teams are not the fixture-order replay");
-  }
-  if (shape(fixtureOrder.updatedParticipants, "userId") === shape(approvalOrder.updatedParticipants, "userId")) {
+  const playersDiff = replayDiff(tournament.tournamentParticipants, fixtureOrder.updatedParticipants, "userId");
+  if (playersDiff) failures.push(`stored players are not the fixture-order replay: ${playersDiff}`);
+  const teamsDiff = isDoubles && replayDiff(tournament.tournamentTeams, fixtureOrder.updatedTeams, "teamKey");
+  if (teamsDiff) failures.push(`stored teams are not the fixture-order replay: ${teamsDiff}`);
+  if (!orderMatters) {
     failures.push("approval order gives the same standings, so this run proves nothing");
   }
   if (failures.length) throw new Error(failures.join("; "));
-  return { games: ordered.length };
+  return { games };
 };
 
 // ── Knockout brackets ───────────────────────────────────────────────────────
@@ -817,18 +842,30 @@ const ordinal = (n) => `${n}${["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) 
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
-// Profiles after each approved game in fixture order, from the profiles they
-// had before the tournament, the way approveGame applies them one by one.
-const expectedProfiles = async (tournament, testUser, scenario, ordered, isDoubles) => {
+const reportedMillis = (game) => {
+  const at = game.reportedAt;
+  if (!at) return 0;
+  return typeof at.toMillis === "function" ? at.toMillis() : new Date(at).getTime();
+};
+
+// Profiles after each approved game in the order the games were approved, from
+// the profiles they had before the tournament, the way approveCompetitionGame
+// applies them one by one: the game's XP goes onto the profile as it stands,
+// with streaks from the fixture-order replay of the games approved before it.
+// Every flow approves a game before it reports a later one, so report time
+// gives the approval order.
+export const expectedProfiles = async (tournament, testUser, scenario, ordered, isDoubles) => {
   const ids = [...new Set(tournament.tournamentParticipants.map((p) => p.userId))];
   const users = new Map();
   for (const userId of ids) {
     users.set(userId, { userId, profileDetail: clone(await baseProfileFor(userId, testUser, scenario)) });
   }
-  for (let k = 0; k < ordered.length; k++) {
-    const game = ordered[k];
+  const approvalOrder = [...ordered].sort((a, b) => reportedMillis(a) - reportedMillis(b));
+  for (let k = 0; k < approvalOrder.length; k++) {
+    const game = approvalOrder[k];
+    const approvedBefore = new Set(approvalOrder.slice(0, k).map((g) => g.gameId));
     const { updatedParticipants } = await recalculateParticipantsFromFixtures(
-      ordered.slice(0, k),
+      ordered.filter((g) => approvedBefore.has(g.gameId)),
       clone(tournament.tournamentParticipants),
       clone(tournament.tournamentTeams ?? []),
       isDoubles,

@@ -39,12 +39,6 @@ appId: com.courtchamp
     when:
       true: ${output.exp.userTeamKey !== ''}
     commands:
-      - scrollUntilVisible:
-          element:
-            text: "Team Performance"
-          direction: RIGHT
-          centerElement: true
-          optional: true
       - runFlow:
           when:
             visible:
@@ -52,6 +46,16 @@ appId: com.courtchamp
           commands:
             - tapOn:
                 id: "player-details-close"
+      - repeat:
+          times: 4
+          while:
+            notVisible: "Team Performance"
+          commands:
+            - swipe:
+                from:
+                  id: "tournament-tabs"
+                direction: LEFT
+                duration: 400
       - tapOn: "Team Performance"
       - evalScript: ${output.keys = Object.keys(output.exp.standings).filter((k) => k.indexOf('-') !== -1); output.i = 0}
       - repeat:
