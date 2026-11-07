@@ -22,6 +22,11 @@ appId: com.courtchamp
       - retry:
           maxRetries: 2
           commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 45%
+                duration: 300
+            - waitForAnimationToEnd
             - scrollUntilVisible:
                 element:
                   id: "bulk-score-${output.gn}"
@@ -30,18 +35,9 @@ appId: com.courtchamp
             - tapOn:
                 id: "bulk-score-${output.gn}"
             - inputText: ${output.exp.scores[output.gn].replace('-', '')}
-            - swipe:
-                start: 50%, 62%
-                end: 50%, 58%
-                duration: 300
-            - waitForAnimationToEnd
-            - scrollUntilVisible:
-                element:
-                  id: "bulk-score-${output.gn}"
-                  text: ${output.exp.scores[output.gn]}
-                direction: UP
-                centerElement: true
-                timeout: 10000
+            - copyTextFrom:
+                id: "bulk-score-${output.gn}"
+            - assertTrue: ${maestro.copiedText == output.exp.scores[output.gn]}
       - evalScript: ${output.oi = output.oi + 1}
 - swipe:
     from:
