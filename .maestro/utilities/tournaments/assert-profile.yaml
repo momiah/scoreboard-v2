@@ -23,7 +23,7 @@ appId: com.courtchamp
             id: "performance-row-${output.cur}"
       - tapOn:
           id: "performance-row-${output.cur}"
-      - tapOn: "Go to profile"
+      - tapOn: "(?i).*go to profile"
 - extendedWaitUntil:
     visible:
       id: "profile-cp"

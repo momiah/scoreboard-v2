@@ -123,7 +123,13 @@ export const FixtureGameItem = ({
           />
         </FixtureTeamVsContainer>
       </FixtureGameContainer>
-      {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
+      {isHighlighted && (
+        <GameGlow
+          glowAnim={glowAnim}
+          color={glowColor}
+          testID={`fixture-game-${game.gameNumber}-glow`}
+        />
+      )}
     </FixtureGameOuter>
   );
 };

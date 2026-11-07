@@ -203,7 +203,12 @@ const Tournament = () => {
       case "Fixtures":
       case "Brackets":
         return tournamentById?.tournamentMode === "Knockout" ? (
-          <Brackets tournament={tournamentById} userRole={userRole} />
+          <Brackets
+            tournament={tournamentById}
+            userRole={userRole}
+            scrollToGameId={scrollToGameId}
+            glowColor={glowColor}
+          />
         ) : (
           <Fixtures
             tournament={tournamentById}
@@ -352,6 +357,7 @@ const Tournament = () => {
               style={{ bottom: -560 }}
             />
             <ScrollView
+              testID="tournament-tabs"
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 10 }}

@@ -1,0 +1,43 @@
+# Knockout admin gates: the admin's empty Brackets tab offers Generate Brackets;
+# once the brackets are generated Invite Players refuses to invite anyone.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koGatesSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- assertVisible:
+    id: "empty-state-message"
+    text: "Generate the bracket to start the tournament"
+- assertVisible:
+    id: "empty-state-generate"
+    text: ".*Generate Brackets"
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: ""
+      GENERATION: ""
+- runFlow:
+    file: ../utilities/tournaments/assert-bracket.yaml
+    env:
+      FILLED_ROUNDS: "1"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn: ".*Invite Players.*"
+- extendedWaitUntil:
+    visible:
+      id: "invite-error"
+      text: "Cannot invite players as fixtures have been generated for this tournament."
+    timeout: 20000
+- tapOn:
+    id: "tab-home"

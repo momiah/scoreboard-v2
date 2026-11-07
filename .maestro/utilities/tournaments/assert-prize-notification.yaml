@@ -3,13 +3,12 @@
 appId: com.courtchamp
 ---
 - evalScript: ${output.prize = output.exp.prizes[output.ids.user]}
-- tapOn:
-    id: "tab-competitions"
+- runFlow: competitions-list.yaml
 - tapOn:
     id: "competitions-notifications"
 - scrollUntilVisible:
     element:
-      text: ".*placed ${output.prize.place} in ${output.tournamentName} and won ${output.prize.xp} CP!"
+      text: ".*placed ${output.prize.place} in ${output.tournamentName} and won ${output.prize.xp} CP!.*"
     timeout: 30000
 - tapOn:
     id: "tab-home"

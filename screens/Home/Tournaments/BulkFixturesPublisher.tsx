@@ -695,7 +695,12 @@ const BulkFixturesPublisher = () => {
           <LoadingText>Loading fixtures...</LoadingText>
         </LoadingContainer>
       ) : (
-        <FixturesScrollContainer>
+        <FixturesScrollContainer
+          testID="bulk-scroll"
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           {Object.keys(gamesByRound).length > 0 ? (
             Object.entries(gamesByRound).map(([roundNumber, games]) => (
               <FixtureRoundContainer key={roundNumber}>

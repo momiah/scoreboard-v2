@@ -1,26 +1,28 @@
-# The test user creates output.tournamentName as a Private round robin of
+# The test user creates output.tournamentName as a Private output.tournamentMode of
 # TYPE (Singles / Doubles) from the Competitions tab.
 appId: com.courtchamp
 ---
-- tapOn:
-    id: "tab-competitions"
+- runFlow: competitions-list.yaml
 - tapOn:
     id: "competitions-add"
 - tapOn:
     id: "add-competition-tournament"
 - tapOn: "Enter tournament name"
 - inputText: ${output.tournamentName}
-- tapOn: "Select or Add Court"
+- hideKeyboard:
+    optional: true
+- tapOn: "Court Location"
+- tapOn: ".*Select or Add Court.*"
 - tapOn: "Search courts..."
 - inputText: ${output.courtName}
 - tapOn:
-    text: ${output.courtName}
+    text: "${output.courtName}( .*)?"
     index: 1
 - tapOn: "Next"
 - runFlow: ../pick-date.yaml
 - tapOn: "8"
 - tapOn: ${TYPE}
-- tapOn: "Round Robin"
+- tapOn: ${output.tournamentMode}
 - tapOn: "Private"
 - tapOn: "Create"
 - extendedWaitUntil:

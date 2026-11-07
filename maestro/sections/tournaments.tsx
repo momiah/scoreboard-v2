@@ -9,6 +9,8 @@ import { useFixtureCompetitionActions } from "../seeds/competitions/fixtureActio
 import {
   RR_SCENARIOS,
   approveUserReports,
+  checkBracket,
+  checkProfiles,
   checkFixtureFairness,
   checkPrizeNotifications,
   checkReportNotifications,
@@ -17,6 +19,7 @@ import {
   findScenarioTournament,
   getActiveScenario,
   opponentReportsUserGame,
+  opponentSendsChatMessage,
   playFixtureGames,
   playGamesInOrder,
   checkReplay,
@@ -39,6 +42,7 @@ export const useRoundRobinSeedActions = () => {
     sendNotification,
     getUserById,
     extractPlayersWithXp,
+    sendChatMessage: league.sendChatMessage,
   };
 };
 
@@ -140,9 +144,24 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
         />
       ))}
       <SeedButton
+        id="maestro-rr-check-profiles"
+        label="RR profiles"
+        run={() => checkProfiles({ testUser })}
+      />
+      <SeedButton
+        id="maestro-rr-check-bracket"
+        label="KO bracket"
+        run={() => checkBracket({ testUser })}
+      />
+      <SeedButton
         id="maestro-rr-expect"
         label="RR expect"
         run={() => expectedState({ testUser })}
+      />
+      <SeedButton
+        id="maestro-rr-opponent-sends-chat"
+        label="RR opp chats"
+        run={() => opponentSendsChatMessage({ testUser, actions })}
       />
       <SeedButton
         id="maestro-rr-check-prizes"

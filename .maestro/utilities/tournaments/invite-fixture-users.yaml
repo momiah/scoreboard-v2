@@ -1,27 +1,43 @@
 # From the tournament screen, the test user invites every fixture user in
-# output.ids through Invite Players, and the fixture users accept.
+# output.ids through Invite Players, one per visit (search matches first and
+# last names, so it types output.fullNames), and the fixture users accept.
 appId: com.courtchamp
 ---
-- tapOn: ".*Invite Players.*"
 - evalScript: ${output.inviteKeys = Object.keys(output.ids).filter((k) => k !== 'user'); output.ii = 0}
 - repeat:
     while:
       true: ${output.ii < output.inviteKeys.length}
     commands:
+      - tapOn: ".*Invite Players.*"
       - tapOn:
           id: "invite-search-input"
-      - eraseText: 40
-      - inputText: ${output.ids[output.inviteKeys[output.ii]]}
-      - tapOn: "@ ${output.ids[output.inviteKeys[output.ii]]}"
+      - inputText: ${output.fullNames[output.inviteKeys[output.ii]]}
+      - extendedWaitUntil:
+          visible: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+          timeout: 30000
+      - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Invite \\(0\\)"
+          commands:
+            - tapOn:
+                text: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+                optional: true
+      - extendedWaitUntil:
+          visible: "Invite \\(1\\)"
+          timeout: 10000
+      - tapOn: "Please ensure you have arranged.*"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "invite-send"
+      - extendedWaitUntil:
+          visible: "Players invited successfully!"
+          timeout: 60000
+      - tapOn:
+          text: "(OK|Close|Done)"
+      - waitForAnimationToEnd
       - evalScript: ${output.ii = output.ii + 1}
-- tapOn:
-    id: "invite-send"
-- extendedWaitUntil:
-    visible: "Players invited successfully!"
-    timeout: 60000
-- tapOn:
-    text: "(OK|Close|Done)"
-    optional: true
 - tapOn:
     id: "tab-home"
 - runFlow:
