@@ -35,9 +35,13 @@ appId: com.courtchamp
                 end: 50%, 58%
                 duration: 300
             - waitForAnimationToEnd
-            - assertVisible:
-                id: "bulk-score-${output.gn}"
-                text: ${output.exp.scores[output.gn]}
+            - scrollUntilVisible:
+                element:
+                  id: "bulk-score-${output.gn}"
+                  text: ${output.exp.scores[output.gn]}
+                direction: UP
+                centerElement: true
+                timeout: 10000
       - evalScript: ${output.oi = output.oi + 1}
 - swipe:
     from:
