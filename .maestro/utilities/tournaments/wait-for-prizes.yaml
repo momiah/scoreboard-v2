@@ -27,7 +27,7 @@ appId: com.courtchamp
           id: "maestro-rr-check-prizes"
       - extendedWaitUntil:
           visible: "(Seeded|Seed failed)"
-          timeout: 60000
+          timeout: 180000
       - runFlow:
           when:
             visible: "Seeded"
