@@ -1,0 +1,24 @@
+appId: com.courtchamp
+---
+# From Home signed out: Sign In → Register → through the intro to the account step.
+- tapOn:
+    id: "home-sign-in-link"
+- tapOn:
+    id: "login-register"
+- extendedWaitUntil:
+    visible:
+      id: "signup-intro-dots"
+    timeout: 10000
+- repeat:
+    while:
+      notVisible:
+        id: "signup-intro-join"
+    commands:
+      - tapOn:
+          id: "signup-intro-next"
+- tapOn:
+    id: "signup-intro-join"
+- extendedWaitUntil:
+    visible:
+      id: "signup-account-email"
+    timeout: 10000

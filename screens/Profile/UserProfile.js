@@ -310,6 +310,9 @@ const UserProfile = () => {
               <TouchableOpacity
                 style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
                 onPress={() => navigation.navigate("ProfileMenu")}
+                testID="profile-menu-button"
+                accessibilityRole="button"
+                accessibilityLabel="Profile menu"
               >
                 <Ionicons name="menu" size={30} color="#aaa" />
               </TouchableOpacity>

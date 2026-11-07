@@ -1,0 +1,7 @@
+appId: com.courtchamp
+---
+# Seeds a pre-registration scenario (SCENARIO: "", "-only-fixtures", ...).
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-seed-prereg${SCENARIO}"

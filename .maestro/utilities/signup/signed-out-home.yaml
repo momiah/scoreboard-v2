@@ -1,0 +1,33 @@
+appId: com.courtchamp
+---
+# Leaves the app on Home, signed out.
+- launchApp:
+    clearState: false
+- tapOn:
+    text: "Not Now"
+    optional: true
+- runFlow:
+    when:
+      visible: ${MAESTRO_METRO_URL}
+    commands:
+      - tapOn: ${MAESTRO_METRO_URL}
+- extendedWaitUntil:
+    visible: "(Sign In|Hello, .*)"
+    timeout: 60000
+- runFlow:
+    when:
+      visible:
+        id: "maestro-harness-unlock"
+    commands:
+      - tapOn:
+          id: "maestro-harness-unlock"
+          repeat: 5
+          delay: 150
+      - runFlow:
+          file: ../harness.yaml
+          env:
+            BUTTON: "maestro-sign-out"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 20000

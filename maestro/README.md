@@ -75,6 +75,26 @@ nothing. Every number that is a rule comes from `courtchamps-shared`, never a
 literal; flows read rule numbers from the `MAESTRO_*` env vars that
 `.maestro/run-suite.sh` exports, or from `maestro-expected-*`.
 
+## Pre-registration section
+
+`sections/preRegistration.tsx` seeds six `maestro-prereg-*` pre-registrations
+(cash and community, singles and doubles, one closed, one launched with its
+ladder) with fixture registrants, and returns every string the screens show
+(`maestro-expected-<fixture>-<field>`, from the shared prize and display
+helpers). The scenario buttons (`-only-fixtures`, `-community-only`,
+`-none-open`) close every open live pre-registration first, saving each status
+in the hidden `maestro-prereg-live-status-backup` doc; it is never overwritten,
+so seeding twice can't record "closed" as the original. Every flow that uses
+them runs `.maestro/utilities/prereg/restore-live.yaml` in `onFlowComplete`,
+which also runs when the flow fails; a restore that can't put a status back
+fails with `CLEANUP INCOMPLETE`. `-launch` and `maestro-assert-prereg-launch-notified`
+cover the `processLadderPreRegistrationLaunches` notification.
+
+The Home banner and each ladder ticket are single touchables, so iOS merges
+their text into one accessibility label: assert inside them with
+`utilities/prereg/assert-banner.yaml` and `assert-ticket.yaml`, which match
+regex-escaped expected values (`store-copied.js` keeps an `_re` copy).
+
 ## Live data
 
 Seeds write to the live Firebase project through the client SDK (`db` from

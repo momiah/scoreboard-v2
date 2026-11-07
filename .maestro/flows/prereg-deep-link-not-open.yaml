@@ -1,0 +1,31 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 14b. A link to a pre-registration that doesn't exist, is closed or has launched shows "This ladder isn't open for pre-registration." without crashing, and Back goes to Home.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- evalScript: ${output.ids = ["maestro-prereg-does-not-exist", "maestro-prereg-closed", "maestro-prereg-launched"]}
+- repeat:
+    while:
+      true: ${output.ids.length > 0}
+    commands:
+      - evalScript: ${output.id = output.ids.shift()}
+      - runFlow:
+          file: ../utilities/prereg/open-link.yaml
+          env:
+            LINK: "courtchamps://join/ladder-pre-registration/${output.id}"
+      - extendedWaitUntil:
+          visible: "This ladder isn't open for pre-registration\\."
+          timeout: 20000
+      - assertVisible: "Ladders"
+      - assertNotVisible:
+          id: "ladder-pre-registration-pot"
+      - tapOn:
+          id: "ladder-pre-registration-back"
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-harness-unlock"
+          timeout: 10000

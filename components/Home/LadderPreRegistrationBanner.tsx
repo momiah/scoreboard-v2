@@ -22,7 +22,7 @@ import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   formatPrizePool,
   getEntrantNoun,
-  getPrizePool,
+  getHeadlinePreRegistration,
   isCashLadder,
 } from "../../helpers/ladderPreRegistrationDisplay";
 
@@ -121,15 +121,8 @@ const LadderPreRegistrationBanner: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { loading, preRegistrations, registeredIds } =
     useLadderPreRegistrations();
-  const cashOptions = preRegistrations.filter(isCashLadder);
-  const hasCash = cashOptions.length > 0;
-  const [headline] = (hasCash ? cashOptions : preRegistrations)
-    .slice()
-    .sort((a, b) =>
-      hasCash
-        ? getPrizePool(b).cash - getPrizePool(a).cash
-        : getPrizePool(b).xp - getPrizePool(a).xp,
-    );
+  const hasCash = preRegistrations.some(isCashLadder);
+  const headline = getHeadlinePreRegistration(preRegistrations);
   const { registrants, total } = useLadderPreRegistrants(
     headline?.preRegistrationId,
     AVATAR_PREVIEW,

@@ -1,0 +1,36 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 13. Share opens the system share sheet with the pre-registration's preview link; the guide's "Invite players" shares the same.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-share"
+      NAME: "share"
+- assertTrue: ${output.share.endsWith("/preview/ladder-pre-registration/maestro-prereg-cash-doubles")}
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Cash"
+      ID: "maestro-prereg-cash-doubles"
+- tapOn:
+    id: "ladder-pre-registration-share"
+- extendedWaitUntil:
+    visible: ".*courtchamps\\.com.*"
+    timeout: 15000
+- runFlow: ../utilities/prereg/close-share-sheet.yaml
+- assertVisible:
+    id: "ladder-pre-registration-pot"
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- tapOn:
+    id: "how-to-play-invite-players"
+- extendedWaitUntil:
+    visible: ".*courtchamps\\.com.*"
+    timeout: 15000
+- runFlow: ../utilities/prereg/close-share-sheet.yaml
+- assertVisible: "Winning the Final"

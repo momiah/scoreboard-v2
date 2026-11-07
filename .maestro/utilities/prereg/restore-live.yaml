@@ -1,0 +1,9 @@
+appId: com.courtchamp
+---
+# onFlowComplete for every flow that closes the live pre-registrations: puts
+# their statuses back even when the flow failed.
+- runFlow: ../../login.yaml
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-restore-prereg-live"
