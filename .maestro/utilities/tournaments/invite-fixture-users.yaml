@@ -16,11 +16,14 @@ appId: com.courtchamp
           visible: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
           timeout: 30000
       - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+      - waitForAnimationToEnd
       - runFlow:
           when:
             visible: "Invite \\(0\\)"
           commands:
-            - tapOn: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+            - tapOn:
+                text: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
+                optional: true
       - extendedWaitUntil:
           visible: "Invite \\(1\\)"
           timeout: 10000
