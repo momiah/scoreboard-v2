@@ -175,14 +175,17 @@ export const findScenarioTournament = async (scenario, testUser) => {
 };
 
 const deleteNotificationsFor = async (userIds, tournamentIds) => {
+  if (tournamentIds.length === 0) return;
+  if (tournamentIds.length > 30) throw new Error("More than 30 scenario tournaments to clean up");
   await Promise.all(
     userIds.map(async (userId) => {
-      const snap = await getDocs(collection(db, "users", userId, "notifications"));
-      await Promise.all(
-        snap.docs
-          .filter((d) => tournamentIds.includes(d.data().data?.tournamentId))
-          .map((d) => deleteDoc(d.ref)),
+      const snap = await getDocs(
+        query(
+          collection(db, "users", userId, "notifications"),
+          where("data.tournamentId", "in", tournamentIds),
+        ),
       );
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     }),
   );
 };
@@ -993,10 +996,14 @@ export const checkPrizeNotifications = async ({ testUser }) => {
   const state = JSON.parse((await expectedState({ testUser })).expected.state);
   const failures = [];
   for (const [userId, prize] of Object.entries(state.prizes)) {
-    const snap = await getDocs(collection(db, "users", userId, "notifications"));
+    const snap = await getDocs(
+      query(
+        collection(db, "users", userId, "notifications"),
+        where("data.tournamentId", "==", tournament.tournamentId),
+      ),
+    );
     const found = snap.docs.some(
       (d) =>
-        d.data().data?.tournamentId === tournament.tournamentId &&
         d.data().senderId === "system" &&
         String(d.data().message).includes(`won ${prize.xp} CP`),
     );
