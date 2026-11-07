@@ -32,7 +32,6 @@ import {
   NormalizedCompetition,
   Game,
   UserProfile,
-  Notification,
 } from "@shared";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RankSuffix from "@/components/RankSuffix";
@@ -71,7 +70,7 @@ const COLLECTIONS: {
 
 const CompetitionsScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { currentUser, notifications, authInitializing } =
+  const { currentUser, unreadNotificationCount, authInitializing } =
     useContext(UserContext);
   const { leagueNavigationId, tournamentNavigationId } =
     useContext(LeagueContext);
@@ -210,9 +209,7 @@ const CompetitionsScreen = memo(() => {
     [navigation],
   );
 
-  const unreadNotifications = notifications.filter(
-    (notification: Notification) => notification.isRead === false,
-  ).length;
+  const unreadNotifications = unreadNotificationCount;
 
   const handleCompetitionPress = useCallback(
     (competition: CompetitionWithMeta) => {

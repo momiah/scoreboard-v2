@@ -42,7 +42,7 @@ const JOIN_REQUESTS: { id: string; userId: ClubFixtureUserId }[] = [
   { id: "nia-requests-join", userId: "maestroClubMember4" },
 ];
 
-const useClubServices = (): ClubServices => {
+export const useClubServices = (): ClubServices => {
   const league = useContext(LeagueContext);
   const { sendNotification } = useContext(UserContext);
   return {
