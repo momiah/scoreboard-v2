@@ -33,6 +33,7 @@ import {
   recalculateParticipantsFromFixtures,
 } from "@shared/helpers";
 import { db } from "../../../services/firebase.config";
+import { ccDefaultImage } from "../../../mockImages";
 import {
   deleteFixtureUserSubcollections,
   deleteFixtureUsers,
@@ -1043,11 +1044,21 @@ export const checkProfiles = async ({ testUser }) => {
 
 // An opponent sends a message from the tournament's Chat Room: the message,
 // then each other entrant's chat summary as ChatRoom's handleSend writes it.
+// An older message from them carries a bundled-image number as its avatar, as
+// sendChatMessage saved for users without a profile image before it used a URL.
 export const opponentSendsChatMessage = async ({ testUser, actions }) => {
   const { scenario } = await getActiveScenario();
   const tournament = await findScenarioTournament(scenario, testUser);
   const sender = scenario.users[0];
   const text = `Good luck, ${formatDisplayName(testUser)}!`;
+  const legacyText = "See you on court!";
+  const legacyRef = doc(collection(db, "tournaments", tournament.id, "chat"));
+  await setDoc(legacyRef, {
+    _id: legacyRef.id,
+    text: legacyText,
+    createdAt: new Date(Date.now() - 60 * 1000),
+    user: { _id: sender.userId, name: sender.username, avatar: ccDefaultImage },
+  });
   await actions.sendChatMessage({
     message: {
       text,
@@ -1075,7 +1086,7 @@ export const opponentSendsChatMessage = async ({ testUser, actions }) => {
       }),
     ),
   );
-  return { expected: { tournamentId: tournament.id, text } };
+  return { expected: { tournamentId: tournament.id, text, legacyText } };
 };
 
 export const cleanupRoundRobinTestData = async ({ testUser }) => {

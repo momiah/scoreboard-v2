@@ -31,6 +31,10 @@ import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { COMPETITION_TYPES } from "@shared";
 import moment from "moment";
+import { ccDefaultImage } from "../../mockImages";
+
+const avatarSource = (avatar) =>
+  typeof avatar === "string" && avatar ? { uri: avatar } : ccDefaultImage;
 
 const ChatRoom = ({
   competitionId,
@@ -242,14 +246,14 @@ const ChatRoom = ({
           {/* Avatar and username container */}
           {!isCurrentUser && showAvatar && (
             <UserInfoContainer>
-              <AvatarImage source={{ uri: item.user.avatar }} />
+              <AvatarImage source={avatarSource(item.user.avatar)} />
               <UserName>{item.user.name}</UserName>
             </UserInfoContainer>
           )}
 
           {/* Current user avatar (no username) */}
           {isCurrentUser && showAvatar && (
-            <AvatarImage source={{ uri: item.user.avatar }} />
+            <AvatarImage source={avatarSource(item.user.avatar)} />
           )}
 
           <BubbleContainer isCurrentUser={isCurrentUser}>
