@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 14a. courtchamps://join/ladder-pre-registration/<id> opens that fixture's sign-up screen, and Back goes to Home.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-pool"
+      NAME: "pool"
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://join/ladder-pre-registration/maestro-prereg-cash-doubles"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+      text: ${output.pool}
+    timeout: 20000
+- assertVisible: "Maestro Manchester Men's Doubles"
+- tapOn:
+    id: "ladder-pre-registration-back"
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-unlock"
+    timeout: 10000
+- assertVisible:
+    id: "tab-home"

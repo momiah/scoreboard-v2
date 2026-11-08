@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 10. How to play steps through every page in order; cash doubles says "teams" and the Season page shows the shared day ranges and home-and-away wording.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-doubles"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Cash"
+      ID: "maestro-prereg-cash-doubles"
+- tapOn:
+    id: "ladder-pre-registration-how-to-play"
+- runFlow:
+    file: ../utilities/prereg/guide-pages.yaml
+    env:
+      KEY: "cash-doubles"
+- assertVisible:
+    id: "pre-registration-how-to-play-pre-register"
+- assertVisible: "Pre-register"
+- tapOn:
+    id: "how-to-play-back"
+- extendedWaitUntil:
+    visible: "The Playoffs"
+    timeout: 10000

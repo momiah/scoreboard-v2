@@ -1,0 +1,7 @@
+appId: com.courtchamp
+---
+# Opens ${LINK} and accepts iOS's "Open in …?" prompt when it appears.
+- openLink: ${LINK}
+- tapOn:
+    text: "Open"
+    optional: true

@@ -1,0 +1,42 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 6. Community tab: "Free" / "to enter", the CP pool and "Top N win CP"; no cash footnote.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "community-doubles"
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "community-singles"
+- assertTrue: ${output["community-doubles-pool"].endsWith(" CP")}
+- assertTrue: ${output["community-doubles-meta"].includes(" win CP")}
+- runFlow:
+    file: ../utilities/prereg/open-list.yaml
+    env:
+      TAB: "Community"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "community-doubles"
+      ID: "maestro-prereg-community-doubles"
+      ACTION: "Pre-register"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "community-singles"
+      ID: "maestro-prereg-community-singles"
+      ACTION: "Pre-register"
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
+- repeat:
+    times: 4
+    commands:
+      - scroll
+- assertNotVisible: "18\\+ only\\..*"

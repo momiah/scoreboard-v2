@@ -38,3 +38,4 @@ yarn-error.*
 /android/
 /ios/
 /local-files/
+.maestro/scratch/

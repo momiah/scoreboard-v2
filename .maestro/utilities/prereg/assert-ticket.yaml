@@ -1,0 +1,19 @@
+appId: com.courtchamp
+---
+# Asserts a fixture ticket shows the seed's expected strings. A ticket is one
+# touchable, so iOS merges its text into a single label: each check matches
+# that label. KEY is the fixture's kebab key ("cash-doubles"), ID its id,
+# ACTION the button text ("Pre-register" or "You're in").
+- runFlow:
+    file: open-ticket.yaml
+    env:
+      ID: ${ID}
+- evalScript: ${output.ticketChecks = ["title","pool","meta","location","entry","entry-caption"].map(f => output[KEY + "-" + f + "_re"]).concat(["REGIONAL LADDER", "Prize pool up to", ACTION])}
+- repeat:
+    while:
+      true: ${output.ticketChecks.length > 0}
+    commands:
+      - evalScript: ${output.check = output.ticketChecks.shift()}
+      - assertVisible:
+          id: "ladder-pre-registration-option-${ID}"
+          text: ".*${output.check}.*"

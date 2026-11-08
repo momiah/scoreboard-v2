@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+# Back to the intro and in again: the account step starts empty.
+- tapOn:
+    id: "signup-account-back"
+- extendedWaitUntil:
+    visible:
+      id: "signup-intro-join"
+    timeout: 10000
+- tapOn:
+    id: "signup-intro-join"
+- extendedWaitUntil:
+    visible:
+      id: "signup-account-email"
+    timeout: 10000

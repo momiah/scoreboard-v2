@@ -1,0 +1,90 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../login.yaml
+  - runFlow:
+      file: ../utilities/harness.yaml
+      env:
+        BUTTON: "maestro-cleanup-signup-profiles"
+---
+# 15. New account: intro → account → profile (name, username, country and city)
+# → welcome. Email sign-ups must verify the address first: the welcome screen
+# says so, Explore returns to Home still signed out, and logging in before
+# verifying is refused with "verify your email".
+- evalScript: ${output.stamp = String(Date.now()).slice(-7)}
+- evalScript: ${output.email = "maestro-signup-" + output.stamp + "@example.com"; output.username = "ms-" + output.stamp}
+- runFlow: ../utilities/signup/signed-out-home.yaml
+- runFlow: ../utilities/signup/open-signup.yaml
+- runFlow:
+    file: ../utilities/signup/fill-account.yaml
+    env:
+      EMAIL: ${output.email}
+      PASSWORD: ${MAESTRO_SIGNUP_PASSWORD}
+      CONFIRM: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible:
+      id: "signup-profile-name"
+    timeout: 20000
+- tapOn:
+    id: "signup-profile-name"
+- inputText: "Maestro Signup"
+- tapOn:
+    id: "signup-profile-username"
+- inputText: ${output.username}
+- hideKeyboard
+- tapOn:
+    id: "signup-profile-location"
+- tapOn: "Search countries..."
+- inputText: "United Kingdom"
+- tapOn:
+    text: "United Kingdom"
+    index: 1
+- extendedWaitUntil:
+    visible: "Search cities..."
+    timeout: 10000
+- tapOn: "Search cities..."
+- inputText: "Manchester"
+- tapOn:
+    text: "Manchester"
+    index: 1
+- assertVisible: ".*Manchester.*"
+- tapOn:
+    id: "signup-profile-hand-right"
+- tapOn:
+    id: "signup-profile-continue"
+- extendedWaitUntil:
+    visible:
+      id: "signup-welcome-explore"
+    timeout: 30000
+- assertVisible: ".*verify your account, then log in.*"
+- assertVisible:
+    id: "signup-welcome-resend"
+- tapOn:
+    id: "signup-welcome-explore"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 15000
+- assertNotVisible: "Hello, .*"
+- tapOn:
+    id: "home-sign-in-link"
+- tapOn:
+    id: "login-email"
+- inputText: ${output.email}
+- tapOn: "Welcome back"
+- tapOn:
+    id: "login-password"
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn: "Welcome back"
+# The refusal is a 3-second toast; the login background never settles, so the
+# tap must not wait for it or the toast is gone before the assertion.
+- tapOn:
+    id: "login-submit"
+    waitToSettleTimeoutMs: 0
+- extendedWaitUntil:
+    visible: ".*verify your email.*"
+    timeout: 20000
+- assertNotVisible: "Hello, .*"

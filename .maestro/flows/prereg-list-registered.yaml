@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 7. A pre-registration the user joined shows "You're in"; the others still say "Pre-register".
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-only-fixtures-registered"
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-doubles"
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-singles"
+- runFlow:
+    file: ../utilities/prereg/open-list.yaml
+    env:
+      TAB: "Cash"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "cash-doubles"
+      ID: "maestro-prereg-cash-doubles"
+      ACTION: "You're in"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "cash-singles"
+      ID: "maestro-prereg-cash-singles"
+      ACTION: "Pre-register"

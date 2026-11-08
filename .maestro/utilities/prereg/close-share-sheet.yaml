@@ -1,0 +1,14 @@
+appId: com.courtchamp
+---
+- tapOn:
+    text: "Close"
+    optional: true
+- runFlow:
+    when:
+      visible: ".*courtchamps\\.com.*"
+    commands:
+      - swipe:
+          start: 50%, 40%
+          end: 50%, 95%
+          duration: 300
+- waitForAnimationToEnd
