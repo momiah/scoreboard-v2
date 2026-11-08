@@ -27,10 +27,35 @@ appId: com.courtchamp
                 end: 50%, 45%
                 duration: 300
             - waitForAnimationToEnd
-            - scrollUntilVisible:
-                element:
-                  id: "bulk-score-${output.gn}"
-                centerElement: true
+            - runFlow:
+                when:
+                  platform: iOS
+                commands:
+                  - scrollUntilVisible:
+                      element:
+                        id: "bulk-score-${output.gn}"
+                      centerElement: true
+            # scrollUntilVisible's quick swipes don't move this list on
+            # Android; slower swipes do.
+            - runFlow:
+                when:
+                  platform: Android
+                commands:
+                  - repeat:
+                      times: 8
+                      while:
+                        notVisible:
+                          id: "bulk-score-${output.gn}"
+                      commands:
+                        - swipe:
+                            start: 50%, 65%
+                            end: 50%, 35%
+                            duration: 700
+                        - waitForAnimationToEnd
+                  - swipe:
+                      start: 50%, 60%
+                      end: 50%, 45%
+                      duration: 700
             - waitForAnimationToEnd
             - tapOn:
                 id: "bulk-score-${output.gn}"
