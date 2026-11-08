@@ -1,0 +1,9 @@
+appId: com.courtchamp
+---
+# Copies the seed's maestro-expected-${KEY} label into output.${NAME} (and output.${NAME}_re, regex-escaped).
+- copyTextFrom:
+    id: "maestro-expected-${KEY}"
+- runScript:
+    file: store-copied.js
+    env:
+      NAME: ${NAME}

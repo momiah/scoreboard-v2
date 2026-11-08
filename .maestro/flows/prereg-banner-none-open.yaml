@@ -1,0 +1,34 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 4. Nothing open: the fallback line and "See the ladders", and the list says no ladders are open.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-none-open"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Play anyone near you, win Court Points and fight for the title\\."
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "See the ladders"
+- runFlow:
+    file: ../utilities/prereg/refute-banner.yaml
+    env:
+      TEXT: "Prize pool up to"
+- tapOn:
+    id: "ladder-pre-registration-banner"
+- extendedWaitUntil:
+    visible: "No Cash Ladders are open.*"
+    timeout: 15000
+- tapOn: "Community"
+- assertVisible: "No Community Ladders are open.*"

@@ -1,0 +1,16 @@
+appId: com.courtchamp
+---
+# From the sign-up screen: open How to play and page to the last page.
+- tapOn:
+    id: "ladder-pre-registration-how-to-play"
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-intro"
+    timeout: 15000
+- repeat:
+    while:
+      notVisible: "Winning the Final"
+    commands:
+      - tapOn:
+          id: "how-to-play-next"
+- waitForAnimationToEnd

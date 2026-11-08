@@ -1,0 +1,5 @@
+appId: com.courtchamp
+---
+- assertNotVisible:
+    id: "ladder-pre-registration-banner"
+    text: ".*${TEXT}.*"
