@@ -95,8 +95,10 @@ export const useScrollToGameGlow = (
 
       // Glow after the scroll settles so the card is in its final position.
       setTimeout(() => {
+        // The highlight stays set after the fade (its rings sit at opacity 0)
+        // so the glow marker remains readable by Maestro on slower devices.
         setHighlightedGameId(scrollToGameId);
-        runGlow(glowAnim, () => setHighlightedGameId(null));
+        runGlow(glowAnim);
       }, 400);
     }, 400);
 
