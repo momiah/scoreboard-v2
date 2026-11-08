@@ -38,6 +38,14 @@ appId: com.courtchamp
             - copyTextFrom:
                 id: "bulk-score-${output.gn}"
             - assertTrue: ${maestro.copiedText == output.exp.scores[output.gn]}
+      # Maestro's swipes don't scroll the list while Android's number pad is
+      # open; it is open after typing, so Back only closes it.
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - pressKey: Back
+            - waitForAnimationToEnd
       - evalScript: ${output.oi = output.oi + 1}
 - swipe:
     from:
