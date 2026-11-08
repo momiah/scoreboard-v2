@@ -1,19 +1,34 @@
 appId: com.courtchamp
 ---
 - tapOn: "Select Date"
+- waitForAnimationToEnd
 - runFlow:
     when:
       platform: iOS
     commands:
       - tapOn:
           point: 23%, 52%
+      - extendedWaitUntil:
+          visible: "Confirm Date"
+          timeout: 10000
+      - tapOn: "Confirm Date"
+# Android: the DateWheel modal (ladder line), or the native date dialog
+# (android-build), which keeps today and commits on OK.
 - runFlow:
     when:
       platform: Android
+      visible:
+        id: "date-wheel-item-1"
     commands:
       - tapOn:
           id: "date-wheel-item-1"
-- extendedWaitUntil:
-    visible: "Confirm Date"
-    timeout: 10000
-- tapOn: "Confirm Date"
+      - extendedWaitUntil:
+          visible: "Confirm Date"
+          timeout: 10000
+      - tapOn: "Confirm Date"
+- runFlow:
+    when:
+      platform: Android
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
