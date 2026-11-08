@@ -312,7 +312,8 @@ const TabIcon = ({ name, color, size }) => {
 
 const Tabs = () => {
   const navigation = useNavigation();
-  const { chatSummaries, notifications, currentUser } = useContext(UserContext);
+  const { chatSummaries, notifications, unreadNotificationCount, currentUser } =
+    useContext(UserContext);
   const { clubNavigationId } = useContext(LeagueContext);
   // const [showAd, setShowAd] = useState(true);
 
@@ -320,9 +321,7 @@ const Tabs = () => {
     (chat) => chat.isRead === false,
   ).length;
 
-  const hasUnreadNotifications = notifications.some(
-    (notification) => notification.isRead === false,
-  );
+  const hasUnreadNotifications = unreadNotificationCount > 0;
 
   let initialRouteName = "Profile";
   if (!currentUser) {

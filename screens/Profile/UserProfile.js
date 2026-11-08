@@ -308,6 +308,7 @@ const UserProfile = () => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
+                testID="profile-menu"
                 style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
                 onPress={() => navigation.navigate("ProfileMenu")}
               >

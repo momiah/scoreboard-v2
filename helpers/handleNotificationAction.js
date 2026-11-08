@@ -1,7 +1,7 @@
 import { notificationTypes } from "@shared";
 
 // Notification type constants
-const ACTION_TYPES = {
+export const ACTION_TYPES = {
   INVITE: Object.values(notificationTypes.ACTION.INVITE),
   JOIN_REQUEST: Object.values(notificationTypes.ACTION.JOIN_REQUEST),
   ADD_GAME: Object.values(notificationTypes.ACTION.ADD_GAME),

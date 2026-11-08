@@ -27,6 +27,7 @@ export const CLUB_NAME_PREFIX = "Maestro";
 export const CLUB_FIXTURE_IDS = {
   ownedClub: "maestro-club-owned",
   fixtureClub: "maestro-club-fixture-owned",
+  inboxClub: "maestro-club-inbox",
 } as const;
 
 export const CLUB_FIXTURE_USERS = [
@@ -83,7 +84,7 @@ export type ClubServices = Pick<
   sendNotification: (notification: Notification) => Promise<void>;
 };
 
-const fixtureUser = (userId: ClubFixtureUserId) =>
+export const fixtureUser = (userId: ClubFixtureUserId) =>
   buildFixtureUser(
     CLUB_FIXTURE_USERS.find((user) => user.userId === userId)!,
   ) as UserProfile;
@@ -169,7 +170,7 @@ const buildClub = ({
   pendingRequests: [],
 });
 
-const recreateClub = async (
+export const recreateClub = async (
   services: ClubServices,
   clubId: string,
   owner: UserProfile,
@@ -425,16 +426,17 @@ const deleteTestUserClubNotifications = async (
   clubIds: string[],
 ) => {
   if (clubIds.length === 0) return 0;
+  if (clubIds.length > 30) throw new Error("More than 30 test clubs to clean up");
   const snap = await getDocs(
-    collection(db, "users", testUser.userId, "notifications"),
-  );
-  const toDelete = snap.docs.filter((notification) =>
-    clubIds.includes(notification.data().data?.clubId),
+    query(
+      collection(db, "users", testUser.userId, "notifications"),
+      where("data.clubId", "in", clubIds),
+    ),
   );
   await Promise.all(
-    toDelete.map((notification) => deleteDoc(notification.ref)),
+    snap.docs.map((notification) => deleteDoc(notification.ref)),
   );
-  return toDelete.length;
+  return snap.size;
 };
 
 export const cleanupClubTestData = async ({
