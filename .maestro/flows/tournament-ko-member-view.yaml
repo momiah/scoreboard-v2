@@ -1,0 +1,24 @@
+# Knockout member view: in a knockout owned by a fixture user, the test user (a
+# player, not an admin) sees the organiser message on the empty Brackets tab,
+# with no Generate Brackets button and no tournament menu.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koMemberSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- assertVisible:
+    id: "empty-state-message"
+    text: "Please contact the tournament organizer to generate the brackets."
+- assertNotVisible:
+    id: "empty-state-generate"
+- assertNotVisible:
+    id: "tournament-menu"
+- tapOn:
+    id: "tab-home"

@@ -1,4 +1,5 @@
-# The admin generates the fixtures from the empty Fixtures tab on two courts.
+# The admin generates the fixtures from the empty Fixtures (or Brackets) tab
+# on two courts.
 # MODE is "" for singles, or the doubles mode; Fixed Doubles teams are picked
 # by display name from output.teams (a list of [name, name] pairs).
 appId: com.courtchamp
@@ -6,7 +7,7 @@ appId: com.courtchamp
 - runFlow:
     file: open-tournament.yaml
     env:
-      TAB: "Fixtures"
+      TAB: ${output.fixturesTab}
 - tapOn:
     id: "empty-state-generate"
 - extendedWaitUntil:
@@ -37,7 +38,8 @@ appId: com.courtchamp
           commands:
             - scrollUntilVisible:
                 element:
-                  id: "fixtures-team-${output.ti + 1}-player1"
+                  id: "fixtures-team-${output.ti + 1}-player2"
+                centerElement: true
             - tapOn:
                 id: "fixtures-team-${output.ti + 1}-player1"
             - tapOn: ${output.teams[output.ti][0]}

@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -21,12 +22,14 @@ import {
   prizeTypes,
 } from "@shared";
 import {
+  advanceBrackets,
   buildTournamentPrizeAllocations,
   calculatePlayerPerformance,
   calculateTournamentPrizePool,
   generateInitialTeamStats,
   getOrderedApprovedGames,
   getTournamentPrizeWinnerIds,
+  isKnockoutComplete,
   recalculateParticipantsFromFixtures,
 } from "@shared/helpers";
 import { db } from "../../../services/firebase.config";
@@ -42,6 +45,7 @@ import {
   generateRoundRobinFixtures,
   generateSinglesRoundRobinFixtures,
 } from "../../../helpers/Tournament/roundRobin";
+import { generateTournamentKnockoutBrackets } from "../../../helpers/Tournament/knockout";
 
 // Doubles team keys are "<uid>-<uid>" and prizes split them on "-", so
 // fixture user ids must not contain a hyphen.
@@ -72,7 +76,7 @@ export const RR_SCENARIOS = {
   doubles: { name: "Maestro RR Doubles", type: "Doubles", users: doubles(7), seed: "none" },
   bulkSingles: { name: "Maestro RR Bulk Singles", type: "Singles", users: singles(3), seed: "fixtures" },
   bulkDoubles: { name: "Maestro RR Bulk Doubles", type: "Doubles", users: doubles(7), seed: "fixtures" },
-  replaySingles: { name: "Maestro RR Replay Singles", type: "Singles", users: singles(3), seed: "fixtures" },
+  replaySingles: { name: "Maestro RR Replay Singles", type: "Singles", users: singles(3), seed: "fixtures", userFirst: true },
   replayDoubles: { name: "Maestro RR Replay Doubles", type: "Doubles", users: doubles(7), seed: "fixtures" },
   fairSingles: { name: "Maestro RR Fair Singles", type: "Singles", users: singles(3), seed: "participants" },
   fairDoubles: { name: "Maestro RR Fair Doubles", type: "Doubles", users: doubles(7), seed: "participants" },
@@ -83,7 +87,20 @@ export const RR_SCENARIOS = {
   gatesDoubles: { name: "Maestro RR Gates Doubles", type: "Doubles", users: doubles(7), seed: "participants" },
   memberSingles: { name: "Maestro RR Member Singles", type: "Singles", users: singles(3), seed: "participants", ownedByFixture: true },
   memberDoubles: { name: "Maestro RR Member Doubles", type: "Doubles", users: doubles(7), seed: "participants", ownedByFixture: true },
+  koSingles: { name: "Maestro KO Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "none", userFirst: true },
+  koDoubles: { name: "Maestro KO Doubles", mode: "Knockout", type: "Doubles", users: doubles(7), seed: "none" },
+  koBulkSingles: { name: "Maestro KO Bulk Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "fixtures" },
+  koBulkDoubles: { name: "Maestro KO Bulk Doubles", mode: "Knockout", type: "Doubles", users: doubles(7), seed: "fixtures", userFirst: true },
+  koGatesSingles: { name: "Maestro KO Gates Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "participants" },
+  koMemberSingles: { name: "Maestro KO Member Singles", mode: "Knockout", type: "Singles", users: singles(3), seed: "participants", ownedByFixture: true },
+  koOddSingles: { name: "Maestro KO Odd Singles", mode: "Knockout", type: "Singles", users: singles(2), seed: "participants" },
+  koSixSingles: { name: "Maestro KO Six Singles", mode: "Knockout", type: "Singles", users: doubles(5), seed: "participants" },
+  koThreeTeams: { name: "Maestro KO Three Teams", mode: "Knockout", type: "Doubles", users: doubles(5), seed: "participants" },
+  chatSingles: { name: "Maestro RR Chat Singles", type: "Singles", users: singles(3), seed: "participants" },
 };
+
+const modeOf = (scenario) => scenario.mode ?? "Round Robin";
+const isKnockout = (scenario) => modeOf(scenario) === "Knockout";
 
 export const RR_TOURNAMENT_PREFIX = "Maestro RR";
 const ACTIVE_KEY = "maestro:rr:active";
@@ -93,9 +110,10 @@ const RR_COURTS = 2;
 
 // Finishing order the scores follow: earlier wins. A doubles team plays as its
 // strongest player. The test user (and, in doubles, their partner f1) sits
-// second, behind f2, so they win some and lose one.
-const strengthOrder = (scenario, testUserId) => {
+// second, behind f2, so they win some and lose one; userFirst puts them first.
+export const strengthOrder = (scenario, testUserId) => {
   const ids = scenario.users.map((u) => u.userId);
+  if (scenario.userFirst) return [testUserId, ...ids];
   return [ids[1], testUserId, ids[0], ...ids.slice(2)];
 };
 
@@ -157,14 +175,17 @@ export const findScenarioTournament = async (scenario, testUser) => {
 };
 
 const deleteNotificationsFor = async (userIds, tournamentIds) => {
+  if (tournamentIds.length === 0) return;
+  if (tournamentIds.length > 30) throw new Error("More than 30 scenario tournaments to clean up");
   await Promise.all(
     userIds.map(async (userId) => {
-      const snap = await getDocs(collection(db, "users", userId, "notifications"));
-      await Promise.all(
-        snap.docs
-          .filter((d) => tournamentIds.includes(d.data().data?.tournamentId))
-          .map((d) => deleteDoc(d.ref)),
+      const snap = await getDocs(
+        query(
+          collection(db, "users", userId, "notifications"),
+          where("data.tournamentId", "in", tournamentIds),
+        ),
       );
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     }),
   );
 };
@@ -172,6 +193,7 @@ const deleteNotificationsFor = async (userIds, tournamentIds) => {
 const deleteTournaments = async (tournaments, testUser) => {
   const ids = tournaments.map((t) => t.id);
   await deleteNotificationsFor([testUser.userId], ids);
+  await Promise.all(ids.map((id) => deleteDoc(doc(db, "users", testUser.userId, "chats", id))));
   await Promise.all(
     tournaments.map(async (t) => {
       const chat = await getDocs(collection(db, COLLECTION_NAMES.tournaments, t.id, "chat"));
@@ -277,7 +299,7 @@ const createScenarioTournament = async ({ key, scenario, owner, actions, clubId 
       startDate: moment().format("DD-MM-YYYY"),
       maxPlayers: 8,
       tournamentType: scenario.type,
-      tournamentMode: "Round Robin",
+      tournamentMode: modeOf(scenario),
       privacy: "Private",
       createdAt: new Date(),
       ...ownerProfiles(owner),
@@ -335,17 +357,18 @@ const generateScenarioFixtures = async ({ tournamentId, scenario, testUser, owne
     actions.getUserById,
   );
   const byId = new Map(participants.map((p) => [p.userId, p]));
-  const result =
+  const teams =
     scenario.type === "Singles"
+      ? participants.map((player) => ({ player1: player, player2: null }))
+      : fixedTeamsFor(scenario, testUser.userId).map(([a, b]) => ({
+          player1: byId.get(a),
+          player2: byId.get(b),
+        }));
+  const result = isKnockout(scenario)
+    ? generateTournamentKnockoutBrackets({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId })
+    : scenario.type === "Singles"
       ? generateSinglesRoundRobinFixtures({ players: participants, numberOfCourts: RR_COURTS, competitionId: tournamentId })
-      : generateRoundRobinFixtures({
-          teams: fixedTeamsFor(scenario, testUser.userId).map(([a, b]) => ({
-            player1: byId.get(a),
-            player2: byId.get(b),
-          })),
-          numberOfCourts: RR_COURTS,
-          competitionId: tournamentId,
-        });
+      : generateRoundRobinFixtures({ teams, numberOfCourts: RR_COURTS, competitionId: tournamentId });
   if (!result) throw new Error("Fixture generation returned nothing");
   await actions.addTournamentFixtures({
     tournamentId,
@@ -398,6 +421,8 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
   return {
     expected: {
       tournamentName: scenario.name,
+      tournamentMode: modeOf(scenario),
+      fixturesTab: isKnockout(scenario) ? "Brackets" : "Fixtures",
       courtName: (await scenarioCourt(actions)).court.courtName.trim(),
       ids: JSON.stringify({
         user: testUser.userId,
@@ -405,6 +430,9 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
       }),
       teams: JSON.stringify(
         fixedTeamsFor(scenario, testUser.userId).map((team) => team.map((id) => nameOf.get(id))),
+      ),
+      fullNames: JSON.stringify(
+        Object.fromEntries(scenario.users.map((u, i) => [`f${i + 1}`, `${u.firstName} ${u.lastName}`])),
       ),
     },
   };
@@ -671,40 +699,142 @@ export const checkTeams = async ({ testUser, generation }) => {
   return { generationMode: tournament.generationMode, generationType: tournament.generationType, teams };
 };
 
+const replayRows = (entrants, key) =>
+  [...entrants]
+    .sort((a, b) => String(a[key]).localeCompare(String(b[key])))
+    .map((e) => {
+      const streak = typeof e.currentStreak === "object" ? [e.currentStreak?.type, e.currentStreak?.count] : e.currentStreak;
+      return JSON.stringify([e[key], e.numberOfWins, e.totalPointDifference, e.resultLog, streak, e.highestWinStreak]);
+    });
+
+const replayShape = (entrants, key) => replayRows(entrants, key).join();
+
+const replayDiff = (stored, replayed, key) => {
+  const want = replayRows(replayed, key);
+  return replayRows(stored, key)
+    .map((row, i) => (row === want[i] ? null : `has ${row}, wants ${want[i]}`))
+    .filter(Boolean)
+    .join("; ");
+};
+
+// The standings a fixture-order replay and a reverse-order (approval order)
+// replay of the approved games give. With every entrant's results reading the
+// same both ways (a strict finishing order whose top two meet in the middle
+// round does that), the two are equal and a replay run proves nothing.
+export const replayStandings = async ({ fixtures, participants, teams, isDoubles }) => {
+  const ordered = getOrderedApprovedGames(fixtures);
+  const replay = (games) =>
+    recalculateParticipantsFromFixtures(games, clone(participants), clone(teams ?? []), isDoubles);
+  const fixtureOrder = await replay(ordered);
+  const approvalOrder = await replay([...ordered].reverse());
+  return {
+    games: ordered.length,
+    fixtureOrder,
+    orderMatters:
+      replayShape(fixtureOrder.updatedParticipants, "userId") !==
+      replayShape(approvalOrder.updatedParticipants, "userId"),
+  };
+};
+
 // After games approved in reverse fixture order, the stored standings are the
 // fixture-order replay: results logs and streaks included, which a fold in
 // approval order would get wrong.
 export const checkReplay = async ({ testUser }) => {
   const { scenario, tournament } = await loadActive(testUser);
   const isDoubles = scenario.type === "Doubles";
-  const ordered = getOrderedApprovedGames(tournament.fixtures);
-  const replay = async (games) =>
-    recalculateParticipantsFromFixtures(
-      games,
-      clone(tournament.tournamentParticipants),
-      clone(tournament.tournamentTeams ?? []),
-      isDoubles,
-    );
-  const fixtureOrder = await replay(ordered);
-  const approvalOrder = await replay([...ordered].reverse());
-  const shape = (entrants, key) =>
-    JSON.stringify(
-      [...entrants]
-        .sort((a, b) => String(a[key]).localeCompare(String(b[key])))
-        .map((e) => [e[key], e.numberOfWins, e.totalPointDifference, e.resultLog, e.currentStreak, e.highestWinStreak]),
-    );
+  const { games, fixtureOrder, orderMatters } = await replayStandings({
+    fixtures: tournament.fixtures,
+    participants: tournament.tournamentParticipants,
+    teams: tournament.tournamentTeams,
+    isDoubles,
+  });
   const failures = [];
-  if (shape(tournament.tournamentParticipants, "userId") !== shape(fixtureOrder.updatedParticipants, "userId")) {
-    failures.push("stored players are not the fixture-order replay");
-  }
-  if (isDoubles && shape(tournament.tournamentTeams, "teamKey") !== shape(fixtureOrder.updatedTeams, "teamKey")) {
-    failures.push("stored teams are not the fixture-order replay");
-  }
-  if (shape(fixtureOrder.updatedParticipants, "userId") === shape(approvalOrder.updatedParticipants, "userId")) {
+  const playersDiff = replayDiff(tournament.tournamentParticipants, fixtureOrder.updatedParticipants, "userId");
+  if (playersDiff) failures.push(`stored players are not the fixture-order replay: ${playersDiff}`);
+  const teamsDiff = isDoubles && replayDiff(tournament.tournamentTeams, fixtureOrder.updatedTeams, "teamKey");
+  if (teamsDiff) failures.push(`stored teams are not the fixture-order replay: ${teamsDiff}`);
+  if (!orderMatters) {
     failures.push("approval order gives the same standings, so this run proves nothing");
   }
   if (failures.length) throw new Error(failures.join("; "));
-  return { games: ordered.length };
+  return { games };
+};
+
+// ── Knockout brackets ───────────────────────────────────────────────────────
+
+// The stored bracket is what advanceBrackets makes of it (nothing left to
+// advance, courts assigned), and every round after a finished one is filled:
+// winners into the next round, the semi-final losers into the 3rd/4th playoff.
+export const checkBracket = async ({ testUser }) => {
+  const { tournament } = await loadActive(testUser);
+  const shape = (fixtures) =>
+    JSON.stringify(
+      fixtures.map((round) =>
+        round.games.map((g) => [sideIds(g.team1), sideIds(g.team2), g.court]),
+      ),
+    );
+  const failures = [];
+  const advanced = advanceBrackets({
+    fixtures: tournament.fixtures,
+    numberOfCourts: tournament.numberOfCourts || 1,
+  });
+  if (shape(advanced) !== shape(tournament.fixtures)) failures.push("bracket not advanced");
+
+  const rounds = [...tournament.fixtures].sort((a, b) => a.round - b.round);
+  let filledRounds = 0;
+  rounds.forEach((round, i) => {
+    const filled = round.games.every((g) => sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0);
+    if (filled) filledRounds = i + 1;
+    const previous = rounds[i - 1];
+    if (previous && previous.games.every(isApproved) && !filled) {
+      failures.push(`round ${round.round} not filled after round ${previous.round}`);
+    }
+  });
+  if (failures.length) throw new Error(failures.join("; "));
+
+  // What each filled card on the Brackets tab shows: its round tab, every
+  // player's name and its status pill.
+  const statusLabel = (g) =>
+    isApproved(g) ? "Approved" : isPending(g) ? "Pending" : "Scheduled";
+  const cards = Object.fromEntries(
+    rounds.flatMap((round, i) =>
+      round.games
+        .filter((g) => sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0)
+        .map((g) => [
+          g.gameNumber,
+          {
+            tab: String(i),
+            names: [g.team1.player1, g.team1.player2, g.team2.player1, g.team2.player2]
+              .filter(Boolean)
+              .map(formatDisplayName),
+            status: statusLabel(g),
+          },
+        ]),
+    ),
+  );
+
+  // Where the Competitions screen lands the test user: their first game an
+  // opponent reported (orange glow), else their first unplayed game (blue).
+  const userGames = tournament.fixtures
+    .flatMap((round) => round.games)
+    .filter((g) => sideIds(g.team1).concat(sideIds(g.team2)).includes(testUser.userId));
+  const awaitingUser = userGames.find((g) => isPending(g) && g.reporter !== testUser.userId);
+  const target = awaitingUser ?? userGames.find((g) => !g.result);
+  const landing = target
+    ? {
+        gameNumber: String(target.gameNumber),
+        tab: String(rounds.findIndex((round) => round.games.some((g) => g.gameId === target.gameId))),
+        glow: awaitingUser ? "#FFA500" : "#00A2FF",
+      }
+    : null;
+
+  return {
+    expected: {
+      filledRounds: String(filledRounds),
+      cards: JSON.stringify(cards),
+      landing: JSON.stringify(landing),
+    },
+  };
 };
 
 // ── Expected numbers ────────────────────────────────────────────────────────
@@ -715,18 +845,30 @@ const ordinal = (n) => `${n}${["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) 
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
-// Profiles after each approved game in fixture order, from the profiles they
-// had before the tournament, the way approveGame applies them one by one.
-const expectedProfiles = async (tournament, testUser, scenario, ordered, isDoubles) => {
+const reportedMillis = (game) => {
+  const at = game.reportedAt;
+  if (!at) return 0;
+  return typeof at.toMillis === "function" ? at.toMillis() : new Date(at).getTime();
+};
+
+// Profiles after each approved game in the order the games were approved, from
+// the profiles they had before the tournament, the way approveCompetitionGame
+// applies them one by one: the game's XP goes onto the profile as it stands,
+// with streaks from the fixture-order replay of the games approved before it.
+// Every flow approves a game before it reports a later one, so report time
+// gives the approval order.
+export const expectedProfiles = async (tournament, testUser, scenario, ordered, isDoubles) => {
   const ids = [...new Set(tournament.tournamentParticipants.map((p) => p.userId))];
   const users = new Map();
   for (const userId of ids) {
     users.set(userId, { userId, profileDetail: clone(await baseProfileFor(userId, testUser, scenario)) });
   }
-  for (let k = 0; k < ordered.length; k++) {
-    const game = ordered[k];
+  const approvalOrder = [...ordered].sort((a, b) => reportedMillis(a) - reportedMillis(b));
+  for (let k = 0; k < approvalOrder.length; k++) {
+    const game = approvalOrder[k];
+    const approvedBefore = new Set(approvalOrder.slice(0, k).map((g) => g.gameId));
     const { updatedParticipants } = await recalculateParticipantsFromFixtures(
-      ordered.slice(0, k),
+      ordered.filter((g) => approvedBefore.has(g.gameId)),
       clone(tournament.tournamentParticipants),
       clone(tournament.tournamentTeams ?? []),
       isDoubles,
@@ -827,6 +969,9 @@ export const expectedState = async ({ testUser }) => {
         prizes,
         userGames,
         scores: Object.fromEntries(games.map((g) => [g.gameNumber, scoreFor(g, order).join("-")])),
+        openGames: games
+          .filter((g) => !isApproved(g) && sideIds(g.team1).length > 0 && sideIds(g.team2).length > 0)
+          .map((g) => g.gameNumber),
         displayScores: Object.fromEntries(
           games.map((g) => {
             const [a, b] = scoreFor(g, order);
@@ -843,14 +988,22 @@ export const expectedState = async ({ testUser }) => {
 export const checkPrizeNotifications = async ({ testUser }) => {
   const { tournament } = await loadActive(testUser);
   const fresh = (await getDoc(doc(db, COLLECTION_NAMES.tournaments, tournament.tournamentId))).data();
-  if (!fresh.prizesDistributed) throw new Error("prizesDistributed is still false");
+  if (!fresh.prizesDistributed) {
+    throw new Error(
+      `Prizes not paid: prizesDistributed=${String(fresh.prizesDistributed)}, fixturesGenerated=${String(fresh.fixturesGenerated)}, tournamentMode=${String(fresh.tournamentMode)}, complete=${isKnockout({ mode: fresh.tournamentMode }) ? isKnockoutComplete(fresh.fixtures ?? []) : "n/a"}, final round: ${JSON.stringify((fresh.fixtures ?? []).at(-1)?.games?.map((g) => [g.gameNumber, g.approvalStatus, g.isThirdPlacePlayoff ?? null]))}`,
+    );
+  }
   const state = JSON.parse((await expectedState({ testUser })).expected.state);
   const failures = [];
   for (const [userId, prize] of Object.entries(state.prizes)) {
-    const snap = await getDocs(collection(db, "users", userId, "notifications"));
+    const snap = await getDocs(
+      query(
+        collection(db, "users", userId, "notifications"),
+        where("data.tournamentId", "==", tournament.tournamentId),
+      ),
+    );
     const found = snap.docs.some(
       (d) =>
-        d.data().data?.tournamentId === tournament.tournamentId &&
         d.data().senderId === "system" &&
         String(d.data().message).includes(`won ${prize.xp} CP`),
     );
@@ -860,7 +1013,70 @@ export const checkPrizeNotifications = async ({ testUser }) => {
   return { winners: Object.keys(state.prizes).length };
 };
 
+// Every entrant's stored profile against the expected one, listing each
+// difference, so a failed profile check says which number is off and by how
+// much.
+export const checkProfiles = async ({ testUser }) => {
+  const state = JSON.parse((await expectedState({ testUser })).expected.state);
+  const failures = [];
+  for (const [userId, want] of Object.entries(state.profiles)) {
+    const p = (await getDoc(doc(db, "users", userId))).data()?.profileDetail ?? {};
+    const have = {
+      cp: cpText(p.XP ?? 0),
+      pd: pdText(p.totalPointDifference || 0),
+      wins: formatNumber(p.numberOfWins || 0),
+      losses: formatNumber(p.numberOfLosses || 0),
+      first: String(p.tournamentStats?.first ?? 0),
+      second: String(p.tournamentStats?.second ?? 0),
+      third: String(p.tournamentStats?.third ?? 0),
+      fourth: String(p.tournamentStats?.fourth ?? 0),
+    };
+    Object.keys(want).forEach((key) => {
+      if (want[key] !== have[key]) failures.push(`${userId} ${key}: has ${have[key]}, wants ${want[key]}`);
+    });
+  }
+  if (failures.length) throw new Error(failures.join("; "));
+  return { checked: Object.keys(state.profiles).length };
+};
+
 // ── Cleanup ─────────────────────────────────────────────────────────────────
+
+// An opponent sends a message from the tournament's Chat Room: the message,
+// then each other entrant's chat summary as ChatRoom's handleSend writes it.
+export const opponentSendsChatMessage = async ({ testUser, actions }) => {
+  const { scenario } = await getActiveScenario();
+  const tournament = await findScenarioTournament(scenario, testUser);
+  const sender = scenario.users[0];
+  const text = `Good luck, ${formatDisplayName(testUser)}!`;
+  await actions.sendChatMessage({
+    message: {
+      text,
+      createdAt: new Date(),
+      user: { _id: sender.userId, name: sender.username, avatar: "" },
+    },
+    competitionId: tournament.id,
+    competitionType: COMPETITION_TYPES.TOURNAMENT,
+  });
+  const lastMessage = `${sender.username}: ${text}`;
+  const recipients = (tournament.tournamentParticipants ?? [])
+    .map((p) => p.userId)
+    .filter((id) => id !== sender.userId);
+  await Promise.all(
+    recipients.map((id) =>
+      setDoc(doc(db, "users", id, "chats", tournament.id), {
+        type: "chat",
+        isRead: false,
+        messageCount: 1,
+        competitionId: tournament.id,
+        lastMessage,
+        createdAt: new Date(),
+        competitionName: tournament.tournamentName,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+      }),
+    ),
+  );
+  return { expected: { tournamentId: tournament.id, text } };
+};
 
 export const cleanupRoundRobinTestData = async ({ testUser }) => {
   const tournaments = await scenarioTournaments(testUser);

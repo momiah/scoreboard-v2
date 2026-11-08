@@ -22,7 +22,11 @@ import {
 import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import {
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -106,9 +110,11 @@ const UserProfile = () => {
     }
   };
 
-  useEffect(() => {
-    loadProfile();
-  }, [route.params?.userId, currentUser]);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [route.params?.userId, currentUser]),
+  );
 
   useEffect(() => {
     if (
@@ -302,9 +308,9 @@ const UserProfile = () => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
+                testID="profile-menu"
                 style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
                 onPress={() => navigation.navigate("ProfileMenu")}
-                testID="profile-menu-button"
                 accessibilityRole="button"
                 accessibilityLabel="Profile menu"
               >

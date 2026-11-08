@@ -121,6 +121,7 @@ const PlayerDetails = ({
           <ModalContent>
             <CloseIconContainer>
               <AntDesign
+                testID="player-details-close"
                 onPress={() => setShowPlayerDetails(false)}
                 name="close-circle"
                 size={26}

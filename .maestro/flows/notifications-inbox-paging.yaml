@@ -1,0 +1,60 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-notifications-seed-inbox"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-inboxNewest"
+- evalScript: ${output.newest = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-inboxUnreadBadge"
+- evalScript: ${output.badge = maestro.copiedText}
+
+# The unread badge counts every unread notification, not just the loaded page
+- tapOn:
+    id: "tab-competitions"
+- extendedWaitUntil:
+    visible:
+      id: "competitions-notifications"
+    timeout: 20000
+- assertVisible:
+    id: "competitions-notifications"
+    text: ".*${output.badge}.*"
+
+# The list opens on the newest notifications; the older invite loads on scroll
+- tapOn:
+    id: "competitions-notifications"
+- extendedWaitUntil:
+    visible: ".*${output.newest}(\\D.*)?"
+    timeout: 20000
+- assertNotVisible: ".*You've been invited to join Maestro Inbox Club.*"
+- scrollUntilVisible:
+    element:
+      text: ".*You've been invited to join Maestro Inbox Club.*"
+    direction: DOWN
+    timeout: 240000
+    speed: 30
+    visibilityPercentage: 50
+- assertVisible: ".*Maestro Inbox Club news 1(\\D.*)?"
+- runFlow: ../utilities/clubs/back.yaml
+
+# Pending invites finds the invite even though it is outside the newest 100
+- tapOn:
+    id: "tab-profile"
+- tapOn:
+    id: "profile-menu"
+- tapOn: "\\W*Pending Invites\\W*"
+- extendedWaitUntil:
+    visible: ".*You've been invited to join Maestro Inbox Club.*"
+    timeout: 20000
+- runFlow: ../utilities/clubs/back.yaml
+- runFlow: ../utilities/clubs/back.yaml
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-notifications-cleanup"

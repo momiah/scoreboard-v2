@@ -1,0 +1,17 @@
+# Shows the Competitions list. A tournament left open stays on the tab's
+# stack, so tapping the active tab again pops back to the list.
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-competitions"
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: "competitions-notifications"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+      - waitForAnimationToEnd
+- assertVisible:
+    id: "competitions-notifications"

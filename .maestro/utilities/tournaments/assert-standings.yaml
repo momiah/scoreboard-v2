@@ -1,5 +1,6 @@
 # Checks Player Performance (and Team Performance in doubles) against
-# output.exp: every entrant's wins, point difference and rank.
+# output.exp: every entrant's wins, point difference and rank, read from each
+# row's text (iOS exposes a tappable row as one element).
 appId: com.courtchamp
 ---
 - runFlow:
@@ -12,31 +13,49 @@ appId: com.courtchamp
       true: ${output.i < output.keys.length}
     commands:
       - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+      - runFlow:
+          when:
+            visible:
+              id: "player-details-close"
+          commands:
+            - tapOn:
+                id: "player-details-close"
       - scrollUntilVisible:
           element:
-            id: "performance-wins-${output.cur}"
+            id: "performance-row-${output.cur}"
       - extendedWaitUntil:
           visible:
-            id: "performance-wins-${output.cur}"
-            text: ${output.row.wins}
+            id: "performance-row-${output.cur}"
+            text: ".*Wins ${output.row.wins}( .*)?"
           timeout: 20000
       - assertVisible:
-          id: "performance-pd-${output.cur}"
-          text: ${output.row.pd}
+          id: "performance-row-${output.cur}"
+          text: ".*PD ${output.row.pd}( .*)?"
       - assertVisible:
-          id: "performance-rank-${output.cur}"
-          text: ${output.row.rank}
+          id: "performance-row-${output.cur}"
+          text: "${output.row.rank} .*"
       - evalScript: ${output.i = output.i + 1}
 - runFlow:
     when:
       true: ${output.exp.userTeamKey !== ''}
     commands:
-      - scrollUntilVisible:
-          element:
-            text: "Team Performance"
-          direction: RIGHT
-          centerElement: true
-          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "player-details-close"
+          commands:
+            - tapOn:
+                id: "player-details-close"
+      - repeat:
+          times: 4
+          while:
+            notVisible: "Team Performance"
+          commands:
+            - swipe:
+                from:
+                  id: "tournament-tabs"
+                direction: LEFT
+                duration: 400
       - tapOn: "Team Performance"
       - evalScript: ${output.keys = Object.keys(output.exp.standings).filter((k) => k.indexOf('-') !== -1); output.i = 0}
       - repeat:
@@ -44,20 +63,34 @@ appId: com.courtchamp
             true: ${output.i < output.keys.length}
           commands:
             - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+            - runFlow:
+                when:
+                  visible:
+                    id: "player-details-close"
+                commands:
+                  - tapOn:
+                      id: "player-details-close"
             - scrollUntilVisible:
                 element:
-                  id: "performance-wins-${output.cur}"
+                  id: "performance-row-${output.cur}"
             - extendedWaitUntil:
                 visible:
-                  id: "performance-wins-${output.cur}"
-                  text: ${output.row.wins}
+                  id: "performance-row-${output.cur}"
+                  text: ".*Wins ${output.row.wins}( .*)?"
                 timeout: 20000
             - assertVisible:
-                id: "performance-pd-${output.cur}"
-                text: ${output.row.pd}
+                id: "performance-row-${output.cur}"
+                text: ".*PD ${output.row.pd}( .*)?"
             - assertVisible:
-                id: "performance-rank-${output.cur}"
-                text: ${output.row.rank}
+                id: "performance-row-${output.cur}"
+                text: "${output.row.rank} .*"
             - evalScript: ${output.i = output.i + 1}
+- runFlow:
+    when:
+      visible:
+        id: "player-details-close"
+    commands:
+      - tapOn:
+          id: "player-details-close"
 - tapOn:
     id: "tab-home"

@@ -1,0 +1,55 @@
+# Knockout entrant counts: brackets have no byes, so Generate Brackets refuses
+# an odd count (3 singles players), a singles count that isn't a power of two
+# (6 players) and too few doubles teams (6 players, 3 teams).
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koOddSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn:
+    id: "empty-state-generate"
+- extendedWaitUntil:
+    visible: "Please ensure an even number of participants."
+    timeout: 10000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koSixSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn:
+    id: "empty-state-generate"
+- extendedWaitUntil:
+    visible: "Knockout tournaments need 4, 8, 16, 32, 64 players. You currently have 6."
+    timeout: 10000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koThreeTeams"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn:
+    id: "empty-state-generate"
+- extendedWaitUntil:
+    visible: "Knockout tournaments need 4, 8, 16, 32 teams. You currently have 3."
+    timeout: 10000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-home"

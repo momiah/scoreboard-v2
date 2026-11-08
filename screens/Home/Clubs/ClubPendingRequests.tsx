@@ -13,12 +13,16 @@ import { UserContext } from "../../../context/UserContext";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { notificationTypes } from "@shared";
 import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
+import { useNotificationsOfTypes } from "../../../hooks/useNotificationsOfTypes";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
 import { Notification } from "@shared";
 
 const ClubPendingRequests = () => {
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
+  const notifications = useNotificationsOfTypes(currentUser?.userId, [
+    notificationTypes.ACTION.JOIN_REQUEST.CLUB,
+  ]);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const route = useRoute();

@@ -21,10 +21,13 @@ appId: com.courtchamp
             text: "maestro-rr-check-prizes"
           timeout: 20000
       - tapOn:
+          id: "maestro-harness-filter-applied"
+      - waitForAnimationToEnd
+      - tapOn:
           id: "maestro-rr-check-prizes"
       - extendedWaitUntil:
           visible: "(Seeded|Seed failed)"
-          timeout: 60000
+          timeout: 180000
       - runFlow:
           when:
             visible: "Seeded"

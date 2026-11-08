@@ -1,0 +1,59 @@
+# Knockout, Doubles: as the singles flow, with Fixed Doubles teams (the test
+# user with f1). In the semi-final the opponent reports and the test user
+# approves from the notification; the test user's team loses it and plays the
+# 3rd/4th playoff, where the test user reports and an opponent approves. Team
+# Performance is checked with Player Performance, the report notification goes
+# to both opponents and never the reporter's partner, and the test user's
+# prize notification reads "Your team has placed 3rd". The Competitions screen
+# lands on the Brackets tab and glows the test user's next game: orange while
+# the semi-final awaits their approval, blue on the playoff.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koDoubles"
+- runFlow:
+    file: ../utilities/tournaments/create-tournament.yaml
+    env:
+      TYPE: "Doubles"
+- runFlow: ../utilities/tournaments/invite-fixture-users.yaml
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Fixed Doubles"
+      GENERATION: ""
+- runFlow:
+    file: ../utilities/tournaments/assert-bracket.yaml
+    env:
+      FILLED_ROUNDS: "1"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-opponent-reports-round-1"
+- runFlow: ../utilities/tournaments/assert-landing.yaml
+- assertTrue: ${output.landing.glow === '#FFA500' && output.landing.tab === '0'}
+- runFlow:
+    file: ../utilities/tournaments/play-round.yaml
+    env:
+      ROUND: "1"
+      OPPONENT_REPORTS: "already"
+- runFlow:
+    file: ../utilities/tournaments/assert-bracket.yaml
+    env:
+      FILLED_ROUNDS: "2"
+- assertTrue: ${!output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-landing.yaml
+- assertTrue: ${output.landing.glow === '#00A2FF' && output.landing.tab === '1'}
+- runFlow:
+    file: ../utilities/tournaments/play-round.yaml
+    env:
+      ROUND: "2"
+      OPPONENT_REPORTS: "false"
+- assertTrue: ${output.exp.complete}
+- assertTrue: ${output.exp.prizes[output.ids.user].place === '3rd'}
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
+- runFlow: ../utilities/tournaments/assert-prize-notification.yaml

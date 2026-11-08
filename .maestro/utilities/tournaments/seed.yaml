@@ -6,6 +6,12 @@ appId: com.courtchamp
     file: ../harness.yaml
     env:
       BUTTON: "maestro-rr-seed-${SCENARIO}"
+- tapOn:
+    id: "tab-home"
+- extendedWaitUntil:
+    visible:
+      id: "maestro-expected-ids"
+    timeout: 20000
 - copyTextFrom:
     id: "maestro-expected-ids"
 - evalScript: ${output.ids = JSON.parse(maestro.copiedText)}
@@ -13,8 +19,17 @@ appId: com.courtchamp
     id: "maestro-expected-tournamentName"
 - evalScript: ${output.tournamentName = maestro.copiedText}
 - copyTextFrom:
+    id: "maestro-expected-tournamentMode"
+- evalScript: ${output.tournamentMode = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-fixturesTab"
+- evalScript: ${output.fixturesTab = maestro.copiedText}
+- copyTextFrom:
     id: "maestro-expected-courtName"
 - evalScript: ${output.courtName = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-fullNames"
+- evalScript: ${output.fullNames = JSON.parse(maestro.copiedText)}
 - copyTextFrom:
     id: "maestro-expected-teams"
 - evalScript: ${output.teams = JSON.parse(maestro.copiedText)}
