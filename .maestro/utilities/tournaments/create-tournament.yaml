@@ -9,8 +9,19 @@ appId: com.courtchamp
     id: "add-competition-tournament"
 - tapOn: "Enter tournament name"
 - inputText: ${output.tournamentName}
-- hideKeyboard:
-    optional: true
+# hideKeyboard presses Back on Android, which leaves the app once the keyboard
+# has already closed, so Android taps the heading instead.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard:
+          optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Create Tournament"
 - tapOn: "Court Location"
 - tapOn: ".*Select or Add Court.*"
 - tapOn: "Search courts..."
