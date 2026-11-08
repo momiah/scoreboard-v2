@@ -1,0 +1,69 @@
+# The admin generates the fixtures from the empty Fixtures (or Brackets) tab
+# on two courts.
+# MODE is "" for singles, or the doubles mode; Fixed Doubles teams are picked
+# by display name from output.teams (a list of [name, name] pairs).
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: ${output.fixturesTab}
+- tapOn:
+    id: "empty-state-generate"
+- extendedWaitUntil:
+    notVisible: "Loading participants..."
+    timeout: 30000
+- runFlow:
+    when:
+      true: ${MODE !== ''}
+    commands:
+      - tapOn: ${MODE}
+- runFlow:
+    when:
+      true: ${MODE === 'Mixed Doubles'}
+    commands:
+      - tapOn: ${GENERATION}
+- tapOn:
+    id: "fixtures-setup-courts-plus"
+- runFlow:
+    when:
+      true: ${MODE === 'Fixed Doubles'}
+    commands:
+      - tapOn:
+          id: "fixtures-setup-create-teams"
+      - evalScript: ${output.ti = 0}
+      - repeat:
+          while:
+            true: ${output.ti < output.teams.length}
+          commands:
+            - scrollUntilVisible:
+                element:
+                  id: "fixtures-team-${output.ti + 1}-player2"
+                centerElement: true
+            - tapOn:
+                id: "fixtures-team-${output.ti + 1}-player1"
+            - tapOn: ${output.teams[output.ti][0]}
+            - tapOn:
+                id: "fixtures-team-${output.ti + 1}-player2"
+            - tapOn: ${output.teams[output.ti][1]}
+            - evalScript: ${output.ti = output.ti + 1}
+      - tapOn:
+          id: "fixtures-create-teams-generate"
+- runFlow:
+    when:
+      true: ${MODE !== 'Fixed Doubles'}
+    commands:
+      - tapOn:
+          id: "fixtures-setup-generate"
+- extendedWaitUntil:
+    visible:
+      id: "fixtures-confirm"
+    timeout: 30000
+- tapOn:
+    id: "fixtures-confirm"
+- extendedWaitUntil:
+    visible: "Tournament fixtures saved successfully!"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-home"

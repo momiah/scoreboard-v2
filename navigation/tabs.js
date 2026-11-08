@@ -312,7 +312,8 @@ const TabIcon = ({ name, color, size }) => {
 
 const Tabs = () => {
   const navigation = useNavigation();
-  const { chatSummaries, notifications, currentUser } = useContext(UserContext);
+  const { chatSummaries, notifications, unreadNotificationCount, currentUser } =
+    useContext(UserContext);
   const { clubNavigationId } = useContext(LeagueContext);
   // const [showAd, setShowAd] = useState(true);
 
@@ -320,9 +321,7 @@ const Tabs = () => {
     (chat) => chat.isRead === false,
   ).length;
 
-  const hasUnreadNotifications = notifications.some(
-    (notification) => notification.isRead === false,
-  );
+  const hasUnreadNotifications = unreadNotificationCount > 0;
 
   let initialRouteName = "Profile";
   if (!currentUser) {
@@ -381,11 +380,16 @@ const Tabs = () => {
           headerShown: false,
         })}
       >
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen
+          name="Home"
+          component={HomeStack}
+          options={{ tabBarButtonTestID: "tab-home" }}
+        />
         <Tab.Screen
           name="Competitions"
           component={CompetitionsStack}
           options={{
+            tabBarButtonTestID: "tab-competitions",
             tabBarBadge: hasUnreadNotifications ? "" : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",
@@ -403,6 +407,7 @@ const Tabs = () => {
           name="ChatsTab"
           component={ChatsStack}
           options={{
+            tabBarButtonTestID: "tab-chats",
             tabBarBadge: unreadChats > 0 ? unreadChats : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",
@@ -410,7 +415,11 @@ const Tabs = () => {
             },
           }}
         />
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileStack}
+          options={{ tabBarButtonTestID: "tab-profile" }}
+        />
       </Tab.Navigator>
 
       {/* {showAd && (

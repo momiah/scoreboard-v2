@@ -310,7 +310,11 @@ const GameApprovalModal = ({
                     >
                       <ButtonText>Decline</ButtonText>
                     </Button>
-                    <Button disabled={isDisabled} onPress={handleApproveGame}>
+                    <Button
+                      testID="game-approval-accept"
+                      disabled={isDisabled}
+                      onPress={handleApproveGame}
+                    >
                       {loadingDecision ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (

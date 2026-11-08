@@ -1,0 +1,60 @@
+# Maestro E2E Testing
+
+Maestro drives the real dev-client app on the iOS simulator (not Expo Go —
+the app relies on custom native modules for video, blur, and the date
+picker).
+
+Every feature or behaviour change ships with its Maestro coverage in the same
+PR: its flows, any seeds and harness section buttons with matching cleanup,
+and a line in the table below. A PR without them isn't ready to merge.
+
+## Flows
+
+| Feature | Flows | Seeds / harness section |
+|---|---|---|
+| Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
+| Clubs: create | `clubs-create`: the test user creates a club in `AddClubModal`; the club page shows the owner, one member and the creation in the feed; the club is in the Clubs list and on Home | `maestro/sections/clubs.tsx` (`maestro-clubs-reset`, `maestro-clubs-cleanup`), `maestro/seeds/clubs/seedClubs.ts` |
+| Clubs: invites and join requests | `clubs-invite-and-requests`: the test user invites two fixture users from `InvitePlayer`; one accepts, one declines (no invite left pending); two fixture users request to join and the owner accepts one and declines the other in `ClubPendingRequests` (handled requests leave the list); member count and the feed's joined events follow | `maestro-clubs-seed-owned-empty`, `maestro-clubs-respond-and-request` (fixture users act through `acceptClubInvite`, `declineClubInvite`, `requestToJoinClub`) |
+| Clubs: roles and settings | `clubs-roles-and-settings`: the owner sees every settings action; assigns, revokes and re-assigns an admin; removes a member with a reason (exactly one removal notice); edits the description, which shows on Summary | `maestro-clubs-seed-owned-members`, `maestro-clubs-count-nia-removal-notices` |
+| Clubs: joining as a member | `clubs-join-as-user`: a non-member sees no admin controls and requests to join; the fixture owner accepts through `acceptClubJoinRequest`; the test user is a participant, still without admin controls, and the joined event is in the feed | `maestro-clubs-seed-fixture-club`, `maestro-clubs-olive-accepts-test-user` |
+| Clubs: delete | `clubs-delete`: a wrong password keeps the club; the right one deletes it, returns Home, and the club is gone from Home and the Clubs list | `maestro-clubs-seed-owned-members` |
+| Clubs: competition won | `clubs-competition-won`: a round-robin tournament inside the test user's club (seeded with the round-robin seeder's `clubId` option; its entrants join the club by invite) shows in the club's Tournaments tab and its creation in the feed; fixture users play it to completion; the club feed then shows the winner the deployed prize function wrote (`writeClubCompetitionWon`), with the name and tournament computed by the seed from the shared prize helpers | `maestro-clubs-seed-tournament`, `maestro-clubs-play-tournament` |
+| Round-robin tournaments (singles and doubles) | `tournament-rr-report-approve-*` (create Private, invite, fixture users accept, generate on two courts, each round: test user reports and the opponent approves, or the opponent reports and the test user approves from the notification; report notification only to opponents; Player/Team Performance and every entrant's global profile exact after each round; completion, prize notification, prize CP and placement on profiles), `tournament-rr-bulk-publish-*` (Bulk Publish Fixtures, then the same checks), `tournament-rr-replay-*` (reverse-order approvals still give the fixture-order replay; the seed's finishing order makes the result logs differ by approval order, which Jest checks for both scenarios), `tournament-rr-fixture-fairness-*` (every pair once, even sit-outs and courts), `tournament-rr-team-selection-doubles` (Random, Balanced, Fixed teams), `tournament-rr-delete-regenerate-*` (delete and regenerate from the empty tab, inviting blocked after generation, delete refused once a game is approved), `tournament-rr-member-view-*` (member sees the organiser message, no Generate Fixtures), `tournament-rr-odd-entrants` (odd singles refused; three doubles teams with one sit-out each, played to completion in reverse order: standings, the 0-win team unplaced, prizes, and profiles whose game CP follows the approval order, as `approveCompetitionGame` applies it) | `maestro/sections/tournaments.tsx`, `maestro/seeds/tournaments/roundRobin.js` (scenarios, fixture users `maestrorrs*` / `maestrorrd*`, test user profile snapshot restored by cleanup), `maestro/seeds/competitions/fixtureActions.ts` |
+| Knockout tournaments (singles and doubles) | `tournament-ko-report-approve-*` (create a Private knockout, invite, fixture users accept, generate the brackets on two courts; semi-finals then the final and 3rd/4th playoff, each round with the test user reporting and the opponent approving or the opponent reporting and the test user approving from the notification; report notification only to opponents; the stored bracket is fully advanced, winners in the final and losers in the playoff, and the test user's next game shows on the Brackets tab; Player/Team Performance and every entrant's global profile exact after each round; completion, prize notification ("You have placed 1st", "Your team has placed 3rd"), prize CP and placement on profiles), `tournament-ko-bulk-publish-*` (Bulk Publish Brackets one round at a time, only games with both sides known, then the same checks), `tournament-ko-gates` (admin sees Generate Brackets, inviting blocked once generated), `tournament-ko-member-view` (member sees the organiser message, no Generate Brackets, no menu), `tournament-ko-invalid-entrants` (no byes: odd count, 6 singles players and 3 doubles teams refused) | `maestro/sections/tournaments.tsx` (`maestro-rr-check-bracket`), `maestro/seeds/tournaments/roundRobin.js` (`ko*` scenarios: `mode: "Knockout"`, `userFirst` finishing order, `checkBracket`, `openGames`) |
+| Chats list | `chats-tournament-chat`: an opponent sends a message in the tournament's Chat Room; the Chats tab shows the tournament's name (not "Unknown League"), the message and an unread count, and tapping the row opens that tournament on its Chat Room and marks the chat read. The Chats screen, `helpers/chatDestination.ts` and `ChatRoom` are the ladder line's, so ladder chats (MatchDetails, PlayoffMatchDetails) and their flows arrive with it | `maestro-rr-seed-chatSingles`, `maestro-rr-opponent-sends-chat`; cleanup deletes the test user's chat summary with the tournament |
+| Notifications inbox | `notifications-inbox-paging`: the fixture club owner invites the test user to a club, then 120 newer club notifications arrive. The Competitions badge counts every unread notification (`99+`). The Notifications list opens on the newest 100 and loads older pages on scroll until the invite appears. Pending Invites shows the invite straight away from its own query, though it is outside the newest 100 | `maestro/sections/notifications.tsx` (`maestro-notifications-seed-inbox`, `maestro-notifications-cleanup`), `maestro/seeds/notifications/seedNotificationInbox.ts`; cleanup is the club cleanup, which deletes the inbox club and the test user's notifications about it |
+
+## Install
+
+```bash
+curl -Ls "https://get.maestro.mobile.dev" | bash
+export PATH="$PATH":"$HOME/.maestro/bin"   # add to ~/.zshrc if not already there
+maestro --version
+```
+
+## Build the dev client
+
+Maestro needs a real build to launch, not the Expo Go sandbox:
+
+```bash
+npx expo run:ios
+```
+
+This installs a dev-client build on the booted simulator. Note the bundle
+id it builds under — the flows' `config.yaml` needs it as `appId`.
+
+## Run flows
+
+```bash
+maestro test .maestro/flows/<file>.yaml   # one flow
+maestro test .maestro/flows               # whole suite
+```
+
+See [.maestro/README.md](../../.maestro/README.md) for how login and seed
+data are wired into these flows.
+
+## CI (not set up yet)
+
+These flows can run headless on Maestro Cloud or a macOS CI runner. Either
+way the dev-client build (`npx expo run:ios`) is a prerequisite step before
+`maestro test` can launch the app — there's no CI wiring for this yet.

@@ -36,6 +36,8 @@ import {
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 
+const NOTIFICATIONS_PAGE_SIZE = 100;
+
 const UserContext = createContext();
 
 const UserProvider = ({ children }) => {
@@ -46,7 +48,12 @@ const UserProvider = ({ children }) => {
   const [authInitializing, setAuthInitializing] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
 
-  const [notifications, setNotifications] = useState([]); // Optional: Track notifications
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLimit, setNotificationLimit] = useState(
+    NOTIFICATIONS_PAGE_SIZE,
+  );
+  const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [chatSummaries, setChatSummaries] = useState([]);
 
   useEffect(() => {
@@ -104,60 +111,54 @@ const UserProvider = ({ children }) => {
   }, [currentUser?.userId]);
 
   useEffect(() => {
-    let unsubscribe;
-
-    const setupListener = async () => {
-      try {
-        // const userId = await AsyncStorage.getItem("userId");
-        const userUid = currentUser?.userId;
-
-        if (!currentUser) {
-          return;
-        }
-
-        // Create a reference to the user's notifications collection
-        const notificationsRef = collection(
-          db,
-          "users",
-          userUid,
-          "notifications",
-        );
-
-        // Set up the snapshot listener
-        unsubscribe = onSnapshot(
-          notificationsRef,
-          (snapshot) => {
-            const notificationsData = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-
-            // Sort by createdAt timestamp (newest first)
-            notificationsData.sort(
-              (a, b) =>
-                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
-            );
-
-            setNotifications(notificationsData);
-          },
-          (error) => {
-            console.error("Error in notifications listener:", error);
-          },
-        );
-      } catch (error) {
-        console.error("Failed to set up notifications listener:", error);
-      }
-    };
-
-    setupListener();
-
-    // Clean up the listener when component unmounts
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+    setNotificationLimit(NOTIFICATIONS_PAGE_SIZE);
   }, [currentUser?.userId]);
+
+  useEffect(() => {
+    const userId = currentUser?.userId;
+    if (!userId) {
+      setNotifications([]);
+      setHasMoreNotifications(false);
+      return;
+    }
+    return onSnapshot(
+      query(
+        collection(db, "users", userId, "notifications"),
+        orderBy("createdAt", "desc"),
+        limitQuery(notificationLimit),
+      ),
+      (snapshot) => {
+        setNotifications(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setHasMoreNotifications(snapshot.size === notificationLimit);
+      },
+      (error) => console.error("Error in notifications listener:", error),
+    );
+  }, [currentUser?.userId, notificationLimit]);
+
+  useEffect(() => {
+    const userId = currentUser?.userId;
+    if (!userId) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+    return onSnapshot(
+      query(
+        collection(db, "users", userId, "notifications"),
+        where("isRead", "==", false),
+      ),
+      (snapshot) => setUnreadNotificationCount(snapshot.size),
+      (error) =>
+        console.error("Error in unread notifications listener:", error),
+    );
+  }, [currentUser?.userId]);
+
+  const loadMoreNotifications = useCallback(() => {
+    if (hasMoreNotifications) {
+      setNotificationLimit((current) =>
+        Math.max(current, notifications.length) + NOTIFICATIONS_PAGE_SIZE,
+      );
+    }
+  }, [hasMoreNotifications, notifications.length]);
 
   const Logout = async () => {
     try {
@@ -166,7 +167,7 @@ const UserProvider = ({ children }) => {
 
       await AsyncStorage.clear();
       setCurrentUser(null); // Clear current user state
-      setNotifications([]); // Clear notifications state
+      setNotifications([]);
 
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
       // handleShowPopup("Successfully logged out!");
@@ -226,11 +227,7 @@ const UserProvider = ({ children }) => {
         return "hide";
       }
 
-      // 1) Tournament owner
-      if (competitionData[`${competitionType}Owner`] === userId) {
-        return "owner";
-      }
-      // 2) Admin
+      // 2) Admin (the owner is always an admin)
       if (
         competitionData[`${competitionType}Admins`].some(
           (a) => a.userId === userId,
@@ -697,7 +694,10 @@ const UserProvider = ({ children }) => {
       return;
     }
     const notifRef = collection(db, "users", recipientId, "notifications");
-    await addDoc(notifRef, notification);
+    await addDoc(notifRef, {
+      ...notification,
+      createdAt: notification.createdAt ?? new Date(),
+    });
     console.log("✅ Notification saved to subcollection!");
   };
 
@@ -905,6 +905,9 @@ const UserProvider = ({ children }) => {
         saveNotification,
         sendPushNotification,
         notifications,
+        unreadNotificationCount,
+        hasMoreNotifications,
+        loadMoreNotifications,
         readNotification,
         chatSummaries,
         readChat,

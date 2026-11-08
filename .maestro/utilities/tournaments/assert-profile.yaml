@@ -1,0 +1,67 @@
+# Checks the global profile of USER (a key of output.ids) against output.exp:
+# CP, PD, wins, losses and tournament placements. The test user's comes from
+# the Profile tab; anyone else's from their row in Player Performance.
+appId: com.courtchamp
+---
+- evalScript: ${output.cur = output.ids[USER]; output.p = output.exp.profiles[output.cur]}
+- runFlow:
+    when:
+      true: ${USER === 'user'}
+    commands:
+      - tapOn:
+          id: "tab-profile"
+- runFlow:
+    when:
+      true: ${USER !== 'user'}
+    commands:
+      - runFlow:
+          file: open-tournament.yaml
+          env:
+            TAB: "Player Performance"
+      - scrollUntilVisible:
+          element:
+            id: "performance-row-${output.cur}"
+      - tapOn:
+          id: "performance-row-${output.cur}"
+      - tapOn: "(?i).*go to profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-cp"
+      text: ${output.p.cp}
+    timeout: 30000
+- assertVisible:
+    id: "profile-pd"
+    text: ${output.p.pd}
+- tapOn:
+    id: "profile-tab-Performance"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+- extendedWaitUntil:
+    visible:
+      id: "profile-stat-wins"
+      text: ${output.p.wins}
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "profile-stat-losses"
+      text: ${output.p.losses}
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "tournament-stats-first"
+    direction: UP
+- assertVisible:
+    id: "tournament-stats-first"
+    text: ${output.p.first}
+- assertVisible:
+    id: "tournament-stats-second"
+    text: ${output.p.second}
+- assertVisible:
+    id: "tournament-stats-third"
+    text: ${output.p.third}
+- assertVisible:
+    id: "tournament-stats-fourth"
+    text: ${output.p.fourth}
+- tapOn:
+    id: "tab-home"

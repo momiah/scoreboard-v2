@@ -10,13 +10,21 @@ import {
 } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
-import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
+import {
+  ACTION_TYPES,
+  getModalTypeForNotification,
+} from "../../../helpers/handleNotificationAction";
+import { useNotificationsOfTypes } from "../../../hooks/useNotificationsOfTypes";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
 import { Notification } from "@shared";
 
 const CompetitionPendingRequests = () => {
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
+  const notifications = useNotificationsOfTypes(
+    currentUser?.userId,
+    ACTION_TYPES.JOIN_REQUEST,
+  );
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const route = useRoute();

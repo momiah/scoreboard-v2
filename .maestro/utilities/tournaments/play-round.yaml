@@ -1,0 +1,57 @@
+# One round of a report-and-approve tournament. The test user reports their own
+# game (or, with OPPONENT_REPORTS true, approves the score their opponent
+# reported from the notification; "already" when the flow has had the opponent
+# report it), fixture users play the rest, then the standings and every
+# entrant's global profile are checked.
+appId: com.courtchamp
+---
+- runFlow: expect.yaml
+- runFlow:
+    when:
+      true: ${OPPONENT_REPORTS !== 'true' && OPPONENT_REPORTS !== 'already'}
+    commands:
+      - runFlow:
+          file: report-user-game.yaml
+          env:
+            ROUND: ${ROUND}
+      - runFlow:
+          file: ../harness.yaml
+          env:
+            BUTTON: "maestro-rr-check-report-notifications"
+      - runFlow:
+          file: ../harness.yaml
+          env:
+            BUTTON: "maestro-rr-approve-user-reports"
+- runFlow:
+    when:
+      true: ${OPPONENT_REPORTS === 'true'}
+    commands:
+      - runFlow:
+          file: ../harness.yaml
+          env:
+            BUTTON: "maestro-rr-opponent-reports-round-${ROUND}"
+- runFlow:
+    when:
+      true: ${OPPONENT_REPORTS === 'true' || OPPONENT_REPORTS === 'already'}
+    commands:
+      - runFlow:
+          file: ../harness.yaml
+          env:
+            BUTTON: "maestro-rr-check-report-notifications"
+      - runFlow: approve-from-notification.yaml
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-play-round-${ROUND}"
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-report-notifications"
+- runFlow: expect.yaml
+- assertTrue: ${output.exp.approved === Number(ROUND) * (output.exp.numberOfGames / output.exp.rounds)}
+- runFlow: assert-standings.yaml
+- runFlow:
+    when:
+      true: ${output.exp.complete}
+    file: wait-for-prizes.yaml
+- runFlow: assert-all-profiles.yaml

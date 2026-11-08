@@ -1,0 +1,24 @@
+# Round robin, singles: in a tournament a fixture user owns, the test user (a
+# member, not an admin) sees the empty Fixtures tab's organiser message and no
+# Generate Fixtures button.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "memberSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- assertVisible:
+    id: "empty-state-message"
+    text: "Please contact the tournament organizer to generate fixtures."
+- assertNotVisible:
+    id: "empty-state-generate"
+- assertNotVisible:
+    id: "tournament-menu"
+- tapOn:
+    id: "tab-home"

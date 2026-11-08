@@ -8,13 +8,21 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { UserContext } from "../../context/UserContext";
-import { getModalTypeForNotification } from "../../helpers/handleNotificationAction";
+import {
+  ACTION_TYPES,
+  getModalTypeForNotification,
+} from "../../helpers/handleNotificationAction";
+import { useNotificationsOfTypes } from "../../hooks/useNotificationsOfTypes";
 import NotificationRow from "../../components/Notification/NotificationRow";
 import InviteActionModal from "../../components/Modals/InviteActionModal";
 import { Notification } from "@shared";
 
 const UserPendingInvites = () => {
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
+  const notifications = useNotificationsOfTypes(
+    currentUser?.userId,
+    ACTION_TYPES.INVITE,
+  );
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   // ── Modal state mirrors the Notifications screen ──

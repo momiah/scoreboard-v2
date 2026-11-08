@@ -1,0 +1,5 @@
+# Workspace-level Maestro config (suite discovery/execution settings only —
+# appId and the onFlowStart login hook live in each flow file's own header;
+# Maestro doesn't support them here). See .maestro/README.md to run.
+flows:
+  - flows/*.yaml

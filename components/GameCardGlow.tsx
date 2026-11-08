@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Easing } from "react-native";
+import { Animated, Easing, View } from "react-native";
 import styled from "styled-components/native";
 
 interface GameGlowProps {
   glowAnim: Animated.Value;
   color?: string;
+  testID?: string;
 }
 
-const GameGlow: React.FC<GameGlowProps> = ({ glowAnim, color = "#FFA500" }) => {
+const GameGlow: React.FC<GameGlowProps> = ({
+  glowAnim,
+  color = "#FFA500",
+  testID,
+}) => {
   const rings = [
     { inset: 0, radius: 8, width: 6, alpha: 0.1 },
     { inset: 0, radius: 8, width: 5, alpha: 0.18 },
@@ -18,6 +23,14 @@ const GameGlow: React.FC<GameGlowProps> = ({ glowAnim, color = "#FFA500" }) => {
   ];
   return (
     <>
+      {testID && (
+        <View
+          testID={testID}
+          accessibilityLabel={color}
+          pointerEvents="none"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+      )}
       {rings.map((ring, index) => (
         <Ring
           key={index}

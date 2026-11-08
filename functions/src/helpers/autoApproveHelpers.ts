@@ -1,11 +1,11 @@
 // functions/helpers/autoApproveHelpers.ts
 import { Game } from "courtchamps-shared/types";
 import { notificationTypes } from "courtchamps-shared";
+import { LEAGUE_AUTO_APPROVE_HOURS } from "courtchamps-shared/helpers";
 import * as admin from "firebase-admin";
 import moment from "moment-timezone";
 
 const TIMEZONE = "Europe/London";
-const AUTO_APPROVE_AFTER_HOURS = 24;
 
 const isTimestampLike = (v: unknown): v is { toDate: () => Date } =>
   typeof (v as { toDate?: unknown })?.toDate === "function";
@@ -17,13 +17,7 @@ export const toMomentTimezone = (
   return moment.tz(value, TIMEZONE);
 };
 
-export const getGamePlayerIds = (game: Game): string[] =>
-  [
-    game.team1.player1?.userId,
-    game.team1.player2?.userId,
-    game.team2.player1?.userId,
-    game.team2.player2?.userId,
-  ].filter((id): id is string => !!id);
+export { getGamePlayerIds } from "courtchamps-shared/helpers";
 
 export const isDueForAutoApproval = (game: Game): boolean => {
   const gameCreatedAt = toMomentTimezone(game.createdAt);
@@ -33,7 +27,7 @@ export const isDueForAutoApproval = (game: Game): boolean => {
     .diff(gameCreatedAt, "hours", true);
   return (
     game.approvalStatus?.toLowerCase() === "pending" &&
-    hoursSinceCreation >= AUTO_APPROVE_AFTER_HOURS &&
+    hoursSinceCreation >= LEAGUE_AUTO_APPROVE_HOURS &&
     (game.numberOfDeclines || 0) === 0
   );
 };

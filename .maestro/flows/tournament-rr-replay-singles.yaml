@@ -1,0 +1,23 @@
+# Round robin, singles: every game is reported and approved in reverse fixture
+# order. Each final approval replays the approved games in fixture order, so
+# the stored standings (results logs and streaks included) are the fixture-
+# order replay, not the approval order, and Player/Team Performance show them.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "replaySingles"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-play-reverse"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-replay"
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-standings.yaml

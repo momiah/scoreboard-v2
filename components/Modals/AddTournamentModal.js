@@ -6,6 +6,7 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import SafeAreaView from "../../components/SafeAreaView";
 import { BlurView } from "expo-blur";
@@ -161,7 +162,7 @@ const AddTournamentModal = ({
 
     try {
       const adminData = await assignTournamentAdmin();
-      if (!adminData) return;
+      if (!adminData) throw new Error("Could not load your profile");
 
       let imageDownloadUrl = null;
       if (selectedImage) {
@@ -201,8 +202,9 @@ const AddTournamentModal = ({
         onSuccess(tournamentId);
       }
     } catch (err) {
-      console.error("Error creating league:", err);
+      console.error("Error creating tournament:", err);
       setTournamentCreationLoading(false);
+      Alert.alert("Couldn't create tournament", "Please try again.");
     }
   };
 

@@ -1,0 +1,35 @@
+# Knockout, Doubles: the admin publishes the bracket from Tournament Settings >
+# Bulk Publish Fixtures (titled Bulk Publish Brackets for a knockout), one round
+# at a time. Only games with both sides known can be scored. After the
+# semi-finals the standings and profiles match the app's helpers and the
+# winners and losers fill the final and the 3rd/4th playoff; publishing those
+# completes the tournament, the prize function pays the winners and the test
+# user sees their prize notification.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koBulkDoubles"
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.approved === 0}
+- assertTrue: ${output.exp.openGames.length === output.exp.numberOfGames / output.exp.rounds}
+- runFlow: ../utilities/tournaments/bulk-publish.yaml
+- runFlow:
+    file: ../utilities/tournaments/assert-bracket.yaml
+    env:
+      FILLED_ROUNDS: "2"
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${!output.exp.complete}
+- assertTrue: ${output.exp.approved === output.exp.numberOfGames / output.exp.rounds}
+- runFlow: ../utilities/tournaments/assert-standings.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
+- runFlow: ../utilities/tournaments/bulk-publish.yaml
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-standings.yaml
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
+- runFlow: ../utilities/tournaments/assert-prize-notification.yaml

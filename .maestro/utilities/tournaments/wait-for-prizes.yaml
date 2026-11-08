@@ -1,0 +1,46 @@
+# The prize function runs on the tournament update after the last approval.
+# Taps the prize check until every winner has their prize notification.
+appId: com.courtchamp
+---
+- evalScript: ${output.prizesPaid = false; output.tries = 0}
+- repeat:
+    while:
+      true: ${!output.prizesPaid && output.tries < 12}
+    commands:
+      - tapOn:
+          id: "tab-home"
+          optional: true
+      - tapOn:
+          id: "maestro-harness-filter"
+          point: 98%,50%
+      - eraseText: 120
+      - inputText: "maestro-rr-check-prizes"
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-harness-filter-applied"
+            text: "maestro-rr-check-prizes"
+          timeout: 20000
+      - tapOn:
+          id: "maestro-harness-filter-applied"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "maestro-rr-check-prizes"
+      - extendedWaitUntil:
+          visible: "(Seeded|Seed failed)"
+          timeout: 180000
+      - runFlow:
+          when:
+            visible: "Seeded"
+          commands:
+            - evalScript: ${output.prizesPaid = true}
+      - tapOn: "OK"
+      - evalScript: ${output.tries = output.tries + 1}
+      - runFlow:
+          when:
+            true: ${!output.prizesPaid}
+          commands:
+            - swipe:
+                start: 50%, 30%
+                end: 50%, 31%
+                duration: 5000
+- assertTrue: ${output.prizesPaid}

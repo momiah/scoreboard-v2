@@ -31,7 +31,7 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { generateKnockoutBrackets } from "../../helpers/Tournament/knockout";
+import { generateTournamentKnockoutBrackets } from "../../helpers/Tournament/knockout";
 import { generateInitialTeamStats } from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 
@@ -118,7 +118,7 @@ interface GenerateFixturesModalProps {
   generatedFixtures: Fixtures[] | null;
 }
 
-const extractPlayersWithXp = async (
+export const extractPlayersWithXp = async (
   players: ScoreboardProfile[],
   getUserById: (id: string) => Promise<UserProfile | null>,
 ): Promise<PlayerWithXP[]> => {
@@ -246,7 +246,7 @@ const GenerateFixturesModal = ({
           player1: player,
           player2: null,
         }));
-        const bracketResult = generateKnockoutBrackets({
+        const bracketResult = generateTournamentKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",
@@ -308,7 +308,7 @@ const GenerateFixturesModal = ({
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (tournamentMode === "Knockout") {
-        const bracketResult = generateKnockoutBrackets({
+        const bracketResult = generateTournamentKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",

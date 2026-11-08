@@ -25,13 +25,18 @@ const ProfilePerformance = ({ profile }) => {
       {
         statTitle: "Wins",
         stat: (
-          <AnimateNumber number={wins} fontSize={screenAdjustedStatFontSize} />
+          <AnimateNumber
+            testID="profile-stat-wins"
+            number={wins}
+            fontSize={screenAdjustedStatFontSize}
+          />
         ),
       },
       {
         statTitle: "Losses",
         stat: (
           <AnimateNumber
+            testID="profile-stat-losses"
             number={losses}
             fontSize={screenAdjustedStatFontSize}
           />

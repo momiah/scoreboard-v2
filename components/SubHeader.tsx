@@ -17,6 +17,7 @@ interface SubHeaderProps {
   navigationRoute?: string;
   paddingTop?: number;
   paddingBottom?: number;
+  iconTestID?: string;
 }
 
 const SubHeader = ({
@@ -28,6 +29,7 @@ const SubHeader = ({
   navigationRoute,
   paddingTop = 35,
   paddingBottom = 20,
+  iconTestID,
 }: SubHeaderProps) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
@@ -40,7 +42,7 @@ const SubHeader = ({
       <LeftContainer>
         <TitleText>{title}</TitleText>
         {showIcon && (
-          <TouchableOpacity onPress={onIconPress}>
+          <TouchableOpacity testID={iconTestID} onPress={onIconPress}>
             <Ionicons name={iconName} size={25} color={"white"} />
           </TouchableOpacity>
         )}

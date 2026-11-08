@@ -20,6 +20,7 @@ import PlayerPerformance from "../../../components/performance/Player/PlayerPerf
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
 import UserRoleTag from "../../../components/UserRoleTag";
+import { getCompetitionClosedReason } from "../../../helpers/competitionEntry";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
@@ -210,7 +211,12 @@ const Tournament = () => {
       case "Fixtures":
       case "Brackets":
         return tournamentById?.tournamentMode === "Knockout" ? (
-          <Brackets tournament={tournamentById} userRole={userRole} />
+          <Brackets
+            tournament={tournamentById}
+            userRole={userRole}
+            scrollToGameId={scrollToGameId}
+            glowColor={glowColor}
+          />
         ) : (
           <Fixtures
             tournament={tournamentById}
@@ -271,7 +277,7 @@ const Tournament = () => {
               />
               <TournamentDetailsContainer>
                 {userRole === "admin" && (
-                  <EditButton onPress={handleNavigate}>
+                  <EditButton testID="tournament-menu" onPress={handleNavigate}>
                     <Ionicons name="menu" size={25} color="white" />
                   </EditButton>
                 )}
@@ -345,6 +351,13 @@ const Tournament = () => {
                     onLoginPress={handleLogin}
                     onRequestJoinPress={handleRequestToJoin}
                     isJoining={isJoinRequestSending}
+                    closedReason={getCompetitionClosedReason({
+                      participantCount:
+                        tournamentById?.tournamentParticipants?.length ?? 0,
+                      maxPlayers: tournamentById?.maxPlayers,
+                      endDate: tournamentById?.endDate,
+                      fixturesGenerated,
+                    })}
                   />
                 </View>
               </TournamentDetailsContainer>
@@ -358,6 +371,7 @@ const Tournament = () => {
               style={{ bottom: -560 }}
             />
             <ScrollView
+              testID="tournament-tabs"
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 10 }}

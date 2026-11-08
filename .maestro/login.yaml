@@ -1,0 +1,53 @@
+appId: com.courtchamp
+---
+- launchApp:
+    clearState: false
+- tapOn:
+    text: "Not Now"
+    optional: true
+- runFlow:
+    when:
+      visible: ${MAESTRO_METRO_URL}
+    commands:
+      - tapOn: ${MAESTRO_METRO_URL}
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-unlock"
+    timeout: 60000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "maestro-harness-unlock"
+    commands:
+      - tapOn:
+          id: "home-sign-in-link"
+      - tapOn:
+          id: "login-email"
+      - inputText: ${MAESTRO_TEST_USER_EMAIL}
+      - tapOn: "Welcome back"
+      - tapOn:
+          id: "login-password"
+      - inputText: ${MAESTRO_TEST_USER_PASSWORD}
+      - tapOn: "Welcome back"
+      - tapOn:
+          id: "login-submit"
+      - extendedWaitUntil:
+          visible: "Not Now"
+          timeout: 10000
+          optional: true
+      - tapOn:
+          text: "Not Now"
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-harness-unlock"
+          timeout: 60000
+- tapOn:
+    id: "maestro-harness-unlock"
+    repeat: 5
+    delay: 150
+- extendedWaitUntil:
+    visible:
+      id: "maestro-cleanup-test-data"
+    timeout: 30000

@@ -10,12 +10,11 @@ import {
 import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 import { EmptyStateContainer } from "../EmptyStateContainer";
+import { knockoutEntrantError } from "../../../helpers/Tournament/knockout";
 import BracketTree from "./BracketTree";
 import { UserContext } from "../../../context/UserContext";
 import { Fixtures, Game, Tournament } from "@shared/types";
 import { COMPETITION_TYPES, isShellGame } from "@shared";
-
-const VALID_KNOCKOUT_COUNTS = [4, 8, 16, 32, 64];
 
 interface BracketsProps {
   tournament: Tournament & { tournamentId?: string };
@@ -51,13 +50,6 @@ const Brackets = ({
   const numberOfParticipants = tournament?.tournamentParticipants
     ? tournament.tournamentParticipants.length
     : 0;
-  // const numberOfParticipants = 32; // Hardcoded for testing purposes
-  const isEvenNumberOfParticipants = numberOfParticipants % 2 === 0;
-  const knockoutCount =
-    tournamentType === "Singles"
-      ? numberOfParticipants
-      : Math.floor(numberOfParticipants / 2);
-  const isValidKnockoutCount = VALID_KNOCKOUT_COUNTS.includes(knockoutCount);
 
   const emptyStateMessage =
     userRole === "admin"
@@ -65,15 +57,12 @@ const Brackets = ({
       : "Please contact the tournament organizer to generate the brackets.";
 
   const handleShowGenerateBrackets = () => {
-    if (!isEvenNumberOfParticipants) {
-      Alert.alert("Please ensure an even number of participants.");
-      return;
-    }
-    if (!isValidKnockoutCount) {
-      const unit = tournamentType === "Singles" ? "players" : "teams";
-      Alert.alert(
-        `Knockout tournaments need ${VALID_KNOCKOUT_COUNTS.join(", ")} ${unit}. You currently have ${knockoutCount}.`,
-      );
+    const entrantError = knockoutEntrantError(
+      tournamentType,
+      numberOfParticipants,
+    );
+    if (entrantError) {
+      Alert.alert(entrantError);
       return;
     }
     setShowGenerateFixturesModal(true);

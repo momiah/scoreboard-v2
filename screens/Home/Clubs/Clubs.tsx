@@ -185,6 +185,7 @@ const Clubs = () => {
           paddingBottom={0}
           title="Clubs"
           onIconPress={addClub}
+          iconTestID="clubs-add-club"
           showIcon
         />
         <View style={{ flexDirection: "row", alignItems: "center" }}>

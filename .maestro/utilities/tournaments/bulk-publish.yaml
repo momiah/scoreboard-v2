@@ -1,0 +1,62 @@
+# The admin opens Bulk Publish Fixtures, enters the score of every open game
+# (both sides known, not yet approved) from output.exp and submits them all.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: ${output.fixturesTab}
+- tapOn:
+    id: "tournament-menu"
+- tapOn: ".*Bulk Publish Fixtures.*"
+- extendedWaitUntil:
+    notVisible: "Loading fixtures..."
+    timeout: 30000
+- assertVisible: "${output.fixturesTab === 'Brackets' ? 'Bulk Publish Brackets' : 'Bulk Publish Fixtures'}"
+- evalScript: ${output.oi = 0}
+- repeat:
+    while:
+      true: ${output.oi < output.exp.openGames.length}
+    commands:
+      - evalScript: ${output.gn = output.exp.openGames[output.oi]}
+      - retry:
+          maxRetries: 2
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 45%
+                duration: 300
+            - waitForAnimationToEnd
+            - scrollUntilVisible:
+                element:
+                  id: "bulk-score-${output.gn}"
+                centerElement: true
+            - waitForAnimationToEnd
+            - tapOn:
+                id: "bulk-score-${output.gn}"
+            - inputText: ${output.exp.scores[output.gn].replace('-', '')}
+            - copyTextFrom:
+                id: "bulk-score-${output.gn}"
+            - assertTrue: ${maestro.copiedText == output.exp.scores[output.gn]}
+      - evalScript: ${output.oi = output.oi + 1}
+- swipe:
+    from:
+      id: "bulk-scroll"
+    direction: DOWN
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      id: "bulk-submit"
+    timeout: 10000
+- tapOn:
+    id: "bulk-submit"
+- extendedWaitUntil:
+    visible: "Submit ${output.exp.openGames.length} game results?"
+    timeout: 10000
+- tapOn: "Submit"
+- extendedWaitUntil:
+    visible: "Successfully submitted ${output.exp.openGames.length} game results!"
+    timeout: 60000
+- tapOn: "Close"
+- tapOn:
+    id: "tab-home"

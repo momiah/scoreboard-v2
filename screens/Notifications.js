@@ -22,7 +22,12 @@ import {
 } from "../helpers/handleNotificationAction";
 
 const Notifications = () => {
-  const { currentUser, notifications } = useContext(UserContext);
+  const {
+    currentUser,
+    notifications,
+    hasMoreNotifications,
+    loadMoreNotifications,
+  } = useContext(UserContext);
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
 
@@ -118,6 +123,7 @@ const Notifications = () => {
         <Header>Notifications</Header>
       </HeaderRow>
       <FlatList
+        testID="notifications-list"
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id.toString()}
@@ -125,6 +131,17 @@ const Notifications = () => {
         maxToRenderPerBatch={10}
         windowSize={10}
         removeClippedSubviews={true}
+        onEndReached={loadMoreNotifications}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          hasMoreNotifications ? (
+            <ActivityIndicator
+              testID="notifications-loading-more"
+              color="#fff"
+              style={{ marginVertical: 20 }}
+            />
+          ) : null
+        }
       />
 
       {modals.welcome && (

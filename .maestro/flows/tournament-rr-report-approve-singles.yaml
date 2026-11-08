@@ -1,0 +1,51 @@
+# Round robin, Singles: the test user creates a Private tournament, invites the
+# fixture users (who accept), generates the fixtures on two courts and plays
+# every round. Each round the test user reports their game and the opponent
+# approves it (round 2: the opponent reports and the test user approves from
+# the notification); fixture users play the rest. After every round the
+# standings, Team Performance and every entrant's global profile match the
+# numbers the app's own helpers give. The last approval completes the
+# tournament: the prize function notifies the winners and their profiles carry
+# the prize CP and the placement.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "singles"
+- runFlow:
+    file: ../utilities/tournaments/create-tournament.yaml
+    env:
+      TYPE: "Singles"
+- runFlow: ../utilities/tournaments/invite-fixture-users.yaml
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: ""
+      GENERATION: ""
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-fairness"
+- runFlow:
+    file: ../utilities/tournaments/play-round.yaml
+    env:
+      ROUND: "1"
+      OPPONENT_REPORTS: "false"
+- runFlow:
+    file: ../utilities/tournaments/play-round.yaml
+    env:
+      ROUND: "2"
+      OPPONENT_REPORTS: "true"
+- assertTrue: ${!output.exp.complete}
+- runFlow:
+    file: ../utilities/tournaments/play-round.yaml
+    env:
+      ROUND: "3"
+      OPPONENT_REPORTS: "false"
+- assertTrue: ${output.exp.complete}
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
+- runFlow: ../utilities/tournaments/assert-prize-notification.yaml
