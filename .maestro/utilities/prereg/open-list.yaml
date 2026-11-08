@@ -1,0 +1,12 @@
+appId: com.courtchamp
+---
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- tapOn:
+    id: "ladder-pre-registration-banner"
+- extendedWaitUntil:
+    visible: "Ladders"
+    timeout: 15000
+- tapOn: ${TAB}

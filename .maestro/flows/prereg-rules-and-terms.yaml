@@ -1,0 +1,48 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 13b. The sign-up screen's Rules and Terms links open their screens and Back returns.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Cash"
+      ID: "maestro-prereg-cash-singles"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-rules"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "ladder-pre-registration-rules"
+- extendedWaitUntil:
+    visible: "Ladder Rules"
+    timeout: 10000
+- tapOn:
+    id: "ladder-rules-back"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-terms"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "ladder-pre-registration-terms"
+- extendedWaitUntil:
+    visible: "Terms & Conditions"
+    timeout: 10000
+- tapOn:
+    id: "ladder-terms-back"
+- assertVisible:
+    id: "ladder-pre-registration-terms"
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- tapOn: ".*Read the full rules.*"
+- extendedWaitUntil:
+    visible: "Ladder Rules"
+    timeout: 10000
+- tapOn:
+    id: "ladder-rules-back"
+- assertVisible: "Winning the Final"

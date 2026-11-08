@@ -10,16 +10,22 @@ appId: com.courtchamp
           start: 50%, 25%
           end: 50%, 85%
           duration: 300
-- tapOn:
-    id: "maestro-harness-filter"
-    point: 98%,50%
-- eraseText: 120
-- inputText: ${BUTTON}
-- extendedWaitUntil:
-    visible:
-      id: "maestro-harness-filter-applied"
-      text: ${BUTTON}
-    timeout: 20000
+# The filter clears itself on focus; when that lands after the typing it wipes
+# the text, so type again until the filter applies.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "maestro-harness-filter"
+          point: 98%,50%
+      - waitForAnimationToEnd
+      - eraseText: 120
+      - inputText: ${BUTTON}
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-harness-filter-applied"
+            text: ${BUTTON}
+          timeout: 8000
 - tapOn:
     id: "maestro-harness-filter-applied"
 - waitForAnimationToEnd

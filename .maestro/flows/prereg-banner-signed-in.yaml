@@ -1,0 +1,52 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 2. Signed in and not registered: "Pre-registration open" / "Pre-register free". Once registered: "You're pre-registered" / "See your ladders".
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-only-fixtures"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Pre-registration open"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Pre-register free"
+- runFlow:
+    file: ../utilities/prereg/refute-banner.yaml
+    env:
+      TEXT: "You're pre-registered"
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-only-fixtures-registered"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "You're pre-registered"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "See your ladders"
+- runFlow:
+    file: ../utilities/prereg/refute-banner.yaml
+    env:
+      TEXT: "Pre-register free"
+- tapOn:
+    id: "ladder-pre-registration-banner"
+- extendedWaitUntil:
+    visible: "Ladders"
+    timeout: 15000

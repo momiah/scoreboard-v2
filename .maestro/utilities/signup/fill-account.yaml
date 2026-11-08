@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+# On a fresh account step: shows the passwords, fills EMAIL / PASSWORD / CONFIRM and taps away.
+- tapOn:
+    id: "signup-account-password-toggle"
+- tapOn:
+    id: "signup-account-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "signup-account-password"
+- inputText: ${PASSWORD}
+- tapOn:
+    id: "signup-account-confirm"
+- inputText: ${CONFIRM}
+- tapOn: "One account for every game that counts\\."

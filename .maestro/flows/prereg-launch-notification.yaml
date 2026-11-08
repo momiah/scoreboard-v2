@@ -1,0 +1,22 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 18. Launch: a ladder created for a pre-registration whose registration has opened
+# notifies the registered test user on the next run of the scheduled
+# processLadderPreRegistrationLaunches (every 15 minutes, or force-run its Cloud
+# Scheduler job). Slow: not part of the per-PR set.
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-seed-prereg-launch"
+- evalScript: ${output.launched = false; output.tries = 0}
+- repeat:
+    while:
+      true: ${!output.launched && output.tries < 18}
+    commands:
+      - evalScript: ${output.tries = output.tries + 1}
+      - runFlow: ../utilities/prereg/poll-launch.yaml
+- assertTrue: ${output.launched}
+- tapOn:
+    id: "tab-home"

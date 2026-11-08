@@ -429,6 +429,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       </TopBar>
       <TouchableOpacity
         onPress={onClose}
+        testID="how-to-play-close"
+        accessibilityRole="button"
+        accessibilityLabel="Close How to Play"
         style={{
           alignSelf: "flex-end",
           position: "absolute",

@@ -45,6 +45,13 @@ const registrantsRef = (preRegistrationId: string) =>
 const registrantRef = (preRegistrationId: string, userId: string) =>
   doc(registrantsRef(preRegistrationId), userId);
 
+// The user's own join or leave reaches the registrants listener from the
+// local cache before the server has it, so a count taken then is one out.
+// The write's promise resolves once the server has it: recount at that point.
+const registrantWriteListeners = new Map<string, Set<() => void>>();
+const registrantsWritten = (preRegistrationId: string) =>
+  registrantWriteListeners.get(preRegistrationId)?.forEach((recount) => recount());
+
 export const useLadderPreRegistrations =
   (): UseLadderPreRegistrationsReturn => {
     const { currentUser } = useContext(UserContext) as {
@@ -121,6 +128,7 @@ export const useLadderPreRegistrations =
           createdAt: serverTimestamp(),
           notifiedAt: null,
         });
+        registrantsWritten(preRegistrationId);
       },
       [userId, username, profileImage],
     );
@@ -129,6 +137,7 @@ export const useLadderPreRegistrations =
       async (preRegistrationId: string) => {
         if (!userId) return;
         await deleteDoc(registrantRef(preRegistrationId, userId));
+        registrantsWritten(preRegistrationId);
       },
       [userId],
     );
@@ -157,7 +166,21 @@ export const useLadderPreRegistrants = (
     if (!preRegistrationId) return;
 
     const registrantsQuery = registrantsRef(preRegistrationId);
-    return onSnapshot(
+    let latestCount = 0;
+    const recount = () => {
+      const request = ++latestCount;
+      getCountFromServer(registrantsQuery)
+        .then((count) => {
+          if (request === latestCount) setTotal(count.data().count);
+        })
+        .catch((error) =>
+          console.error("Failed to count ladder pre-registrants:", error),
+        );
+    };
+    const listeners = registrantWriteListeners.get(preRegistrationId) ?? new Set();
+    listeners.add(recount);
+    registrantWriteListeners.set(preRegistrationId, listeners);
+    const unsubscribe = onSnapshot(
       query(registrantsQuery, orderBy("createdAt", "desc"), limit(previewSize)),
       (snapshot) => {
         setRegistrants(
@@ -165,14 +188,14 @@ export const useLadderPreRegistrants = (
             (registrant) => registrant.data() as LadderPreRegistrant,
           ),
         );
-        getCountFromServer(registrantsQuery)
-          .then((count) => setTotal(count.data().count))
-          .catch((error) =>
-            console.error("Failed to count ladder pre-registrants:", error),
-          );
+        recount();
       },
       (error) => console.error("Failed to load ladder pre-registrants:", error),
     );
+    return () => {
+      unsubscribe();
+      listeners.delete(recount);
+    };
   }, [preRegistrationId, previewSize]);
 
   return { registrants, total };

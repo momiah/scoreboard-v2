@@ -1,0 +1,17 @@
+appId: com.courtchamp
+---
+# From Home: Ladders list → tab ${TAB} → the ${ID} fixture's sign-up screen.
+- runFlow:
+    file: open-list.yaml
+    env:
+      TAB: ${TAB}
+- runFlow:
+    file: open-ticket.yaml
+    env:
+      ID: ${ID}
+- tapOn:
+    id: "ladder-pre-registration-option-${ID}"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+    timeout: 15000
