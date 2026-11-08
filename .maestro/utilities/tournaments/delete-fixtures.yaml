@@ -1,0 +1,39 @@
+# The owner deletes the fixtures from Tournament Settings. With BLOCKED true it
+# expects the app to refuse because a game has been approved.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- tapOn:
+    id: "tournament-menu"
+- tapOn: ".*Delete Fixtures.*"
+- runFlow:
+    when:
+      true: ${BLOCKED === 'true'}
+    commands:
+      - extendedWaitUntil:
+          visible: "Fixtures cannot be deleted as one or more games have already been reported."
+          timeout: 10000
+      - tapOn: "OK"
+      - back
+- runFlow:
+    when:
+      true: ${BLOCKED !== 'true'}
+    commands:
+      - extendedWaitUntil:
+          visible: ".*Are you sure you want to delete all fixtures for.*"
+          timeout: 10000
+      - tapOn: "Delete"
+      - extendedWaitUntil:
+          visible: "Fixtures have been deleted successfully."
+          timeout: 30000
+      - tapOn: "OK"
+      - tapOn: "Fixtures"
+      - extendedWaitUntil:
+          visible:
+            id: "empty-state-generate"
+          timeout: 30000
+- tapOn:
+    id: "tab-home"

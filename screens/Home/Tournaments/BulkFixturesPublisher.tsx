@@ -45,7 +45,7 @@ import {
 } from "../../../helpers/scoreInputHelpers";
 import { isShellGame } from "@shared";
 
-import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
+import { doc, increment, onSnapshot, writeBatch } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { getUserById } from "../../../devFunctions/firebaseFunctions";
 import { getPlayerUserIds } from "../../../context/LeagueContext";
@@ -137,6 +137,7 @@ const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
         </StaticScoreContainer>
       ) : (
         <SingleScoreInput
+          testID={`bulk-score-${game.gameNumber}`}
           keyboardType="number-pad"
           placeholder="00-00"
           placeholderTextColor="#1d3a5f"
@@ -576,20 +577,22 @@ const BulkFixturesPublisher = () => {
                       isDoubles,
                     });
 
-                await updateDoc(tournamentRef, {
+                // One batch: the tournament write can complete the tournament,
+                // and the prize function's XP increments must not be
+                // overwritten by these whole-profileDetail writes landing later.
+                const batch = writeBatch(db);
+                usersToUpdate.forEach((user) =>
+                  batch.update(doc(db, "users", user.userId), {
+                    profileDetail: user.profileDetail,
+                  }),
+                );
+                batch.update(tournamentRef, {
                   fixtures: updatedFixtures,
                   tournamentParticipants: updatedParticipants,
                   ...(isDoubles && { tournamentTeams: updatedTeams }),
                   gamesCompleted: increment(successfulGames.length),
                 });
-
-                await Promise.all(
-                  usersToUpdate.map((user) =>
-                    updateDoc(doc(db, "users", user.userId), {
-                      profileDetail: user.profileDetail,
-                    }),
-                  ),
-                );
+                await batch.commit();
               }
 
               // ── Feedback ──
@@ -693,7 +696,12 @@ const BulkFixturesPublisher = () => {
           <LoadingText>Loading fixtures...</LoadingText>
         </LoadingContainer>
       ) : (
-        <FixturesScrollContainer>
+        <FixturesScrollContainer
+          testID="bulk-scroll"
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           {Object.keys(gamesByRound).length > 0 ? (
             Object.entries(gamesByRound).map(([roundNumber, games]) => (
               <FixtureRoundContainer key={roundNumber}>
@@ -721,6 +729,7 @@ const BulkFixturesPublisher = () => {
 
       <SubmitButtons>
         <SubmitButton
+          testID="bulk-submit"
           onPress={handleSubmitGames}
           disabled={gamesReadyToSubmit.length === 0 || publishing}
           style={{

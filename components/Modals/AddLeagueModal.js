@@ -6,6 +6,7 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import SafeAreaView from "../../components/SafeAreaView";
 import { BlurView } from "expo-blur";
@@ -156,7 +157,7 @@ const AddLeagueModal = ({
 
     try {
       const adminData = await assignLeagueAdmin();
-      if (!adminData) return;
+      if (!adminData) throw new Error("Could not load your profile");
 
       let imageDownloadUrl = null;
       if (selectedImage) {
@@ -198,6 +199,7 @@ const AddLeagueModal = ({
     } catch (err) {
       console.error("Error creating league:", err);
       setLeagueCreationLoading(false);
+      Alert.alert("Couldn't create league", "Please try again.");
     }
   };
 

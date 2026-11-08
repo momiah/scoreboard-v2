@@ -87,7 +87,12 @@ export const BracketGameCard = ({
           : null;
 
   return (
-    <CardPressable shell={shell} disabled={shell} onPress={onPress}>
+    <CardPressable
+      testID={`fixture-game-${game.gameNumber}`}
+      shell={shell}
+      disabled={shell}
+      onPress={onPress}
+    >
       <CardHeader game={game} label={label} />
       <Divider />
       <BodyRow>

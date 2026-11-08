@@ -1,0 +1,65 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-fixture-club"
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Olive's Club"
+
+# A non-member sees the club but no admin controls
+- assertVisible: "2 MEMBERS"
+- assertNotVisible:
+    id: "club-settings-button"
+- assertNotVisible:
+    id: "club-invite-members"
+- assertNotVisible: "OWNER"
+- tapOn: "Feed"
+- assertVisible: ".*Ada joined the club.*"
+
+# The test user asks to join
+- tapOn: ".*REQUEST TO JOIN.*"
+- extendedWaitUntil:
+    visible: ".*REQUEST PENDING.*"
+    timeout: 20000
+
+# Olive accepts
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-olive-accepts-test-user"
+- copyTextFrom:
+    id: "maestro-expected-clubMembers"
+- assertTrue: ${maestro.copiedText == "3"}
+- copyTextFrom:
+    id: "maestro-expected-clubPendingRequests"
+- assertTrue: ${maestro.copiedText == "0"}
+- copyTextFrom:
+    id: "maestro-expected-clubJoinedMessage"
+
+# The test user is now a member: still no admin controls
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Olive's Club"
+- assertVisible: "3 MEMBERS"
+- assertVisible: ".*PARTICIPANT.*"
+- assertNotVisible:
+    id: "club-settings-button"
+- assertNotVisible:
+    id: "club-invite-members"
+- tapOn: "Feed"
+- assertVisible: ".*${maestro.copiedText}.*"
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

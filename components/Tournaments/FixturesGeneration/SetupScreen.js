@@ -87,6 +87,7 @@ export const SetupScreen = ({
             <CourtsText>{numberOfCourts}</CourtsText>
           </CourtsDisplay>
           <CourtsButton
+            testID="fixtures-setup-courts-plus"
             onPress={() =>
               setNumberOfCourts(Math.min(getMaxCourts(), numberOfCourts + 1))
             }
@@ -116,6 +117,7 @@ export const SetupScreen = ({
           <>
             {selectedMode === "Mixed Doubles" && (
               <GenerateButton
+                testID="fixtures-setup-generate"
                 disabled={
                   loadingParticipants ||
                   !(
@@ -144,6 +146,7 @@ export const SetupScreen = ({
 
             {selectedMode === "Fixed Doubles" && (
               <CreateButton
+                testID="fixtures-setup-create-teams"
                 disabled={
                   loadingParticipants ||
                   !(selectedMode === "Fixed Doubles" && numberOfCourts >= 1)
@@ -156,6 +159,7 @@ export const SetupScreen = ({
           </>
         ) : (
           <GenerateButton
+            testID="fixtures-setup-generate"
             disabled={loadingParticipants || numberOfCourts < 1 || isGenerating}
             onPress={onSinglesGenerate}
           >

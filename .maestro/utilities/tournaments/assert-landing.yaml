@@ -1,0 +1,33 @@
+# Opening the tournament from the Competitions screen lands on the Brackets tab
+# at the test user's next game (the first one an opponent reported, else the
+# first unplayed one) and glows it: orange for a game awaiting their approval,
+# blue for an unplayed one.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-bracket"
+- copyTextFrom:
+    id: "maestro-expected-landing"
+- evalScript: ${output.landing = JSON.parse(maestro.copiedText)}
+- assertTrue: ${output.landing !== null}
+- runFlow: competitions-list.yaml
+- scrollUntilVisible:
+    element:
+      id: "competition-item-${output.tournamentName}"
+    timeout: 30000
+    centerElement: true
+- tapOn:
+    id: "competition-item-${output.tournamentName}"
+- extendedWaitUntil:
+    visible:
+      id: "fixture-game-${output.landing.gameNumber}-glow"
+      text: ${output.landing.glow}
+    timeout: 10000
+- assertVisible:
+    id: "fixture-game-${output.landing.gameNumber}"
+- assertVisible:
+    id: "bracket-round-${output.landing.tab}"
+- tapOn:
+    id: "tab-home"

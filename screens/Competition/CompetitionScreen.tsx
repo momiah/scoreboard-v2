@@ -32,7 +32,6 @@ import {
   NormalizedCompetition,
   Game,
   UserProfile,
-  Notification,
 } from "@shared";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RankSuffix from "@/components/RankSuffix";
@@ -71,7 +70,7 @@ const COLLECTIONS: {
 
 const CompetitionsScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { currentUser, notifications, authInitializing } =
+  const { currentUser, unreadNotificationCount, authInitializing } =
     useContext(UserContext);
   const { leagueNavigationId, tournamentNavigationId } =
     useContext(LeagueContext);
@@ -210,9 +209,7 @@ const CompetitionsScreen = memo(() => {
     [navigation],
   );
 
-  const unreadNotifications = notifications.filter(
-    (notification: Notification) => notification.isRead === false,
-  ).length;
+  const unreadNotifications = unreadNotificationCount;
 
   const handleCompetitionPress = useCallback(
     (competition: CompetitionWithMeta) => {
@@ -234,7 +231,9 @@ const CompetitionsScreen = memo(() => {
         ? "Summary"
         : isLeague
           ? "Scoreboard"
-          : "Fixtures";
+          : competition.mode === "Knockout"
+            ? "Brackets"
+            : "Fixtures";
 
       if (isLeague) {
         const firstPending = (competition.games || []).find(
@@ -370,12 +369,15 @@ const CompetitionsHeader = memo<CompetitionsHeaderProps>(
   ({ unreadNotifications, onAddPress, onNotificationsPress }) => (
     <HeaderRow>
       <Header>
-        <AddButton onPress={onAddPress}>
+        <AddButton testID="competitions-add" onPress={onAddPress}>
           <Ionicons name="add" size={isSmallScreen ? 18 : 22} color="white" />
         </AddButton>
         <HeaderText>Competitions</HeaderText>
       </Header>
-      <NotificationButton onPress={onNotificationsPress}>
+      <NotificationButton
+        testID="competitions-notifications"
+        onPress={onNotificationsPress}
+      >
         <Ionicons name="notifications-outline" size={24} color="white" />
         {unreadNotifications > 0 && (
           <NotificationBadge>
@@ -500,13 +502,16 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
         game.team2?.player1?.userId === userId ||
         game.team2?.player2?.userId === userId;
 
-      return (competition.games || []).reduce((count, game) => {
+      const games = isLeague
+        ? competition.games || []
+        : (competition.fixtures || []).flatMap((fixture) => fixture.games || []);
+      return games.reduce((count, game) => {
         const isPending =
           game.approvalStatus === "pending" ||
           game.approvalStatus === "Pending";
         return isUserInGame(game) && isPending ? count + 1 : count;
       }, 0);
-    }, [competition.games, userId]);
+    }, [isLeague, competition.games, competition.fixtures, userId]);
 
     const activityMessage = useMemo(() => {
       if (competition.prizesDistributed) {
@@ -574,6 +579,7 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 
     return (
       <ListItemContainer
+        testID={`competition-item-${competition.name}`}
         onPress={onPress}
         style={{ opacity: competition.isExpired ? 0.5 : 1 }}
       >

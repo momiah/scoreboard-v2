@@ -3,29 +3,17 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 
 import {
+  buildTournamentPrizeAllocations,
   calculateTournamentPrizePool,
-  getKnockoutTopFour,
+  getTournamentPrizeWinnerIds,
   isKnockoutComplete,
-} from "courtchamps-shared/helpers";
-import {
-  sortPlayersByPlacement,
-  sortTeamsByPlacement,
 } from "courtchamps-shared/helpers";
 import { ScoreboardProfile, Tournament } from "courtchamps-shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { writeClubCompetitionWon } from "./helpers/clubFeed";
 import { notificationTypes } from "courtchamps-shared";
 
-const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
-const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;
 const PLACEMENT_SUFFIX = ["st", "nd", "rd", "th"] as const;
-
-interface PrizeAllocation {
-  userId: string;
-  prizeXP: number;
-  placementKey: (typeof PLACEMENT_KEYS)[number];
-  placementIndex: number;
-}
 
 const isRoundRobinComplete = (
   tournament: Tournament,
@@ -49,56 +37,6 @@ const isRoundRobinComplete = (
     return false;
   }
   return true;
-};
-
-// Returns userIds grouped by placement position. prizeWinners[0] = 1st place,
-// prizeWinners[1] = 2nd, etc. Each entry holds 1 userId (singles) or 2 (doubles).
-const getPrizeWinnerIds = (tournament: Tournament): string[][] => {
-  const isKnockout = tournament.tournamentMode === "Knockout";
-  const isDoubles = tournament.tournamentType === "Doubles";
-
-  if (isKnockout) {
-    const topFour = getKnockoutTopFour(tournament.fixtures);
-    return [
-      topFour.first,
-      topFour.second,
-      topFour.third,
-      topFour.fourth,
-    ].filter((position): position is string[] => position !== null);
-  }
-
-  if (isDoubles) {
-    return sortTeamsByPlacement(tournament.tournamentTeams)
-      .slice(0, 4)
-      .map((team) => team.teamKey.split("-"));
-  }
-
-  return sortPlayersByPlacement(tournament.tournamentParticipants)
-    .slice(0, 4)
-    .map((player) => [player.userId!]);
-};
-
-const buildPrizeAllocations = (
-  prizeWinners: string[][],
-  prizePool: number,
-  isDoubles: boolean,
-): PrizeAllocation[] => {
-  const allocations: PrizeAllocation[] = [];
-  prizeWinners.forEach((userIds, placementIndex) => {
-    const positionPrize = Math.floor(
-      prizePool * (DISTRIBUTION[placementIndex] || 0),
-    );
-    const prizeXP = isDoubles ? Math.floor(positionPrize / 2) : positionPrize;
-    userIds.forEach((userId) => {
-      allocations.push({
-        userId,
-        prizeXP,
-        placementKey: PLACEMENT_KEYS[placementIndex],
-        placementIndex,
-      });
-    });
-  });
-  return allocations;
 };
 
 type TournamentSideEffects = {
@@ -149,8 +87,8 @@ const distributeForTournament = async (
       tournament.tournamentType as "Singles" | "Doubles",
     );
 
-    const prizeWinners = getPrizeWinnerIds(tournament);
-    const allocations = buildPrizeAllocations(
+    const prizeWinners = getTournamentPrizeWinnerIds(tournament);
+    const allocations = buildTournamentPrizeAllocations(
       prizeWinners,
       prizePool,
       isDoubles,

@@ -22,7 +22,11 @@ import {
 import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import {
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -106,9 +110,11 @@ const UserProfile = () => {
     }
   };
 
-  useEffect(() => {
-    loadProfile();
-  }, [route.params?.userId, currentUser]);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [route.params?.userId, currentUser]),
+  );
 
   useEffect(() => {
     if (
@@ -302,6 +308,7 @@ const UserProfile = () => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
+                testID="profile-menu"
                 style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
                 onPress={() => navigation.navigate("ProfileMenu")}
               >
@@ -325,8 +332,9 @@ const UserProfile = () => {
                   </Pressable>
                   <DetailColumn>
                     <PlayerName>{profile?.username}</PlayerName>
-                    <DetailText>{profileXp ?? 0} CP</DetailText>
+                    <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
                     <DetailText
+                      testID="profile-pd"
                       style={{
                         fontWeight: "bold",
                         color: pointDifference < 0 ? "red" : "green",
@@ -356,8 +364,9 @@ const UserProfile = () => {
                 </Pressable>
                 <DetailColumn>
                   <PlayerName>{profile?.username}</PlayerName>
-                  <DetailText>{profileXp ?? 0} CP</DetailText>
+                  <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
                   <DetailText
+                    testID="profile-pd"
                     style={{
                       fontWeight: "bold",
                       color: pointDifference < 0 ? "red" : "green",
@@ -438,6 +447,7 @@ const UserProfile = () => {
               }}
               renderItem={({ item: tab }) => (
                 <Tab
+                  testID={`profile-tab-${tab.component}`}
                   onPress={() => setSelectedTab(tab.component)}
                   isSelected={selectedTab === tab.component}
                 >

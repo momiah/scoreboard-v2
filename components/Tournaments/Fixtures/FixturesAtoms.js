@@ -31,7 +31,7 @@ export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   </FixtureTeamContainer>
 );
 
-export const FixtureScoreDisplay = ({ game }) => {
+export const FixtureScoreDisplay = ({ game, testID }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
   const videoCount = game?.videoCount ?? 0;
@@ -47,15 +47,18 @@ export const FixtureScoreDisplay = ({ game }) => {
     <FixtureResultsContainer>
       <FixtureScoreContainer>
         {hasResult ? (
-          <FixtureScore>
+          <FixtureScore testID={testID && `${testID}-score`}>
             {game.team1.score} - {game.team2.score}
           </FixtureScore>
         ) : (
-          <FixtureScore>-</FixtureScore>
+          <FixtureScore testID={testID && `${testID}-score`}>-</FixtureScore>
         )}
       </FixtureScoreContainer>
       {statusLabel && (
-        <FixtureStatusLabel status={approvalStatus}>
+        <FixtureStatusLabel
+          status={approvalStatus}
+          testID={testID && `${testID}-status`}
+        >
           {statusLabel}
         </FixtureStatusLabel>
       )}
@@ -90,10 +93,12 @@ export const FixtureGameItem = ({
   glowAnim,
   isHighlighted,
   glowColor,
+  testID,
 }) => {
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
+        testID={testID}
         onPress={() => onPress(game)}
         style={{
           opacity:
@@ -110,7 +115,7 @@ export const FixtureGameItem = ({
             position="left"
             tournamentType={tournamentType}
           />
-          <FixtureScoreDisplay game={game} />
+          <FixtureScoreDisplay game={game} testID={testID} />
           <FixtureTeamColumn
             team={game?.team2}
             position="right"
@@ -118,7 +123,13 @@ export const FixtureGameItem = ({
           />
         </FixtureTeamVsContainer>
       </FixtureGameContainer>
-      {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
+      {isHighlighted && (
+        <GameGlow
+          glowAnim={glowAnim}
+          color={glowColor}
+          testID={`fixture-game-${game.gameNumber}-glow`}
+        />
+      )}
     </FixtureGameOuter>
   );
 };
@@ -199,6 +210,7 @@ export const FixturesDisplay = ({
           {round.games?.map((game) => (
             <FixtureGameItem
               key={game.gameId}
+              testID={`fixture-game-${game.gameNumber}`}
               game={game}
               tournamentType={tournamentType}
               onPress={handleGamePress}

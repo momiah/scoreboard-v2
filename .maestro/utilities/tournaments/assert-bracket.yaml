@@ -1,0 +1,52 @@
+# The stored bracket is fully advanced (winners in the next round, semi-final
+# losers in the 3rd/4th playoff) and FILLED_ROUNDS rounds have both sides of
+# every game. On the Brackets tab every filled card shows all its players and
+# its status.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-bracket"
+- copyTextFrom:
+    id: "maestro-expected-filledRounds"
+- assertTrue: ${maestro.copiedText === FILLED_ROUNDS}
+- copyTextFrom:
+    id: "maestro-expected-cards"
+- evalScript: ${output.cards = JSON.parse(maestro.copiedText); output.cardKeys = Object.keys(output.cards); output.ci = 0}
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- repeat:
+    while:
+      true: ${output.ci < output.cardKeys.length}
+    commands:
+      - evalScript: ${output.cn = output.cardKeys[output.ci]; output.card = output.cards[output.cn]; output.ni = 0}
+      - scrollUntilVisible:
+          element:
+            id: "bracket-round-${output.card.tab}"
+          direction: UP
+      - tapOn:
+          id: "bracket-round-${output.card.tab}"
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            id: "fixture-game-${output.cn}"
+          centerElement: true
+      - extendedWaitUntil:
+          visible:
+            id: "fixture-game-${output.cn}"
+            text: ".*${output.card.status}.*"
+          timeout: 20000
+      - repeat:
+          while:
+            true: ${output.ni < output.card.names.length}
+          commands:
+            - assertVisible:
+                id: "fixture-game-${output.cn}"
+                text: ".*${output.card.names[output.ni]}.*"
+            - evalScript: ${output.ni = output.ni + 1}
+      - evalScript: ${output.ci = output.ci + 1}
+- tapOn:
+    id: "tab-home"

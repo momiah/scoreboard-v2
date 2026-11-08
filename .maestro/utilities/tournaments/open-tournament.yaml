@@ -1,0 +1,35 @@
+# Opens output.tournamentName from the Competitions tab, the way a player
+# reaches their own private tournament, on the tab TAB.
+appId: com.courtchamp
+---
+- runFlow: competitions-list.yaml
+- scrollUntilVisible:
+    element:
+      id: "competition-item-${output.tournamentName}"
+    timeout: 30000
+    centerElement: true
+- repeat:
+    times: 3
+    while:
+      notVisible: "Chat Room"
+    commands:
+      - tapOn:
+          id: "competition-item-${output.tournamentName}"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Chat Room"
+          timeout: 10000
+          optional: true
+- assertVisible: "Chat Room"
+- repeat:
+    times: 4
+    while:
+      notVisible: ${TAB}
+    commands:
+      - swipe:
+          from:
+            id: "tournament-tabs"
+          direction: LEFT
+          duration: 400
+- tapOn: ${TAB}
+- waitForAnimationToEnd

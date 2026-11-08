@@ -1,0 +1,39 @@
+# Round robin, doubles: the admin generates fixtures for four entrants on two
+# courts. Every pair meets exactly once, nobody plays twice in a round,
+# sit-outs and courts are spread evenly, and the Fixtures tab shows every game.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "fairDoubles"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: "Mixed Doubles"
+      GENERATION: "Random"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-fairness"
+- runFlow: ../utilities/tournaments/expect.yaml
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- evalScript: ${output.gn = 1}
+- repeat:
+    while:
+      true: ${output.gn <= output.exp.numberOfGames}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "fixture-game-${output.gn}"
+      - assertVisible:
+          id: "fixture-game-${output.gn}"
+          text: "GAME ${output.gn} .*Scheduled.*"
+      - evalScript: ${output.gn = output.gn + 1}
+- tapOn:
+    id: "tab-home"

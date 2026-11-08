@@ -1,0 +1,18 @@
+# Every entrant's global profile: first the stored numbers against the expected
+# ones (a mismatch lists each difference), then each profile screen.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-profiles"
+- evalScript: ${output.profileKeys = Object.keys(output.ids); output.pi = 0}
+- repeat:
+    while:
+      true: ${output.pi < output.profileKeys.length}
+    commands:
+      - runFlow:
+          file: assert-profile.yaml
+          env:
+            USER: ${output.profileKeys[output.pi]}
+      - evalScript: ${output.pi = output.pi + 1}

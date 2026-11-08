@@ -17,6 +17,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../components/Tag";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../services/firebase.config";
+import { sendClubInvite } from "../helpers/clubs/sendClubInvite";
 import { collection, query, getDocs } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
 import {
@@ -145,7 +146,9 @@ const InvitePlayer = () => {
         setClubMembers(members);
         // Only the club-competition checkbox list pre-populates suggestions.
         // Club context searches all users, so its list starts empty.
-        if (isClubCompetition) setSuggestions(members);
+        if (isClubCompetition) {
+          setSuggestions(members.filter((m) => !hasUserConflict(m.userId)));
+        }
       } catch (e) {
         console.error("Error fetching club members:", e);
         setClubMembersError(true);
@@ -283,24 +286,12 @@ const InvitePlayer = () => {
       // Club context: send genuine club invites (invite/accept step).
       if (isClubContext) {
         for (const user of inviteUsers) {
-          const payload = {
-            ...notificationSchema,
-            createdAt: new Date(),
-            recipientId: user.userId,
+          await sendClubInvite({
+            club,
             senderId: currentUserId,
-            message: `You've been invited to join ${club.clubName}`,
-            type: notificationTypes.ACTION.INVITE.CLUB,
-            data: {
-              clubId: club.clubId,
-            },
-          };
-
-          await sendNotification(payload);
-          await updatePendingInvites(
-            club.clubId,
-            user.userId,
-            COLLECTION_NAMES.clubs as CollectionName,
-          );
+            recipientId: user.userId,
+            sendNotification,
+          });
         }
 
         handleShowPopup("Members invited successfully!");
@@ -398,12 +389,12 @@ const InvitePlayer = () => {
           },
         };
 
-        await sendNotification(payload);
-        await updatePendingInvites(
+        const invited = await updatePendingInvites(
           competition!.id,
           user.userId,
           collectionName as CollectionName,
         );
+        if (invited) await sendNotification(payload);
       }
 
       handleShowPopup("Players invited successfully!");
@@ -426,12 +417,15 @@ const InvitePlayer = () => {
 
   /** Club mode: filter already-loaded club members, no Firestore call */
   const handleSearchClubMembers = (value: string) => {
+    const addableMembers = clubMembers.filter(
+      (member) => !hasUserConflict(member.userId),
+    );
     if (!value.trim()) {
-      setSuggestions(clubMembers);
+      setSuggestions(addableMembers);
       return;
     }
     const term = value.toLowerCase().trim();
-    const filtered = clubMembers.filter((user) => {
+    const filtered = addableMembers.filter((user) => {
       const first = (user.firstName ?? "").toLowerCase();
       const last = (user.lastName ?? "").toLowerCase();
       const full = `${first} ${last}`;
@@ -470,7 +464,12 @@ const InvitePlayer = () => {
             (u) => u.userId === user.userId,
           );
 
-          return matchesSearch && !isCurrentUser && !alreadySelected;
+          return (
+            matchesSearch &&
+            !isCurrentUser &&
+            !alreadySelected &&
+            !hasUserConflict(user.userId)
+          );
         });
 
         setSuggestions(filteredUsers);
@@ -524,7 +523,7 @@ const InvitePlayer = () => {
   const handleShare = async () => {
     try {
       if (isClubContext) {
-        const url = `https://courtchamps.com/join/club/${club.clubId}`;
+        const url = `https://courtchamps.com/preview/club/${encodeURIComponent(club.clubId)}`;
         await Share.share({
           message: `Join my club on Court Champs! 🏸\n\n${url}`,
           url,
@@ -703,6 +702,7 @@ const InvitePlayer = () => {
 
         {/* Search input: always shown */}
         <Input
+          testID="invite-search-input"
           placeholder={
             isClubCompetition
               ? "Filter club members…"
@@ -762,6 +762,7 @@ const InvitePlayer = () => {
                   data={suggestions}
                   keyExtractor={(item) => item.userId}
                   scrollEnabled={false}
+                  keyboardShouldPersistTaps="handled"
                   renderItem={({ item }) => {
                     const isAlreadySelected = inviteUsers.some(
                       (u) => u.userId === item.userId,
@@ -825,13 +826,16 @@ const InvitePlayer = () => {
 
             {renderDisclaimer()}
 
-            {displayError ? <ErrorText>{displayError}</ErrorText> : null}
+            {displayError ? (
+              <ErrorText testID="invite-error">{displayError}</ErrorText>
+            ) : null}
           </ScrollView>
         </TouchableWithoutFeedback>
       )}
 
       <BottomBar>
         <InviteButton
+          testID="invite-send"
           onPress={handleSendInvite}
           disabled={isInviteDisabled}
           style={{ opacity: isInviteDisabled ? 0.6 : 1 }}

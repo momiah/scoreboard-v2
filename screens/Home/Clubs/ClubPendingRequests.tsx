@@ -3,20 +3,26 @@ import { FlatList } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  useFocusEffect,
   useNavigation,
   useRoute,
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 import { notificationTypes } from "@shared";
 import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
+import { useNotificationsOfTypes } from "../../../hooks/useNotificationsOfTypes";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
 import { Notification } from "@shared";
 
 const ClubPendingRequests = () => {
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
+  const notifications = useNotificationsOfTypes(currentUser?.userId, [
+    notificationTypes.ACTION.JOIN_REQUEST.CLUB,
+  ]);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const route = useRoute();
@@ -39,12 +45,36 @@ const ClubPendingRequests = () => {
   });
   const [joinRequestVisible, setJoinRequestVisible] = useState(false);
 
+  const { fetchClubById } = useContext(LeagueContext);
+  const [pendingSenderIds, setPendingSenderIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const loadPendingRequests = useCallback(async () => {
+    const club = await fetchClubById(clubId);
+    setPendingSenderIds(
+      new Set((club?.pendingRequests ?? []).map((request) => request.userId)),
+    );
+  }, [clubId, fetchClubById]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPendingRequests();
+    }, [loadPendingRequests]),
+  );
+
   const requestNotifications = useMemo(() => {
+    const seenSenders = new Set<string>();
     return (notifications || []).filter((item: Notification) => {
-      if (item.type !== notificationTypes.ACTION.JOIN_REQUEST.CLUB) return false;
-      return item.data?.clubId === clubId;
+      if (item.type !== notificationTypes.ACTION.JOIN_REQUEST.CLUB)
+        return false;
+      if (item.data?.clubId !== clubId) return false;
+      if (!item.senderId || !pendingSenderIds.has(item.senderId)) return false;
+      if (seenSenders.has(item.senderId)) return false;
+      seenSenders.add(item.senderId);
+      return true;
     });
-  }, [notifications, clubId]);
+  }, [notifications, clubId, pendingSenderIds]);
 
   const handleNotificationAction = useCallback((item: Notification) => {
     setModalState({
@@ -102,7 +132,10 @@ const ClubPendingRequests = () => {
       {joinRequestVisible && (
         <JoinRequestModal
           visible={joinRequestVisible}
-          onClose={() => setJoinRequestVisible(false)}
+          onClose={() => {
+            setJoinRequestVisible(false);
+            loadPendingRequests();
+          }}
           requestId={modalState.selectedCompetitionId || ""}
           requestType={modalState.notificationType ?? ""}
           notificationId={modalState.notificationId ?? ""}

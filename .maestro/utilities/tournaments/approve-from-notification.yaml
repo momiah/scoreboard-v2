@@ -1,0 +1,23 @@
+# The test user approves the score an opponent reported, from their
+# notification in the Competitions tab.
+appId: com.courtchamp
+---
+- runFlow: competitions-list.yaml
+- tapOn:
+    id: "competitions-notifications"
+- scrollUntilVisible:
+    element:
+      text: ".*has just reported a score in ${output.tournamentName} tournament.*"
+    timeout: 30000
+- tapOn:
+    text: ".*has just reported a score in ${output.tournamentName} tournament.*"
+- extendedWaitUntil:
+    visible:
+      id: "game-approval-accept"
+    timeout: 30000
+- tapOn:
+    id: "game-approval-accept"
+- waitForAnimationToEnd
+- back
+- tapOn:
+    id: "tab-home"

@@ -37,6 +37,7 @@ import {
   NormalizedCompetition,
   Game,
 } from "@shared/types";
+import { canRespondToGame } from "@shared/helpers";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { UserContext } from "../context/UserContext";
 import GameVideoCard from "../components/Feed/GameVideoCard";
@@ -128,7 +129,6 @@ const GameScreen: React.FC = () => {
   );
 
   // ── Approval eligibility ──────────────────────────────────────────────────
-  const isReporter = liveGame?.reporter === currentUser?.userId;
   const approvalLimitReached =
     liveGame?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
   const autoApproved = liveGame?.autoApproved ?? false;
@@ -136,7 +136,10 @@ const GameScreen: React.FC = () => {
     liveGame?.approvalStatus === "Pending" ||
     liveGame?.approvalStatus === "pending";
 
-  const showApproval = isParticipant && !isReporter && liveGame !== null;
+  const showApproval =
+    !!liveGame &&
+    !!currentUser?.userId &&
+    canRespondToGame(liveGame, currentUser.userId);
   const canApprove =
     showApproval && isPending && !approvalLimitReached && !autoApproved;
 
@@ -324,7 +327,7 @@ const GameScreen: React.FC = () => {
               </CompetitionName>
 
               {showApproval && (
-                <ApprovalContainer>
+                <ApprovalContainer testID="game-screen-approval">
                   <ApprovalLabel disabled={!canApprove}>
                     {approvalLabel}
                   </ApprovalLabel>
@@ -337,6 +340,7 @@ const GameScreen: React.FC = () => {
                       <Ionicons name="close" size={15} color="white" />
                     </IconButton>
                     <IconButton
+                      testID="game-screen-approve"
                       variant="accept"
                       disabled={!canApprove || loadingDecision}
                       onPress={handleApprove}
