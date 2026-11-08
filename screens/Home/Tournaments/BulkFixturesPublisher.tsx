@@ -315,13 +315,14 @@ const BulkFixturesPublisher = () => {
   const scrollOffsetY = useRef(0);
 
   // Android doesn't lift the focused score above the number pad, so scroll it
-  // up by however much the keyboard covers it.
+  // up by however much the keyboard covers it (once the keyboard padding has
+  // been laid out, or the scroll stops at the old end of the list).
   const revealFocusedScore = useCallback(() => {
     const keyboardTop = Keyboard.metrics()?.screenY;
     const input = TextInput.State.currentlyFocusedInput();
     if (Platform.OS !== "android" || !keyboardTop || !input) return;
     input.measureInWindow((_x, y, _width, height) => {
-      const overlap = y + height + 24 - keyboardTop;
+      const overlap = y + height + 80 - keyboardTop;
       if (overlap > 0) {
         scrollRef.current?.scrollTo({
           y: scrollOffsetY.current + overlap,
@@ -332,7 +333,9 @@ const BulkFixturesPublisher = () => {
   }, []);
 
   useEffect(() => {
-    if (keyboardHeight > 0) revealFocusedScore();
+    if (keyboardHeight === 0) return;
+    const timer = setTimeout(revealFocusedScore, 150);
+    return () => clearTimeout(timer);
   }, [keyboardHeight, revealFocusedScore]);
   const { tournamentId, tournamentById } =
     route.params as BulkFixturesPublisherParams;
