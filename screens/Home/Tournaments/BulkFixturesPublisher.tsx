@@ -48,6 +48,7 @@ import { doc, increment, onSnapshot, writeBatch } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { getUserById } from "../../../devFunctions/firebaseFunctions";
 import { getPlayerUserIds } from "../../../context/LeagueContext";
+import { useAndroidKeyboardHeight } from "../../../hooks/useAndroidKeyboardHeight";
 
 const { height: screenHeight } = Dimensions.get("window");
 const popupHeight = screenHeight * 0.3;
@@ -285,6 +286,7 @@ const applyRoundRobinUpdates = async ({
 const BulkFixturesPublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const keyboardHeight = useAndroidKeyboardHeight();
   const { tournamentId, tournamentById } =
     route.params as BulkFixturesPublisherParams;
   const { currentUser } = useContext(UserContext);
@@ -700,6 +702,7 @@ const BulkFixturesPublisher = () => {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{ paddingBottom: keyboardHeight }}
         >
           {Object.keys(gamesByRound).length > 0 ? (
             Object.entries(gamesByRound).map(([roundNumber, games]) => (
