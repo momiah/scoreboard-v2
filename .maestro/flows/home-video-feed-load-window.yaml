@@ -1,0 +1,28 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Home's Game Videos feed (live data) loads only the video on screen and its neighbours; a card further down stays idle until it is scrolled to, so the feed never buffers every video at once.
+- scrollUntilVisible:
+    element:
+      id: "game-video-loaded"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "game-video-idle"
+    direction: DOWN
+    speed: 20
+    visibilityPercentage: 5
+- assertVisible:
+    id: "game-video-loaded"
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          start: 50%, 70%
+          end: 50%, 35%
+          duration: 700
+      - waitForAnimationToEnd
+      - assertVisible:
+          id: "game-video-loaded"

@@ -35,6 +35,7 @@ interface GameVideoCardProps {
   currentUserId?: string;
   onVideoDeleted?: () => void;
   competitionPage?: boolean;
+  shouldLoad?: boolean;
 }
 
 const GameVideoCard: React.FC<GameVideoCardProps> = ({
@@ -50,6 +51,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   currentUserId,
   onVideoDeleted,
   competitionPage = false,
+  shouldLoad = true,
 }) => {
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -57,7 +59,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   const [fullscreenVisible, setFullscreenVisible] = useState(false);
   const [removedModalVisible, setRemovedModalVisible] = useState(false);
 
-  const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
+  const videoSource = shouldLoad && video?.videoUrl ? video.videoUrl : null;
+  const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
     p.muted = true;
   });
@@ -76,7 +79,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
     } else {
       player.pause();
     }
-  }, [isActive]);
+  }, [isActive, player]);
 
   const handleVideoPress = useCallback(() => {
     if (isPlaying) {
@@ -178,7 +181,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
       )}
 
       {/* ── Video ── */}
-      <VideoContainer>
+      <VideoContainer
+        testID={videoSource ? "game-video-loaded" : "game-video-idle"}
+      >
         <TouchableOpacity onPress={handleVideoPress} activeOpacity={1}>
           <StyledVideoView
             player={player}
