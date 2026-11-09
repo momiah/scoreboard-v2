@@ -20,6 +20,7 @@ import { UserContext } from "../../context/UserContext";
 import GameVideoCard from "../Feed/GameVideoCard";
 import { useLikeVideo } from "../../hooks/useLikeVideo";
 import LineTabs from "../LineTabs";
+import { isInVideoLoadWindow } from "../../helpers/videoLoadWindow";
 
 interface ProfileVideosProps {
   userId: string;
@@ -139,6 +140,10 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
     fetchVideos();
   }, [fetchVideos]);
 
+  const activeVideoIndex = videos.findIndex(
+    (v) => `${v.gameId}_${v.postedBy.userId}` === activeVideoId,
+  );
+
   const availableTabs = VIDEO_TABS(isOwnProfile, firstName);
 
   return (
@@ -185,8 +190,9 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
             viewabilityConfigCallbackPairs.current
           }
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <GameVideoCard
+              shouldLoad={isInVideoLoadWindow(index, activeVideoIndex)}
               profilePage={true}
               profileVideoTab={selectedVideoTab}
               currentUserId={currentUser?.userId}
