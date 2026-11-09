@@ -122,6 +122,7 @@ const SelectPlayer = memo<SelectPlayerProps>(
     return (
       <View>
         <PlayerSelectContainer
+          testID={`add-game-player-${team}-${index}`}
           onPress={toggleDropdown}
           style={borderStyle}
           hasBorder={borderType !== "none"}
