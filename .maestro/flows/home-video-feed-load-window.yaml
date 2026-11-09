@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Home's Game Videos feed (live data) loads only the active video and its neighbours. The feed list reports how many cards have a video loaded (home-video-feed-loaded-N): none before a video is on screen, and never more than three while scrolling, so the feed never buffers every video at once.
+- assertVisible:
+    id: "home-video-feed-loaded-0"
+- repeat:
+    times: 20
+    while:
+      notVisible:
+        id: "home-video-feed-loaded-[1-3]"
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 25%
+          duration: 700
+      - waitForAnimationToEnd
+- assertVisible:
+    id: "home-video-feed-loaded-[23]"
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 30%
+          duration: 700
+      - waitForAnimationToEnd
+      - assertVisible:
+          id: "home-video-feed-loaded-[23]"
+      - assertNotVisible:
+          id: "home-video-feed-loaded-([4-9]|[1-9][0-9]+)"

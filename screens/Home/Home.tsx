@@ -43,6 +43,7 @@ import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
+import { isInVideoLoadWindow } from "@/helpers/videoLoadWindow";
 import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
@@ -123,11 +124,24 @@ const Home = () => {
     initLikedVideos(likedByMap, currentUser.userId);
   }, [videos, currentUser]);
 
+  const activeVideoIndex = useMemo(
+    () => videos.findIndex((v) => v.gameId === activeVideoId),
+    [videos, activeVideoId],
+  );
+
+  const loadedVideoCount = useMemo(
+    () =>
+      videos.filter((_, index) => isInVideoLoadWindow(index, activeVideoIndex))
+        .length,
+    [videos, activeVideoIndex],
+  );
+
   const renderVideo = useCallback(
-    ({ item }: { item: GameVideo }) => (
+    ({ item, index }: { item: GameVideo; index: number }) => (
       <GameVideoCard
         video={item}
         isActive={item.gameId === activeVideoId && isScreenFocused}
+        shouldLoad={isInVideoLoadWindow(index, activeVideoIndex)}
         onLike={(docId) => handleLike(docId, currentUser?.userId ?? "")}
         isLiked={likedVideoIds.has(`${item.gameId}_${item.postedBy.userId}`)}
         initiallyLiked={
@@ -137,7 +151,14 @@ const Home = () => {
         currentUserId={currentUser?.userId}
       />
     ),
-    [activeVideoId, likedVideoIds, handleLike, isScreenFocused, currentUser],
+    [
+      activeVideoId,
+      activeVideoIndex,
+      likedVideoIds,
+      handleLike,
+      isScreenFocused,
+      currentUser,
+    ],
   );
 
   // ─── Home Data ───────────────────────────────────────────────────────────────
@@ -286,6 +307,7 @@ const Home = () => {
       }}
     >
       <FlatList
+        testID={`home-video-feed-loaded-${loadedVideoCount}`}
         data={videos}
         renderItem={renderVideo}
         keyExtractor={(item) => `${item.gameId}_${item.postedBy.userId}`}
