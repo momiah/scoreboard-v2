@@ -267,7 +267,7 @@ const League = () => {
 
               <LeagueDetailsContainer>
                 {userRole === "admin" && (
-                  <EditButton onPress={handleNavigate}>
+                  <EditButton testID="league-menu" onPress={handleNavigate}>
                     <Ionicons name="menu" size={25} color="white" />
                   </EditButton>
                 )}
@@ -355,6 +355,7 @@ const League = () => {
               style={{ bottom: -560 }}
             />
             <ScrollView
+              testID="league-tabs"
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 10 }}

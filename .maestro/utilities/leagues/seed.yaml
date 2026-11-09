@@ -1,0 +1,24 @@
+# Seeds a league scenario (SCENARIO, a key of LEAGUE_SCENARIOS) and keeps its
+# name in output.leagueName, its player ids in output.ids and the games the
+# admin will enter in output.games.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-league-seed-${SCENARIO}"
+- tapOn:
+    id: "tab-home"
+- extendedWaitUntil:
+    visible:
+      id: "maestro-expected-leagueName"
+    timeout: 20000
+- copyTextFrom:
+    id: "maestro-expected-leagueName"
+- evalScript: ${output.leagueName = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-ids"
+- evalScript: ${output.ids = JSON.parse(maestro.copiedText)}
+- copyTextFrom:
+    id: "maestro-expected-games"
+- evalScript: ${output.games = JSON.parse(maestro.copiedText)}

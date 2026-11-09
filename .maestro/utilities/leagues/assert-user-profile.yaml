@@ -1,0 +1,29 @@
+# The test user's global profile shows the CP, PD, wins and losses the app's
+# scoring gives for the league games (output.exp.userProfile).
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-cp"
+      text: ${output.exp.userProfile.cp}
+    timeout: 30000
+- assertVisible:
+    id: "profile-pd"
+    text: ${output.exp.userProfile.pd}
+- tapOn:
+    id: "profile-tab-Performance"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+- extendedWaitUntil:
+    visible:
+      id: "profile-stat-wins"
+      text: ${output.exp.userProfile.wins}
+    timeout: 20000
+- assertVisible:
+    id: "profile-stat-losses"
+    text: ${output.exp.userProfile.losses}
+- tapOn:
+    id: "tab-home"
