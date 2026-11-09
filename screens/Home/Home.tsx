@@ -129,6 +129,13 @@ const Home = () => {
     [videos, activeVideoId],
   );
 
+  const loadedVideoCount = useMemo(
+    () =>
+      videos.filter((_, index) => isInVideoLoadWindow(index, activeVideoIndex))
+        .length,
+    [videos, activeVideoIndex],
+  );
+
   const renderVideo = useCallback(
     ({ item, index }: { item: GameVideo; index: number }) => (
       <GameVideoCard
@@ -300,6 +307,7 @@ const Home = () => {
       }}
     >
       <FlatList
+        testID={`home-video-feed-loaded-${loadedVideoCount}`}
         data={videos}
         renderItem={renderVideo}
         keyExtractor={(item) => `${item.gameId}_${item.postedBy.userId}`}
