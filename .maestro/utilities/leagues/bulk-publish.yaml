@@ -1,7 +1,7 @@
 # The admin opens League Settings > Bulk Publish Games and enters every game in
-# output.games through the Add Game card, then publishes them all. On Android
-# the number pad stays open while Submit is tapped: the card must sit above it
-# with the score field and Submit reachable.
+# output.games through the Add Game card, then publishes them all. The number
+# pad has no return key, so it stays open while Submit is tapped: the card must
+# sit above it with the score field and Submit reachable.
 appId: com.courtchamp
 ---
 - runFlow:
@@ -10,7 +10,7 @@ appId: com.courtchamp
       TAB: "Scoreboard"
 - tapOn:
     id: "league-menu"
-- tapOn: "Bulk Publish Games"
+- tapOn: ".*Bulk Publish Games.*"
 - extendedWaitUntil:
     visible:
       id: "bulk-league-add-game"
@@ -61,11 +61,6 @@ appId: com.courtchamp
       - copyTextFrom:
           id: "add-game-score-input"
       - assertTrue: ${maestro.copiedText == output.g.score.slice(0, 2) + '-' + output.g.score.slice(2)}
-      - runFlow:
-          when:
-            platform: iOS
-          commands:
-            - hideKeyboard
       - tapOn:
           id: "add-game-submit"
       - extendedWaitUntil:
