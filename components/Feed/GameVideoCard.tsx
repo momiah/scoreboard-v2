@@ -19,6 +19,10 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const VIDEO_HEIGHT = screenWidth * (9 / 16);
 const CARD_HEIGHT = VIDEO_HEIGHT + 100;
+const VIDEO_BUFFER_OPTIONS = {
+  preferredForwardBufferDuration: 10,
+  maxBufferBytes: 8 * 1024 * 1024,
+};
 
 type ProfileVideoTab = "Uploaded" | "Saved" | "Videos of Me";
 
@@ -63,6 +67,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
     p.muted = true;
+    p.bufferOptions = VIDEO_BUFFER_OPTIONS;
   });
 
   const { isPlaying } = useEvent(player, "playingChange", {
