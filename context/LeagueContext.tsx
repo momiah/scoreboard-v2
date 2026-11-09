@@ -27,7 +27,6 @@ import {
   DocumentData,
 } from "firebase/firestore";
 import { Alert } from "react-native";
-import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 import { addPendingInvite } from "../helpers/addPendingInvite";
 import { LeagueContextType } from "./types/LeagueContextType";
@@ -1677,7 +1676,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         user: {
           _id: message.user._id,
           name: message.user.name,
-          avatar: message.user.avatar || ccDefaultImage,
+          avatar: message.user.avatar || ccImageEndpoint,
         },
       };
       await setDoc(messageRef, messageToSend);
