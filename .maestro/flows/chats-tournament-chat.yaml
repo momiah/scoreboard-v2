@@ -1,6 +1,8 @@
 # Chats list: an opponent messages the tournament's Chat Room. The Chats tab
 # lists it under the tournament's name (not "Unknown League") with the message
 # and an unread count, and the row opens that tournament on its Chat Room.
+# An older message with a numeric avatar (saved before avatars were always
+# URLs) renders with the default image instead of crashing Android.
 appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
@@ -19,6 +21,9 @@ onFlowStart:
 - copyTextFrom:
     id: "maestro-expected-text"
 - evalScript: ${output.chatText = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-legacyText"
+- evalScript: ${output.legacyText = maestro.copiedText}
 - tapOn:
     id: "tab-chats"
 - tapOn:
@@ -38,6 +43,7 @@ onFlowStart:
       id: "chat-room-input"
     timeout: 20000
 - assertVisible: ${output.chatText}
+- assertVisible: ${output.legacyText}
 - assertVisible: ${output.tournamentName}
 - tapOn:
     id: "tab-chats"
