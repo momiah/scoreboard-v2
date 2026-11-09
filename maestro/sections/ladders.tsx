@@ -64,6 +64,10 @@ import {
 } from "../seeds/mockCourtSubmissionReview";
 import { mockPartnerSetHomeCourt } from "../seeds/mockPartnerSetHomeCourt";
 import {
+  INACTIVITY_VARIANT,
+  seedLadderInactivity,
+} from "../seeds/seedLadderInactivity";
+import {
   MAESTRO_PO_CANCELLED_SIZE,
   MAESTRO_PO_DOUBLES_LADDER_ID,
   MAESTRO_PO_LADDER_ID,
@@ -926,6 +930,14 @@ const LadderButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
         label: `Seed Join Doubles (${key})`,
         run: () =>
           seedLadderJoinFlowDoubles({ testUser: currentUser, variant }),
+      })),
+      ...[
+        ["warning", INACTIVITY_VARIANT.WARNING],
+        ["removed", INACTIVITY_VARIANT.REMOVED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-inactivity-${key}`,
+        label: `Seed Inactivity (${key})`,
+        run: () => seedLadderInactivity({ testUser: currentUser, variant }),
       })),
       {
         id: "maestro-seed-add-game-flow-checkin-court-coords",

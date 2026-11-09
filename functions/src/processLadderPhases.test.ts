@@ -314,6 +314,7 @@ describe("registration close", () => {
 
     expect(summary).toEqual({
       registrationClosed: [],
+      inactiveRemoved: [],
       cancelled: [],
       playoffsGenerated: [],
       standingsFinalised: [],

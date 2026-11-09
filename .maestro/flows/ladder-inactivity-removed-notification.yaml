@@ -1,0 +1,26 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-inactivity-removed"
+- copyTextFrom:
+    id: "maestro-expected-inactivityMessage"
+- evalScript: ${output.message = maestro.copiedText}
+- runFlow:
+    file: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*${output.message}.*"
+    timeout: 20000
+- tapOn: ".*${output.message}.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+    centerElement: true
+- assertVisible:
+    id: "ladder-summary-join"
+    text: ".*Registration Closed.*"
+- assertNotVisible: ".*Participant.*"
