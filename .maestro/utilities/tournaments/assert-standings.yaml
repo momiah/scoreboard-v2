@@ -1,6 +1,7 @@
 # Checks Player Performance (and Team Performance in doubles) against
 # output.exp: every entrant's wins, point difference and rank, read from each
-# row's text (iOS exposes a tappable row as one element).
+# row's text (a tappable row is one element: iOS joins its texts with spaces,
+# Android with ", ").
 appId: com.courtchamp
 ---
 - runFlow:
@@ -26,14 +27,14 @@ appId: com.courtchamp
       - extendedWaitUntil:
           visible:
             id: "performance-row-${output.cur}"
-            text: ".*Wins ${output.row.wins}( .*)?"
+            text: ".*Wins,? ${output.row.wins}(,? .*)?"
           timeout: 20000
       - assertVisible:
           id: "performance-row-${output.cur}"
-          text: ".*PD ${output.row.pd}( .*)?"
+          text: ".*PD,? ${output.row.pd}(,? .*)?"
       - assertVisible:
           id: "performance-row-${output.cur}"
-          text: "${output.row.rank} .*"
+          text: "${output.row.rank},? .*"
       - evalScript: ${output.i = output.i + 1}
 - runFlow:
     when:
@@ -76,14 +77,14 @@ appId: com.courtchamp
             - extendedWaitUntil:
                 visible:
                   id: "performance-row-${output.cur}"
-                  text: ".*Wins ${output.row.wins}( .*)?"
+                  text: ".*Wins,? ${output.row.wins}(,? .*)?"
                 timeout: 20000
             - assertVisible:
                 id: "performance-row-${output.cur}"
-                text: ".*PD ${output.row.pd}( .*)?"
+                text: ".*PD,? ${output.row.pd}(,? .*)?"
             - assertVisible:
                 id: "performance-row-${output.cur}"
-                text: "${output.row.rank} .*"
+                text: "${output.row.rank},? .*"
             - evalScript: ${output.i = output.i + 1}
 - runFlow:
     when:
