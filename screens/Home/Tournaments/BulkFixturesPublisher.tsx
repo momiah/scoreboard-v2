@@ -1,10 +1,22 @@
-import React, { useState, useContext, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import {
   View,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   Dimensions,
+  Keyboard,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  TextInput,
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -48,6 +60,7 @@ import { doc, increment, onSnapshot, writeBatch } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { getUserById } from "../../../devFunctions/firebaseFunctions";
 import { getPlayerUserIds } from "../../../context/LeagueContext";
+import { useAndroidKeyboardHeight } from "../../../hooks/useAndroidKeyboardHeight";
 
 const { height: screenHeight } = Dimensions.get("window");
 const popupHeight = screenHeight * 0.3;
@@ -71,6 +84,7 @@ interface BulkScoreDisplayProps {
     team1Score: string,
     team2Score: string,
   ) => void;
+  onScoreFocus: () => void;
 }
 
 interface BulkGameItemProps {
@@ -81,9 +95,14 @@ interface BulkGameItemProps {
     team1Score: string,
     team2Score: string,
   ) => void;
+  onScoreFocus: () => void;
 }
 
-const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
+const BulkScoreDisplay = ({
+  game,
+  onScoresChange,
+  onScoreFocus,
+}: BulkScoreDisplayProps) => {
   const hasReportedScore =
     game.result && game.gamescore && game.gamescore !== "";
 
@@ -142,6 +161,7 @@ const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
           placeholderTextColor="#1d3a5f"
           value={scoreInput}
           onChangeText={handleScoreInputChange}
+          onFocus={onScoreFocus}
           maxLength={5}
         />
       )}
@@ -153,6 +173,7 @@ const BulkGameItem = ({
   game,
   tournamentType,
   onScoresChange,
+  onScoreFocus,
 }: BulkGameItemProps) => (
   <GameCard>
     <FixtureGameHeader game={game} />
@@ -162,7 +183,11 @@ const BulkGameItem = ({
         position="left"
         tournamentType={tournamentType}
       />
-      <BulkScoreDisplay game={game} onScoresChange={onScoresChange} />
+      <BulkScoreDisplay
+        game={game}
+        onScoresChange={onScoresChange}
+        onScoreFocus={onScoreFocus}
+      />
       <FixtureTeamColumn
         team={game?.team2}
         position="right"
@@ -285,6 +310,33 @@ const applyRoundRobinUpdates = async ({
 const BulkFixturesPublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const keyboardHeight = useAndroidKeyboardHeight();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetY = useRef(0);
+
+  // Android doesn't lift the focused score above the number pad, so scroll it
+  // up by however much the keyboard covers it (once the keyboard padding has
+  // been laid out, or the scroll stops at the old end of the list).
+  const revealFocusedScore = useCallback(() => {
+    const keyboardTop = Keyboard.metrics()?.screenY;
+    const input = TextInput.State.currentlyFocusedInput();
+    if (Platform.OS !== "android" || !keyboardTop || !input) return;
+    input.measureInWindow((_x, y, _width, height) => {
+      const overlap = y + height + 80 - keyboardTop;
+      if (overlap > 0) {
+        scrollRef.current?.scrollTo({
+          y: scrollOffsetY.current + overlap,
+          animated: true,
+        });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (keyboardHeight === 0) return;
+    const timer = setTimeout(revealFocusedScore, 150);
+    return () => clearTimeout(timer);
+  }, [keyboardHeight, revealFocusedScore]);
   const { tournamentId, tournamentById } =
     route.params as BulkFixturesPublisherParams;
   const { currentUser } = useContext(UserContext);
@@ -696,10 +748,16 @@ const BulkFixturesPublisher = () => {
         </LoadingContainer>
       ) : (
         <FixturesScrollContainer
+          ref={scrollRef}
           testID="bulk-scroll"
+          onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            scrollOffsetY.current = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{ paddingBottom: keyboardHeight }}
         >
           {Object.keys(gamesByRound).length > 0 ? (
             Object.entries(gamesByRound).map(([roundNumber, games]) => (
@@ -713,6 +771,7 @@ const BulkFixturesPublisher = () => {
                       tournamentById.tournamentType as CompetitionTypes
                     }
                     onScoresChange={handleScoresChange}
+                    onScoreFocus={revealFocusedScore}
                   />
                 ))}
               </FixtureRoundContainer>

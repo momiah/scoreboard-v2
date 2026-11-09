@@ -8,9 +8,38 @@ appId: com.courtchamp
 - tapOn:
     id: "add-competition-tournament"
 - tapOn: "Enter tournament name"
-- inputText: ${output.tournamentName}
-- hideKeyboard:
-    optional: true
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - inputText: ${output.tournamentName}
+# A debug Android build reloads on two R key presses in a row ("Maestro RR"),
+# so Android types the name in parts split between the Rs.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - evalScript: ${output.nameParts = output.tournamentName.replace(/R(?=R)/g, 'R|').split('|'); output.np = 0}
+      - repeat:
+          while:
+            true: ${output.np < output.nameParts.length}
+          commands:
+            - inputText: ${output.nameParts[output.np]}
+            - waitForAnimationToEnd
+            - evalScript: ${output.np = output.np + 1}
+# hideKeyboard presses Back on Android, which leaves the app once the keyboard
+# has already closed, so Android taps the heading instead.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard:
+          optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Create Tournament"
 - tapOn: "Court Location"
 - tapOn: ".*Select or Add Court.*"
 - tapOn: "Search courts..."

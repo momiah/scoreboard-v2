@@ -24,11 +24,11 @@ appId: com.courtchamp
             - tapOn:
                 text: ".*@ ${output.ids[output.inviteKeys[output.ii]]}.*"
                 optional: true
+      - tapOn: "Please ensure you have arranged.*"
+      - waitForAnimationToEnd
       - extendedWaitUntil:
           visible: "Invite \\(1\\)"
           timeout: 10000
-      - tapOn: "Please ensure you have arranged.*"
-      - waitForAnimationToEnd
       - tapOn:
           id: "invite-send"
       - extendedWaitUntil:
