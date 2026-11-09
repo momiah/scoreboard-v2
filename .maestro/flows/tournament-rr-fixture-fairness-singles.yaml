@@ -33,7 +33,7 @@ onFlowStart:
             id: "fixture-game-${output.gn}"
       - assertVisible:
           id: "fixture-game-${output.gn}"
-          text: "GAME ${output.gn} .*Scheduled.*"
+          text: "GAME,? ${output.gn},? .*Scheduled.*"
       - evalScript: ${output.gn = output.gn + 1}
 - tapOn:
     id: "tab-home"
