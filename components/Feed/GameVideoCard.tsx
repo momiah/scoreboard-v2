@@ -186,9 +186,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
       )}
 
       {/* ── Video ── */}
-      <VideoContainer
-        testID={videoSource ? "game-video-loaded" : "game-video-idle"}
-      >
+      <VideoContainer>
         <TouchableOpacity onPress={handleVideoPress} activeOpacity={1}>
           <StyledVideoView
             player={player}
