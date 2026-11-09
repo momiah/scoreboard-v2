@@ -10,7 +10,7 @@ import {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { formatCurrency } from "@shared";
+import { formatCurrency, getLadderEligibilityRule } from "@shared";
 import type { LadderPreRegistration } from "@shared/types";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import RegistrantAvatars from "../../../components/LadderPreRegistration/RegistrantAvatars";
@@ -139,6 +139,12 @@ const LadderPreRegistrationSignup: React.FC = () => {
               : "Free to enter. Pre-register at the end of the guide."}
           </CenteredMuted>
         )}
+
+        {getLadderEligibilityRule(option) ? (
+          <CenteredMuted testID="ladder-pre-registration-eligibility-rule">
+            {getLadderEligibilityRule(option)}
+          </CenteredMuted>
+        ) : null}
 
         <LinksRow>
           <TextLink
