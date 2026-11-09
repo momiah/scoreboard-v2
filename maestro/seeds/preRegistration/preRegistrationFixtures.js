@@ -5,8 +5,10 @@ import {
   formatCurrency,
   getLadderPlayoffStructure,
 } from "@shared";
+import { Country } from "country-state-city";
 import {
   formatLadderPrizePool,
+  getLadderEligibilityRule,
   getFullLadderPrizeTable,
   getLadderEntrantNoun,
   getLadderLocation,
@@ -90,6 +92,20 @@ export const PREREG_FIXTURES = {
     status: LADDER_PRE_REGISTRATION_STATUS.CLOSED,
     registrants: 0,
   },
+  overseas: {
+    preRegistrationId: "maestro-prereg-overseas",
+    name: "Maestro Dublin Singles",
+    region: "Ireland",
+    city: "Dublin",
+    countryCode: "IE",
+    currencyType: "EUR",
+    ladderType: LADDER_TYPE.SINGLES,
+    genderType: GENDER_TYPE.MIXED,
+    entryFee: 0,
+    maxPlayers: 128,
+    status: LADDER_PRE_REGISTRATION_STATUS.CLOSED,
+    registrants: 0,
+  },
   launched: {
     preRegistrationId: "maestro-prereg-launched",
     name: "Maestro Glasgow Men's Singles",
@@ -165,6 +181,10 @@ export const buildPreRegistrationDoc = (key, { actorUserId, now }) => {
 
 const ladderOf = (key) => ({ ...shared, ...PREREG_FIXTURES[key] });
 
+/** The pre-register button a user from another country sees on the overseas fixture. */
+export const otherCountryLabel = (key) =>
+  `Only for players in ${Country.getCountryByCode(ladderOf(key).countryCode)?.name}`;
+
 /** The strings the app renders for a fixture, computed with the same helpers the screens use. */
 export const expectedFor = (key, { registrantCount }) => {
   const ladder = ladderOf(key);
@@ -200,6 +220,7 @@ export const expectedFor = (key, { registrantCount }) => {
     seasonPlayoffs: `The top ${playoffSpots} ${noun}s play a knockout.`,
   };
   if (cash) values.footnote = `18+ only. ${getPlatformFeeFootnote(ladder)}`;
+  else values.eligibilityRule = getLadderEligibilityRule(ladder);
   return values;
 };
 
