@@ -1,22 +1,19 @@
 import React from "react";
-import { Platform, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
 
 const PreRegistrationHeader: React.FC<{
   title: string;
   onShare?: () => void;
 }> = ({ title, onShare }) => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const topInset = useAndroidTopInset();
 
   return (
-    // React Native's SafeAreaView only pads on iOS; Android draws edge to edge.
-    <Header
-      style={Platform.OS === "android" ? { marginTop: insets.top } : undefined}
-    >
+    <Header style={{ marginTop: topInset }}>
       <TouchableOpacity
         testID="ladder-pre-registration-back"
         onPress={() => navigation.goBack()}
