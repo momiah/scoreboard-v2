@@ -85,9 +85,15 @@ onFlowComplete:
     visible:
       id: "login-email"
     timeout: 30000
-- tapOn:
-    id: "login-email"
-- inputText: ${output.email}
+# A busy Android emulator can mistype a key, so check the email and retype it.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "login-email"
+      - eraseText: 120
+      - inputText: ${output.email}
+      - assertVisible: ${output.email}
 - tapOn: "Welcome back"
 - tapOn:
     id: "login-password"
