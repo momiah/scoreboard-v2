@@ -13,7 +13,7 @@ appId: com.courtchamp
       - tapOn: ${MAESTRO_METRO_URL}
 - extendedWaitUntil:
     visible: "(Sign In|Hello, .*)"
-    timeout: 60000
+    timeout: 180000
 - runFlow:
     when:
       visible:

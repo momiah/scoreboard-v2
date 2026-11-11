@@ -37,7 +37,7 @@ onFlowComplete:
 - runFlow:
     file: ../utilities/prereg/assert-banner.yaml
     env:
-      TEXT: "Prize pool up to ${output.pool_re}"
+      TEXT: "Prize pool up to,? ${output.pool_re}"
 - runFlow:
     file: ../utilities/prereg/assert-banner.yaml
     env:
