@@ -1,6 +1,6 @@
 appId: com.courtchamp
 ---
-# The banner is one touchable, so iOS merges its text into one label; TEXT is a regex fragment it must contain.
+# The banner is one touchable, so its text merges into one label (Android joins the pieces with ", "); TEXT is a regex fragment it must contain.
 - extendedWaitUntil:
     visible:
       id: "ladder-pre-registration-banner"

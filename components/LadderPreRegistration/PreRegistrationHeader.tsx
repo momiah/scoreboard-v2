@@ -3,15 +3,17 @@ import { TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
 
 const PreRegistrationHeader: React.FC<{
   title: string;
   onShare?: () => void;
 }> = ({ title, onShare }) => {
   const navigation = useNavigation();
+  const topInset = useAndroidTopInset();
 
   return (
-    <Header>
+    <Header style={{ marginTop: topInset }}>
       <TouchableOpacity
         testID="ladder-pre-registration-back"
         onPress={() => navigation.goBack()}
