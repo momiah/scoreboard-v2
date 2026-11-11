@@ -39,6 +39,11 @@ onFlowComplete:
     id: "signup-profile-location"
 - tapOn: "Search countries..."
 - inputText: "United Kingdom"
+- extendedWaitUntil:
+    visible:
+      text: "United Kingdom"
+      index: 1
+    timeout: 60000
 - tapOn:
     text: "United Kingdom"
     index: 1
@@ -47,6 +52,11 @@ onFlowComplete:
     timeout: 10000
 - tapOn: "Search cities..."
 - inputText: "Manchester"
+- extendedWaitUntil:
+    visible:
+      text: "Manchester"
+      index: 1
+    timeout: 60000
 - tapOn:
     text: "Manchester"
     index: 1
