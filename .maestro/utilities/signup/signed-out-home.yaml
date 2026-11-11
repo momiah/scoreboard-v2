@@ -14,12 +14,6 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "(Sign In|Hello, .*)"
     timeout: 180000
-# Home shows Sign In until the saved session loads, so give a signed-in user time to appear.
-- extendedWaitUntil:
-    visible:
-      id: "maestro-harness-unlock"
-    timeout: 20000
-    optional: true
 - runFlow:
     when:
       visible:
