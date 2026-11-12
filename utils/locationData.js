@@ -12,9 +12,13 @@ let cachedCountriesWithCities = null;
  */
 export function loadCountries() {
   if (cachedCountriesWithCities) return cachedCountriesWithCities;
+  // One pass over the cities; asking per country rescans every city each time.
+  const countryCodesWithCities = new Set(
+    City.getAllCities().map((city) => city.countryCode)
+  );
   cachedCountriesWithCities = Country.getAllCountries()
     .map((c) => ({ key: c.isoCode, value: c.name }))
-    .filter((c) => City.getCitiesOfCountry(c.key).length > 0);
+    .filter((c) => countryCodesWithCities.has(c.key));
   return cachedCountriesWithCities;
 }
 
