@@ -1,7 +1,8 @@
 # Checks Player Performance (and Team Performance in doubles) against
 # output.exp: every row's wins, point difference and rank, read from the row's
 # text (a tappable row is one element: iOS joins its texts with spaces,
-# Android with ", ").
+# Android with ", "). Android reports a row half under the tab bar as fully
+# visible, so the rows are nudged up until the rank text itself shows.
 appId: com.courtchamp
 ---
 - runFlow:
@@ -38,6 +39,17 @@ appId: com.courtchamp
             - scrollUntilVisible:
                 element:
                   id: "performance-row-${output.cur}"
+            - repeat:
+                times: 3
+                while:
+                  notVisible:
+                    id: "performance-row-${output.cur}"
+                    text: "${output.row.rank},? .*"
+                commands:
+                  - swipe:
+                      start: 50%, 75%
+                      end: 50%, 55%
+                      duration: 400
             - extendedWaitUntil:
                 visible:
                   id: "performance-row-${output.cur}"
