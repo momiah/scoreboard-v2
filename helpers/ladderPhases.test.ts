@@ -1,6 +1,11 @@
 import { LADDER_STATUS, deriveLadderDates } from "@shared";
 import type { Ladder } from "@shared/types";
-import { getLadderPhases } from "./ladderPhases";
+import moment from "moment";
+import {
+  formatSeasonStart,
+  getLadderPhases,
+  timeLeftToSeasonStart,
+} from "./ladderPhases";
 
 const registrationOpensAt = new Date(2026, 10, 1, 9, 0);
 const dates = deriveLadderDates(registrationOpensAt);
@@ -45,5 +50,32 @@ describe("getLadderPhases", () => {
       playoffsCompletedAt,
       null,
     ]);
+  });
+});
+
+describe("season start", () => {
+  const seasonStartsAt = new Date(2026, 10, 28, 9, 0);
+  const preSeason = { seasonStartsAt } as unknown as Ladder;
+
+  it("counts down to the season start", () => {
+    expect(timeLeftToSeasonStart(preSeason, moment(new Date(2026, 10, 25, 9, 0)))).toBe(
+      "3 days",
+    );
+    expect(timeLeftToSeasonStart(preSeason, moment(new Date(2026, 10, 28, 7, 0)))).toBe(
+      "2 hours",
+    );
+  });
+
+  it("says the season is starting once it is due", () => {
+    expect(timeLeftToSeasonStart(preSeason, moment(new Date(2026, 10, 28, 9, 5)))).toBe(
+      "Starting",
+    );
+  });
+
+  it("formats the season start day", () => {
+    expect(formatSeasonStart(preSeason, moment(new Date(2026, 10, 20)))).toBe(
+      "Sat 28 Nov",
+    );
+    expect(formatSeasonStart(preSeason, moment(new Date(2026, 10, 29)))).toBe("soon");
   });
 });

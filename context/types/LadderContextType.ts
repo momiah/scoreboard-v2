@@ -83,9 +83,14 @@ export interface AcceptTeamJoinRequestOutcome {
 export interface CreateLadderMatchOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
+  reason?: "not_started";
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
+export type AcceptLadderMatchFailureReason =
+  | "unavailable"
+  | "frozen"
+  | "not_started"
+  | "error";
 
 export interface AcceptLadderMatchOutcome {
   success: boolean;

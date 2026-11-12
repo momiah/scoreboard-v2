@@ -1,0 +1,39 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Registration is open but the season has not started: the Summary shows the
+# season start and how many more players are needed, and Matchmaking keeps
+# posting closed until then.
+- runFlow:
+    file: ../utilities/season/open-from-notification.yaml
+    env:
+      BUTTON: "maestro-seed-season-start-pre-season"
+      NOTIFICATION: ".*open Maestro Season Start on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-preseason-notice"
+    timeout: 30000
+- assertVisible:
+    id: "ladder-preseason-title"
+    text: "Season starts .*"
+- assertVisible:
+    id: "ladder-preseason-body"
+    text: ".*more players needed to start. If fewer than ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined by then, the season start moves back ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days.*"
+- assertVisible: "Season Starts"
+- assertVisible:
+    id: "ladder-season-countdown"
+- assertNotVisible:
+    id: "ladder-playoff-countdown"
+- tapOn:
+    id: "ladder-tab-Matchmaking"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
+- assertVisible: "Matches open .*"
+- assertNotVisible: "Post a Match"
+- tapOn:
+    id: "matchmaking-post-match"
+- assertNotVisible:
+    id: "add-ladder-match-court-selector"

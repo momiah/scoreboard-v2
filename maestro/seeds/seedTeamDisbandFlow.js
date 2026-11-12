@@ -134,6 +134,7 @@ const ladderDocument = ({ testUser, ladderId, name, status }) => ({
       ? daysFromNow(7)
       : daysFromNow(-1),
   seasonStartsAt: daysFromNow(-5),
+  seasonStartedAt: daysFromNow(-5),
   playoffStartsAt: daysFromNow(50),
   entryFee: 0,
   currencyType: "GBP",

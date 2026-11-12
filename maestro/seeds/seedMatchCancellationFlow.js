@@ -141,6 +141,7 @@ export const seedMatchCancellationFlow = async ({
     registrationOpensAt: daysFromNow(-5),
     registrationClosesAt: daysFromNow(7),
     seasonStartsAt: daysFromNow(-5),
+    seasonStartedAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: 0,
     currencyType: "GBP",

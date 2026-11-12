@@ -46,6 +46,13 @@ pairing, so a player must not be able to set an arbitrary location.
 | `ladders/{ladderId}` | A joining player or team member | update | `participantCount` +1, only in the same transaction as the participant/team create above. |
 | `teams/{teamId}` | A team member | update | `ladderIds` (arrayUnion) after joining a ladder. |
 
+## Ladder match posting
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{matchId}` | A ladder entrant (the poster, or either partner of a doubles team) | create | Built by `buildLadderMatchDocument`, `matchStatus: "posted"`, `createdBy` = the writer. Only once the season has started (`isLadderSeasonStarted`: the ladder has `seasonStartedAt`, or its status is past `registrationOpen`) and before the posting deadline. |
+| same | A ladder entrant who is not in the match | update | Accept: `matchStatus: "accepted"` and the accepter added (`buildAcceptedLadderMatch`). Same season-started condition. |
+
 ## Ladder match reporting
 
 | Path | Writer | Operation | Fields / conditions |

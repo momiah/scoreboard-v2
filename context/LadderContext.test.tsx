@@ -1484,3 +1484,72 @@ describe("before the playoffs", () => {
     );
   });
 });
+
+describe("before the season starts", () => {
+  const { setDoc } = jest.requireMock("firebase/firestore") as {
+    setDoc: jest.Mock;
+  };
+  const preSeasonLadder = {
+    status: "registrationOpen",
+    seasonStartsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
+  const matchInput = {
+    court: { courtId: "c1", courtName: "Court" },
+    matchDate: "01-12-2026",
+    matchTime: { start: "18:00", end: "19:00" },
+  } as never;
+
+  it("refuses to post a match", async () => {
+    mockGetDoc.mockResolvedValue({ data: () => preSeasonLadder });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      matchInput,
+      "user",
+    );
+
+    expect(outcome).toEqual({
+      success: false,
+      ladderMatch: null,
+      reason: "not_started",
+    });
+    expect(setDoc).not.toHaveBeenCalled();
+  });
+
+  it("posts once the season has started", async () => {
+    mockGetDoc.mockResolvedValue({
+      data: () => ({ ...preSeasonLadder, seasonStartedAt: new Date() }),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      matchInput,
+      "user",
+    );
+
+    expect(outcome.success).toBe(true);
+    expect(setDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to accept a match", async () => {
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1)], {
+        matchStatus: LADDER_MATCH_STATUS.POSTED,
+        participants: ["opponent"],
+      }),
+      [`ladders/${LADDER}`]: preSeasonLadder,
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.acceptLadderMatch(
+      LADDER,
+      MATCH,
+      "user",
+    );
+
+    expect(outcome).toEqual({ success: false, reason: "not_started" });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+});

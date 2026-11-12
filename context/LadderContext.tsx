@@ -55,6 +55,7 @@ import {
   planLadderGameApproval,
   isLadderMatchPlayFrozen,
   isLadderResultsClosed,
+  isLadderSeasonStarted,
   getLadderPostingDeadline,
   getLadderResultsDeadline,
   buildLadderPlayoffLegMatch,
@@ -971,6 +972,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
+        const ladderSnap = await getDoc(doc(db, LADDERS_COLLECTION, ladderId));
+        if (!isLadderSeasonStarted(ladderSnap.data() as Ladder | undefined)) {
+          return { success: false, ladderMatch: null, reason: "not_started" };
+        }
         const matchesRef = collection(
           db,
           LADDERS_COLLECTION,
@@ -1831,6 +1836,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (isLadderMatchPlayFrozen(ladderSnap.data()?.status, snap.data())) {
             throw new AcceptLadderMatchError("FROZEN");
           }
+          if (!isLadderSeasonStarted(ladderSnap.data() as Ladder | undefined)) {
+            throw new AcceptLadderMatchError("NOT_STARTED");
+          }
 
           const match: LadderMatch = {
             ...snap.data(),
@@ -1852,7 +1860,12 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         if (error instanceof AcceptLadderMatchError) {
           return {
             success: false,
-            reason: error.message === "FROZEN" ? "frozen" : "unavailable",
+            reason:
+              error.message === "FROZEN"
+                ? "frozen"
+                : error.message === "NOT_STARTED"
+                  ? "not_started"
+                  : "unavailable",
           };
         }
         console.error("Error accepting ladder match:", error);

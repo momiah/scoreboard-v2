@@ -1,0 +1,22 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Still too few after the moved-back start: the ladder is cancelled before any
+# match is played, and the player is told why and about the refund.
+- runFlow:
+    file: ../utilities/season/open-from-notification.yaml
+    env:
+      BUTTON: "maestro-seed-season-start-cancelled"
+      NOTIFICATION: ".*Maestro Season Start has been cancelled because fewer than ${MAESTRO_LADDER_MIN_ENTRANTS} players joined before the season start. If you paid an entry fee, it will be refunded to you in full.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-status"
+    timeout: 30000
+- assertVisible:
+    id: "ladder-status"
+    text: "Cancelled"
+- assertNotVisible:
+    id: "ladder-preseason-notice"
+- assertNotVisible:
+    id: "ladder-season-countdown"

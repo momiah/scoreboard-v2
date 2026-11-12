@@ -58,6 +58,10 @@ import {
 } from "../seeds/seedLadderJoinFlow";
 import { seedHomeCourtFlowDoubles } from "../seeds/seedHomeCourtFlowDoubles";
 import {
+  SEASON_VARIANT,
+  seedLadderSeasonStart,
+} from "../seeds/seedLadderSeasonStart";
+import {
   findOwnPendingCourtId,
   mockApproveCourtSubmission,
   mockRejectCourtSubmission,
@@ -903,6 +907,16 @@ const LadderButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
             ladderStatus: LADDER_STATUS.PLAYOFFS,
           }),
       },
+      ...[
+        ["pre-season", SEASON_VARIANT.PRE_SEASON],
+        ["extended", SEASON_VARIANT.EXTENDED],
+        ["started", SEASON_VARIANT.STARTED],
+        ["cancelled", SEASON_VARIANT.CANCELLED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-season-start-${key}`,
+        label: `Seed Season Start (${key})`,
+        run: () => seedLadderSeasonStart({ testUser: currentUser, variant }),
+      })),
       ...[
         ["open", JOIN_VARIANT.OPEN],
         ["full", JOIN_VARIANT.FULL],

@@ -26,11 +26,20 @@ import type {
 import {
   LADDER_MIN_PLAYOFF_SIZE,
   buildLadderPlayoffTies,
+  deriveExtendedLadderDates,
   getDisqualification,
   getLadderPlayoffQualifiers,
+  getLadderSeasonCancelledNotification,
+  getLadderSeasonExtendedNotification,
+  getLadderSeasonStartStep,
+  getLadderSeasonStartedNotification,
+  isLadderSeasonStarted,
   isLadderStandingsFinal,
 } from "courtchamps-shared/helpers";
-import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
+import type {
+  LadderNotificationCopy,
+  LadderPlayoffEntrant,
+} from "courtchamps-shared/helpers";
 
 import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
 import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
@@ -152,6 +161,8 @@ const runPlayoffDeadlinesAndReminders = async (
 };
 
 export interface ProcessLadderPhasesSummary {
+  seasonsStarted: string[];
+  seasonsExtended: string[];
   registrationClosed: string[];
   cancelled: string[];
   playoffsGenerated: string[];
@@ -345,6 +356,11 @@ const loadEntrants = async (
   };
 };
 
+const registrationClosedCancellation = (ladder: Ladder): LadderNotificationCopy => ({
+  title: "Ladder cancelled",
+  message: `${ladder.name} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
+});
+
 const sendCancellationNotifications = async ({
   ladderRef,
   ladder,
@@ -352,15 +368,51 @@ const sendCancellationNotifications = async ({
   ladderRef: DocRef;
   ladder: Ladder;
 }): Promise<void> => {
+  const { title, message } = ladder.seasonStartedAt
+    ? registrationClosedCancellation(ladder)
+    : getLadderSeasonCancelledNotification(ladder);
   await notifyLadderPlayers({
     userIds: await loadEntrantPlayerIds(ladderRef, ladder),
     ladder,
     kind: "ladder-cancelled",
-    title: "Ladder cancelled",
-    message: `${ladder.name} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
+    title,
+    message,
     tab: "Summary",
   });
   await ladderRef.update({ cancellationNotificationsSentAt: new Date() });
+};
+
+type SeasonNotice = "started" | "extended";
+
+const SEASON_NOTICE_SENT_FIELD: Record<SeasonNotice, string> = {
+  started: "seasonStartNotificationsSentAt",
+  extended: "seasonExtensionNotificationsSentAt",
+};
+
+const sendSeasonNotifications = async ({
+  ladderRef,
+  ladder,
+  notice,
+  entrantCount,
+}: {
+  ladderRef: DocRef;
+  ladder: Ladder;
+  notice: SeasonNotice;
+  entrantCount: number;
+}): Promise<void> => {
+  const { title, message } =
+    notice === "started"
+      ? getLadderSeasonStartedNotification(ladder)
+      : getLadderSeasonExtendedNotification(ladder, entrantCount);
+  await notifyLadderPlayers({
+    userIds: await loadEntrantPlayerIds(ladderRef, ladder),
+    ladder,
+    kind: `season-${notice}`,
+    title,
+    message,
+    tab: "Summary",
+  });
+  await ladderRef.update({ [SEASON_NOTICE_SENT_FIELD[notice]]: new Date() });
 };
 
 const firstRoundTies = (
@@ -458,6 +510,67 @@ const countEntrants = async (
       team.status !== TEAM_STATUS.PENDING && (team.playerIds ?? []).length >= 2
     );
   }).length;
+};
+
+/**
+ * At the season start: with enough entrants the season starts and matches
+ * open; with too few the dates move back once, then the ladder is cancelled.
+ */
+const processSeasonStart = async ({
+  db,
+  ladderRef,
+  ladder,
+  now,
+}: {
+  db: Db;
+  ladderRef: DocRef;
+  ladder: Ladder;
+  now: Date;
+}): Promise<"started" | "extended" | "cancelled" | null> => {
+  if (!getLadderSeasonStartStep(ladder, LADDER_MIN_PLAYOFF_SIZE, now.getTime())) {
+    return null;
+  }
+  const entrantCount = await countEntrants(ladderRef, ladder);
+  const step = getLadderSeasonStartStep(ladder, entrantCount, now.getTime());
+  if (!step) return null;
+
+  if (step === "cancel") {
+    const cancelled = await cancelLadder({
+      db,
+      ladderRef,
+      ladder,
+      entrantCount,
+      now,
+    });
+    return cancelled ? "cancelled" : null;
+  }
+
+  const updated = await db.runTransaction(async (transaction) => {
+    const fresh = await transaction.get(ladderRef);
+    const data = fresh.data() as Ladder | undefined;
+    if (!data || getLadderSeasonStartStep(data, entrantCount, now.getTime()) !== step) {
+      return null;
+    }
+    if (step === "start") {
+      transaction.update(ladderRef, { seasonStartedAt: now });
+      return { ...data, seasonStartedAt: now };
+    }
+    const seasonStartsAt = toDate(data.seasonStartsAt);
+    if (!seasonStartsAt) return null;
+    const dates = deriveExtendedLadderDates(seasonStartsAt);
+    transaction.update(ladderRef, { ...dates, seasonExtendedAt: now });
+    return { ...data, ...dates, seasonExtendedAt: now };
+  });
+  if (!updated) return null;
+
+  const notice: SeasonNotice = step === "start" ? "started" : "extended";
+  await sendSeasonNotifications({
+    ladderRef,
+    ladder: { ...updated, ladderId: ladder.ladderId },
+    notice,
+    entrantCount,
+  });
+  return notice;
 };
 
 const closeRegistration = async ({
@@ -619,7 +732,41 @@ const resumePlayoffNotifications = async ({
   });
 };
 
+const resumeSeasonNotifications = async (db: Db, now: Date): Promise<void> => {
+  const snapshot = await db
+    .collection(LADDERS)
+    .where("status", "==", LADDER_STATUS.REGISTRATION_OPEN)
+    .get();
+  for (const ladderDoc of snapshot.docs) {
+    const ladder = { ...(ladderDoc.data() as Ladder), ladderId: ladderDoc.id };
+    const data = ladderDoc.data();
+    const notice: SeasonNotice | null =
+      isRecent(data.seasonStartedAt, now) && !data.seasonStartNotificationsSentAt
+        ? "started"
+        : !data.seasonStartedAt &&
+            isRecent(data.seasonExtendedAt, now) &&
+            !data.seasonExtensionNotificationsSentAt
+          ? "extended"
+          : null;
+    if (!notice) continue;
+    try {
+      await sendSeasonNotifications({
+        ladderRef: ladderDoc.ref,
+        ladder,
+        notice,
+        entrantCount: await countEntrants(ladderDoc.ref, ladder),
+      });
+    } catch (error) {
+      console.log(
+        `❌ processLadderPhases could not resume season notifications for ${ladder.ladderId}:`,
+        error,
+      );
+    }
+  }
+};
+
 const resumePendingNotifications = async (db: Db, now: Date): Promise<void> => {
+  await resumeSeasonNotifications(db, now);
   const snapshot = await db
     .collection(LADDERS)
     .where("status", "in", [LADDER_STATUS.PLAYOFFS, LADDER_STATUS.CANCELLED])
@@ -673,8 +820,10 @@ const payUnpaidCompletedLadders = async (
 };
 
 /**
- * Moves ladders through their scheduled phases. At registration close a ladder
- * with fewer than LADDER_MIN_PLAYOFF_SIZE entrants is cancelled (and refunded),
+ * Moves ladders through their scheduled phases. At the season start a ladder
+ * with LADDER_MIN_PLAYOFF_SIZE entrants starts and matches open; with fewer its
+ * dates move back once, then it is cancelled (and refunded). At registration
+ * close a ladder that has dropped below LADDER_MIN_PLAYOFF_SIZE is cancelled,
  * otherwise registration is closed. At playoff start the top entrants are
  * placed into a knockout bracket and the ladder moves to Playoffs. Each step
  * re-checks the ladder inside a transaction and bracket slots have fixed ids,
@@ -685,6 +834,8 @@ export const runProcessLadderPhases = async (
 ): Promise<ProcessLadderPhasesSummary> => {
   const db = admin.firestore();
   const summary: ProcessLadderPhasesSummary = {
+    seasonsStarted: [],
+    seasonsExtended: [],
     registrationClosed: [],
     cancelled: [],
     playoffsGenerated: [],
@@ -707,6 +858,22 @@ export const runProcessLadderPhases = async (
     const ladder = { ...(ladderDoc.data() as Ladder), ladderId: ladderDoc.id };
     try {
       let status = ladder.status;
+
+      if (!isLadderSeasonStarted(ladder)) {
+        const outcome = await processSeasonStart({
+          db,
+          ladderRef: ladderDoc.ref,
+          ladder,
+          now,
+        });
+        if (outcome === "started") {
+          summary.seasonsStarted.push(ladder.ladderId);
+        } else {
+          if (outcome === "extended") summary.seasonsExtended.push(ladder.ladderId);
+          if (outcome === "cancelled") summary.cancelled.push(ladder.ladderId);
+          continue;
+        }
+      }
 
       if (
         status === LADDER_STATUS.REGISTRATION_OPEN &&
@@ -762,7 +929,7 @@ export const runProcessLadderPhases = async (
   await payUnpaidCompletedLadders(db, now, summary);
 
   console.log(
-    `✅ processLadderPhases: closed ${summary.registrationClosed.length}, cancelled ${summary.cancelled.length}, playoffs ${summary.playoffsGenerated.length}, standings final ${summary.standingsFinalised.length}.`,
+    `✅ processLadderPhases: started ${summary.seasonsStarted.length}, extended ${summary.seasonsExtended.length}, closed ${summary.registrationClosed.length}, cancelled ${summary.cancelled.length}, playoffs ${summary.playoffsGenerated.length}, standings final ${summary.standingsFinalised.length}.`,
   );
   return summary;
 };

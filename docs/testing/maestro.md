@@ -13,6 +13,7 @@ and a line in the table below. A PR without them isn't ready to merge.
 | Feature | Flows | Seeds / harness section |
 |---|---|---|
 | Ladders (reject-game, add/approve game, cancellation, check-in, home court, court submission, join, team, report player, freeze, info, playoffs, PROLevel) | `reject-*`, `add-game-*`, `approve-game-*`, `cancel-*`, `checkin-*`, `court-*`, `home-court-*`, `join-ladder-*`, `team-*`, `report-player-*`, `dispute-*`, `disqualified-*`, `ladder-*`, `match-chat-room-*`, `profile-prolevel-*`; test plans in `docs/testing/*-test-plan.md` | `maestro/sections/ladders.tsx`, `maestro/seeds/*`, `maestro-cleanup-ladder-test-data` |
+| Ladder season start: matches closed until the season starts, the pre-season notice and countdown on Summary, the moved-back start, the season-started and cancelled-before-start notifications, How to Play and Rules copy | `ladder-season-*` | `maestro-seed-season-start-{pre-season,extended,started,cancelled}` in `maestro/sections/ladders.tsx` (`maestro/seeds/seedLadderSeasonStart.js`), removed by `maestro-cleanup-ladder-test-data` |
 | Chats tab | `chats-tab-*` | `maestro-seed-chats-*` in `maestro/sections/ladders.tsx` (`seedChatsTab` uses the ladder cancellation seed) |
 | Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
 

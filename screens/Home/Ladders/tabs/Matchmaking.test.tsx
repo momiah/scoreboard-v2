@@ -128,6 +128,7 @@ const ladder = {
   courtIds: ["courtB"],
   registrationOpensAt: moment().subtract(1, "days").toDate(),
   seasonStartsAt: moment().subtract(1, "days").toDate(),
+  seasonStartedAt: moment().subtract(1, "days").toDate(),
   playoffStartsAt: moment().add(30, "days").toDate(),
 } as unknown as Ladder;
 
@@ -154,7 +155,9 @@ const homeCourtState = (overrides = {}) => ({
   ...overrides,
 });
 
-const renderMatchmaking = () => {
+const mockShowBottomToast = jest.fn();
+
+const renderMatchmaking = (target: Ladder = ladder) => {
   mockSubscribeToLadderMatches.mockImplementation((_id, onNext) => {
     onNext([postedMatch]);
     return jest.fn();
@@ -165,8 +168,10 @@ const renderMatchmaking = () => {
         { subscribeToLadderMatches: mockSubscribeToLadderMatches } as never
       }
     >
-      <PopupContext.Provider value={{ showBottomToast: jest.fn() } as never}>
-        <Matchmaking ladder={ladder} />
+      <PopupContext.Provider
+        value={{ showBottomToast: mockShowBottomToast } as never}
+      >
+        <Matchmaking ladder={target} />
       </PopupContext.Provider>
     </LadderContext.Provider>,
   );
@@ -260,5 +265,36 @@ describe("Matchmaking home court gate", () => {
 
     expect(utils.queryByTestId("mock-post-modal")).toBeNull();
     expect(utils.queryByTestId("mock-court-picker")).toBeNull();
+  });
+});
+
+describe("Matchmaking before the season starts", () => {
+  const seasonStartsAt = moment().add(5, "days").startOf("day").add(9, "hours");
+  const preSeason = {
+    ...ladder,
+    seasonStartsAt: seasonStartsAt.toDate(),
+    seasonStartedAt: undefined,
+  } as unknown as Ladder;
+
+  it("shows when matches open and keeps posting closed", () => {
+    mockUseLadderHomeCourt.mockReturnValue(
+      homeCourtState({ hasHomeCourt: true }),
+    );
+    const utils = renderMatchmaking(preSeason);
+
+    expect(
+      utils.getByText(`Matches open ${seasonStartsAt.format("ddd D MMM")}`),
+    ).toBeTruthy();
+    fireEvent.press(utils.getByTestId("matchmaking-post-match"));
+    expect(utils.queryByTestId("mock-post-modal")).toBeNull();
+  });
+
+  it("opens posting once the season has started", () => {
+    mockUseLadderHomeCourt.mockReturnValue(
+      homeCourtState({ hasHomeCourt: true }),
+    );
+    const utils = renderMatchmaking();
+
+    expect(utils.getByText("Post a Match")).toBeTruthy();
   });
 });

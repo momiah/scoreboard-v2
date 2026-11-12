@@ -1,0 +1,25 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# The season started with enough players: the notification opens the Summary,
+# the pre-season notice is gone and matches can be posted.
+- runFlow:
+    file: ../utilities/season/open-from-notification.yaml
+    env:
+      BUTTON: "maestro-seed-season-start-started"
+      NOTIFICATION: ".*Maestro Season Start has started. Post or accept a match to start climbing the ladder.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoff-countdown"
+    timeout: 30000
+- assertNotVisible:
+    id: "ladder-preseason-notice"
+- assertNotVisible:
+    id: "ladder-season-countdown"
+- tapOn:
+    id: "ladder-tab-Matchmaking"
+- extendedWaitUntil:
+    visible: "Post a Match"
+    timeout: 20000
+- assertNotVisible: "Matches open .*"

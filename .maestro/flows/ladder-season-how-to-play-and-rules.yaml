@@ -1,0 +1,40 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# How to Play's season page and the Ladder Rules explain that matches open at
+# the season start, once enough players have joined.
+- runFlow:
+    file: ../utilities/season/open-from-notification.yaml
+    env:
+      BUTTON: "maestro-seed-season-start-pre-season"
+      NOTIFICATION: ".*open Maestro Season Start on Summary.*"
+- tapOn: ".*How to Play.*"
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-dots"
+    timeout: 15000
+- repeat:
+    while:
+      notVisible: "Season Starts"
+    times: 12
+    commands:
+      - tapOn:
+          id: "how-to-play-next"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible: ".*Sign up and invite friends. The season starts once ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined. If not, it waits ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days more, then the ladder is cancelled.*"
+- assertVisible: ".*Matches open. Post or accept matches to climb. New players can still join.*"
+- tapOn:
+    id: "how-to-play-close"
+- tapOn:
+    id: "ladder-burger"
+- tapOn:
+    id: "ladder-menu-LadderRules"
+- extendedWaitUntil:
+    visible: "Ladder Rules"
+    timeout: 10000
+- scrollUntilVisible:
+    element: ".*Matches open when the season starts, .* days after registration opens, once ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined.*"
+    direction: DOWN
+- assertVisible: ".*If fewer have joined by then, the season start moves back ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days. If there are still too few, the ladder is cancelled and every entry fee is refunded in full.*"

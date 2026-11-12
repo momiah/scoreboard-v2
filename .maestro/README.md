@@ -25,6 +25,8 @@ the in-app harness, seeds and fixture users.
     also scrolls the harness list on Android, where off-screen buttons aren't
     in the accessibility tree; flows whose button sits far down on iOS use
     `harness-scrolled.yaml`).
+  - `season/open-from-notification.yaml`: seeds a season start variant
+    (`${BUTTON}`) and opens its ladder from a notification (`${NOTIFICATION}`).
 - `.env` (gitignored): the test account and this checkout's Metro port. Copy
   `.env.example` and fill it in.
 
@@ -51,7 +53,8 @@ MAESTRO_DEVICE=<udid> .maestro/run-suite.sh               # a specific device
 
 `run-suite.sh` sources `.env`, exports `MAESTRO_METRO_URL` and the rule numbers
 from `courtchamps-shared` (`MAESTRO_PLAYOFF_TIE_DAYS`,
-`MAESTRO_LADDER_HOST_ARRANGE_HOURS`, `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`), runs
+`MAESTRO_LADDER_HOST_ARRANGE_HOURS`, `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`,
+`MAESTRO_LADDER_MIN_ENTRANTS`, `MAESTRO_LADDER_SEASON_EXTENSION_DAYS`), runs
 the flows one at a time, retries a failed flow once, and prints `FLAKY` for one
 that passed on the retry and `FAIL` only for one that failed twice. Logs go to
 `/tmp/maestro-<flow>.log`. To run one flow with plain `maestro test`, export the

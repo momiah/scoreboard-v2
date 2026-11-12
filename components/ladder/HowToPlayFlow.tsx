@@ -12,9 +12,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
 import {
+  LADDER_MIN_ENTRANTS_TO_START,
   LADDER_POSTING_CLOSE_DAYS,
   LADDER_PLAYOFF_START_DAYS,
   LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_SEASON_EXTENSION_DAYS,
+  LADDER_SEASON_START_DAYS,
   LADDER_STATUS,
   LADDER_STATUS_LABELS,
   DECISIVE_WIN_MARGIN,
@@ -429,6 +432,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       </TopBar>
       <TouchableOpacity
         onPress={onClose}
+        testID="how-to-play-close"
+        accessibilityRole="button"
+        accessibilityLabel="Close How to Play"
         style={{
           alignSelf: "flex-end",
           position: "absolute",
@@ -953,7 +959,7 @@ const daysLabel = (days: number) => `${days} day${days === 1 ? "" : "s"}`;
 
 const dayRange = (first: number, last: number) => `Day ${first} - ${last}`;
 
-/** A ladder season's phases, timed from the day registration opens. */
+/** A ladder season's phases. Season days count from the season start. */
 const seasonPhases = (
   noun: "player" | "team",
   playoffSpots: number,
@@ -964,8 +970,14 @@ const seasonPhases = (
     {
       icon: "person-add-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
+      length: daysLabel(LADDER_SEASON_START_DAYS),
+      text: `Sign up and invite friends. The season starts once ${LADDER_MIN_ENTRANTS_TO_START} ${noun}s have joined. If not, it waits ${daysLabel(LADDER_SEASON_EXTENSION_DAYS)} more, then the ladder is cancelled${isPaid ? " and refunded" : ""}.`,
+    },
+    {
+      icon: "tennisball-outline",
+      label: "Season Starts",
       length: dayRange(1, LADDER_REGISTRATION_CLOSE_DAYS),
-      text: "Sign up and start posting or accepting matches straight away.",
+      text: `Matches open. Post or accept matches to climb. New ${noun}s can still join.`,
     },
     {
       icon: "lock-closed-outline",

@@ -129,6 +129,7 @@ export const seedRejectGameFlow = async ({
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
+    seasonStartedAt: new Date(),
     playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
     entryFee: 0,
     currencyType: "GBP",

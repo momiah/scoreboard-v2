@@ -140,6 +140,16 @@ jest.mock("./helpers/refundLadderEntryFees", () => ({
   refundLadderEntryFees: (...args: unknown[]) => mockRefund(...args),
 }));
 
+import {
+  LADDER_MIN_ENTRANTS_TO_START,
+  LADDER_SEASON_EXTENSION_DAYS,
+  LADDER_SEASON_START_DAYS,
+  deriveExtendedLadderDates,
+  deriveLadderDates,
+  getLadderSeasonCancelledNotification,
+  getLadderSeasonExtendedNotification,
+  getLadderSeasonStartedNotification,
+} from "courtchamps-shared/helpers";
 import { runProcessLadderPhases } from "./processLadderPhases";
 
 const now = new Date("2026-10-06T12:00:00Z");
@@ -176,6 +186,8 @@ const seedLadder = (ladderId: string, overrides: Data = {}) => {
     name: ladderId,
     ladderType: LADDER_TYPE.SINGLES,
     status: LADDER_STATUS.REGISTRATION_CLOSED,
+    seasonStartsAt: daysFromNow(-60),
+    seasonStartedAt: daysFromNow(-60),
     registrationClosesAt: daysFromNow(-30),
     playoffStartsAt: daysFromNow(-1),
     maxPlayers: 2048,
@@ -313,6 +325,8 @@ describe("registration close", () => {
     const summary = await runProcessLadderPhases(now);
 
     expect(summary).toEqual({
+      seasonsStarted: [],
+      seasonsExtended: [],
       registrationClosed: [],
       cancelled: [],
       playoffsGenerated: [],
@@ -324,6 +338,177 @@ describe("registration close", () => {
       laddersPaid: [],
     });
     expect(writeLog).toHaveLength(0);
+  });
+});
+
+describe("season start", () => {
+  const sent = () =>
+    mockSendNotification.mock.calls.map(([notification, options]) => ({
+      ...notification,
+      id: options?.id,
+    }));
+
+  const seedPreSeason = (overrides: Data = {}) => {
+    const dates = deriveLadderDates(daysFromNow(-LADDER_SEASON_START_DAYS));
+    seedLadder("L1", {
+      name: "North London Ladder",
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      seasonStartedAt: undefined,
+      ...dates,
+      ...overrides,
+    });
+    return dates;
+  };
+
+  it("starts the season once enough have joined and tells every entrant", async () => {
+    seedPreSeason();
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsStarted).toEqual(["L1"]);
+    expect(ladder("L1").seasonStartedAt).toEqual(now);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.REGISTRATION_OPEN);
+    expect(sent()).toHaveLength(LADDER_MIN_ENTRANTS_TO_START);
+    expect(sent()[0]).toMatchObject({
+      ...getLadderSeasonStartedNotification({
+        name: "North London Ladder",
+        ladderType: LADDER_TYPE.SINGLES,
+      }),
+      data: { ladderId: "L1", tab: "Summary" },
+      id: "season-started-L1-p0000",
+    });
+    expect(ladder("L1").seasonStartNotificationsSentAt).toBeInstanceOf(Date);
+    expect(mockRefund).not.toHaveBeenCalled();
+  });
+
+  it("moves every date back once when too few have joined", async () => {
+    const dates = seedPreSeason();
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START - 28);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsExtended).toEqual(["L1"]);
+    expect(summary.cancelled).toEqual([]);
+    expect(ladder("L1")).toMatchObject({
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      seasonExtendedAt: now,
+      ...deriveExtendedLadderDates(dates.seasonStartsAt),
+    });
+    expect(ladder("L1").seasonStartedAt).toBeUndefined();
+    expect(sent()).toHaveLength(LADDER_MIN_ENTRANTS_TO_START - 28);
+    expect(sent()[0]).toMatchObject({
+      ...getLadderSeasonExtendedNotification(
+        { name: "North London Ladder", ladderType: LADDER_TYPE.SINGLES },
+        LADDER_MIN_ENTRANTS_TO_START - 28,
+      ),
+      id: "season-extended-L1-p0000",
+    });
+    expect(sent()[0].message).toContain("needs 28 more players");
+  });
+
+  it("does nothing more until the moved start is due", async () => {
+    seedPreSeason();
+    seedParticipants("L1", 10);
+    await runProcessLadderPhases(now);
+    mockSendNotification.mockClear();
+    writeLog.length = 0;
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsExtended).toEqual([]);
+    expect(summary.cancelled).toEqual([]);
+    expect(writeLog).toHaveLength(0);
+    expect(mockSendNotification).not.toHaveBeenCalled();
+  });
+
+  it("cancels and refunds when there are still too few after the extension", async () => {
+    seedPreSeason({
+      seasonExtendedAt: daysFromNow(-LADDER_SEASON_EXTENSION_DAYS),
+    });
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START - 1);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.cancelled).toEqual(["L1"]);
+    expect(ladder("L1")).toMatchObject({
+      status: LADDER_STATUS.CANCELLED,
+      cancelledAt: now,
+      cancelledReason: LADDER_CANCELLED_REASON.TOO_FEW_REGISTRATIONS,
+    });
+    expect(mockRefund).toHaveBeenCalledWith({
+      ladder: expect.objectContaining({ ladderId: "L1" }),
+      entrantCount: LADDER_MIN_ENTRANTS_TO_START - 1,
+    });
+    expect(sent()[0]).toMatchObject({
+      ...getLadderSeasonCancelledNotification({
+        name: "North London Ladder",
+        ladderType: LADDER_TYPE.SINGLES,
+      }),
+      id: "ladder-cancelled-L1-p0000",
+    });
+  });
+
+  it("starts after the extension when enough have joined by then", async () => {
+    seedPreSeason({
+      seasonExtendedAt: daysFromNow(-LADDER_SEASON_EXTENSION_DAYS),
+    });
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsStarted).toEqual(["L1"]);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.REGISTRATION_OPEN);
+  });
+
+  it("counts active doubles teams, not players", async () => {
+    seedPreSeason({ ladderType: LADDER_TYPE.DOUBLES });
+    seedParticipants("L1", 200);
+    for (let index = 0; index < 100; index += 1) {
+      store.set(`ladders/L1/ladderTeams/t${index}`, {
+        teamKey: `t${index}`,
+        playerIds: [`a${index}`, `b${index}`],
+      });
+    }
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsExtended).toEqual(["L1"]);
+    expect(sent()[0].message).toContain("needs 28 more teams");
+  });
+
+  it("waits until the season start", async () => {
+    seedPreSeason({ seasonStartsAt: daysFromNow(1) });
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.seasonsStarted).toEqual([]);
+    expect(writeLog).toHaveLength(0);
+  });
+
+  it("finishes the season start messages on the next run after a failure", async () => {
+    seedPreSeason();
+    seedParticipants("L1", LADDER_MIN_ENTRANTS_TO_START);
+    let calls = 0;
+    mockSendNotification.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 20) throw new Error("function timed out");
+    });
+    await runProcessLadderPhases(now);
+    expect(ladder("L1").seasonStartedAt).toEqual(now);
+    expect(ladder("L1").seasonStartNotificationsSentAt).toBeUndefined();
+
+    mockSendNotification.mockReset();
+    mockSendNotification.mockResolvedValue(undefined);
+    await runProcessLadderPhases(now);
+
+    expect(sent()).toHaveLength(LADDER_MIN_ENTRANTS_TO_START);
+    expect(ladder("L1").seasonStartNotificationsSentAt).toBeInstanceOf(Date);
+
+    mockSendNotification.mockClear();
+    await runProcessLadderPhases(now);
+    expect(mockSendNotification).not.toHaveBeenCalled();
   });
 });
 

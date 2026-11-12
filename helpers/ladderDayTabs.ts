@@ -76,9 +76,6 @@ const dayTabsBetween = (
 const ladderEnd = (ladder: Ladder): Date | null =>
   toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
 
-const ladderRegistrationOpens = (ladder: Ladder): Date | null =>
-  toMoment(ladder.registrationOpensAt)?.toDate() ?? null;
-
 /** The day key for today, used to highlight it on the strips. */
 export const todayDayKey = (now: Date = new Date()): string =>
   dateToKey(startOfDay(now));
@@ -105,16 +102,6 @@ export const buildScheduleDayTabs = (matches: LadderMatch[]): LadderDayTab[] =>
     .filter((entry): entry is { key: string; date: Date } => entry.date != null)
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .map(({ key, date }) => ({ key, label: labelForDate(date) }));
-
-/** True once matches can be posted (from registrationOpensAt onward). */
-export const ladderRegistrationOpen = (
-  ladder: Ladder,
-  now: Date = new Date(),
-): boolean => {
-  const regOpens = ladderRegistrationOpens(ladder);
-  if (!regOpens) return true;
-  return now.getTime() >= regOpens.getTime();
-};
 
 export const filterMatchesByDay = (
   matches: LadderMatch[],

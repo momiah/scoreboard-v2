@@ -14,6 +14,8 @@ export MAESTRO_METRO_URL="http://localhost:${MAESTRO_METRO_PORT}"
 export MAESTRO_PLAYOFF_TIE_DAYS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")"
 export MAESTRO_LADDER_HOST_ARRANGE_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_HOST_ARRANGE_HOURS")"
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
+export MAESTRO_LADDER_MIN_ENTRANTS="$(node -p "require('courtchamps-shared').LADDER_MIN_ENTRANTS_TO_START")"
+export MAESTRO_LADDER_SEASON_EXTENSION_DAYS="$(node -p "require('courtchamps-shared').LADDER_SEASON_EXTENSION_DAYS")"
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
 forward() { [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] && adb -s "$MAESTRO_DEVICE" reverse "tcp:$MAESTRO_METRO_PORT" "tcp:$MAESTRO_METRO_PORT" >/dev/null; true; }

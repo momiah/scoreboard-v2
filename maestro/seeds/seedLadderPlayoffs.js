@@ -222,6 +222,7 @@ const buildLadderDoc = ({
     registrationOpensAt: new Date(now.getTime() - 120 * DAY_MS),
     registrationClosesAt: new Date(now.getTime() - 60 * DAY_MS),
     seasonStartsAt: new Date(now.getTime() - 90 * DAY_MS),
+    seasonStartedAt: new Date(now.getTime() - 90 * DAY_MS),
     playoffStartsAt: upcoming
       ? new Date(now.getTime() + 3 * DAY_MS)
       : new Date(now.getTime() - 60 * 1000),

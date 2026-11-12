@@ -92,6 +92,8 @@ const seedLadder = async (
     name: `Ladder ${ladderId}`,
     ladderType: LADDER_TYPE.SINGLES,
     status: LADDER_STATUS.REGISTRATION_CLOSED,
+    seasonStartsAt: daysFromNow(-60),
+    seasonStartedAt: daysFromNow(-60),
     registrationClosesAt: daysFromNow(-30),
     playoffStartsAt: daysFromNow(-1),
     maxPlayers: 2048,
