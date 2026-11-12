@@ -5,4 +5,3 @@ appId: com.courtchamp
     element:
       id: "ladder-pre-registration-option-${ID}"
     direction: DOWN
-    centerElement: true

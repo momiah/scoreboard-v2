@@ -6,6 +6,10 @@ appId: com.courtchamp
       id: "how-to-play-intro"
     timeout: 15000
 - assertVisible: "SEASON ONE"
+# The title and close button sit below the status bar; under it, Android leaves them out of the hierarchy.
+- assertVisible: "How to Play"
+- assertVisible:
+    id: "how-to-play-close"
 - assertVisible:
     id: "how-to-play-intro-pool"
 - assertVisible: ".*${output[KEY + '-entrants']}\\. One champion\\..*"
