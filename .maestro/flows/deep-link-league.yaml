@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/deep-link/cleanup.yaml
+---
+# A shared league link (https://courtchamps.com/join/league/<id>, or /preview/league/<id>)
+# opens that league in the app, and Back goes to Home.
+- runFlow:
+    file: ../utilities/leagues/seed.yaml
+    env:
+      SCENARIO: "bulkSingles"
+- copyTextFrom:
+    id: "maestro-expected-leagueId"
+- evalScript: ${output.leagueId = maestro.copiedText}
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://join/league/${output.leagueId}"
+- extendedWaitUntil:
+    visible:
+      id: "league-tabs"
+    timeout: 30000
+- assertVisible: ".*${output.leagueName}.*"
+- runFlow: ../utilities/deep-link/back.yaml
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://preview/league/${output.leagueId}"
+- extendedWaitUntil:
+    visible:
+      id: "league-tabs"
+    timeout: 30000
+- assertVisible: ".*${output.leagueName}.*"
+- runFlow: ../utilities/deep-link/back.yaml
