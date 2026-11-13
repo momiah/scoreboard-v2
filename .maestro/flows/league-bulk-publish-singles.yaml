@@ -1,0 +1,22 @@
+# League, Singles: the admin opens League Settings > Bulk Publish Games and enters
+# every game through the Add Game card (on Android with the number pad open,
+# which used to cover the score field), then publishes them all at once. The
+# stored league and profiles match the app's own scoring, Player Performance show the expected wins, PD and rank, and the
+# test user's profile shows the expected CP, PD, wins and losses.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/leagues/seed.yaml
+    env:
+      SCENARIO: "bulkSingles"
+- runFlow: ../utilities/leagues/bulk-publish.yaml
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-league-check-results"
+- runFlow: ../utilities/leagues/expect.yaml
+- assertTrue: ${output.exp.published === output.exp.numberOfGames}
+- runFlow: ../utilities/leagues/assert-standings.yaml
+- runFlow: ../utilities/leagues/assert-user-profile.yaml

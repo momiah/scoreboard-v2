@@ -408,6 +408,7 @@ const BulkGamePublisher = () => {
       </Header>
 
       <AddGameButton
+        testID="bulk-league-add-game"
         onPress={handleAddGame}
         disabled={loadingPlayers || leagueEnded}
       >
@@ -448,6 +449,7 @@ const BulkGamePublisher = () => {
         </CancelButton>
 
         <PublishButton
+          testID="bulk-league-publish"
           onPress={handlePublishGames}
           disabled={pendingGames.length === 0 || publishing}
           style={{

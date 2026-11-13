@@ -1,0 +1,10 @@
+# Reads the expected standings and profile for the league into output.exp.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-league-expect"
+- copyTextFrom:
+    id: "maestro-expected-state"
+- evalScript: ${output.exp = JSON.parse(maestro.copiedText)}
