@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/deep-link/cleanup.yaml
+---
+# A shared tournament link (https://courtchamps.com/join/tournament/<id>, or
+# /preview/tournament/<id>) opens that tournament in the app, and Back goes to Home.
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "bulkSingles"
+- copyTextFrom:
+    id: "maestro-expected-tournamentId"
+- evalScript: ${output.tournamentId = maestro.copiedText}
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://join/tournament/${output.tournamentId}"
+- extendedWaitUntil:
+    visible:
+      id: "tournament-tabs"
+    timeout: 30000
+- assertVisible: ".*${output.tournamentName}.*"
+- runFlow: ../utilities/deep-link/back.yaml
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://preview/tournament/${output.tournamentId}"
+- extendedWaitUntil:
+    visible:
+      id: "tournament-tabs"
+    timeout: 30000
+- assertVisible: ".*${output.tournamentName}.*"
+- runFlow: ../utilities/deep-link/back.yaml
