@@ -1,0 +1,80 @@
+# The admin opens League Settings > Bulk Publish Games and enters every game in
+# output.games through the Add Game card, then publishes them all. The number
+# pad has no return key, so it stays open while Submit is tapped: the card must
+# sit above it with the score field and Submit reachable.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-league.yaml
+    env:
+      TAB: "Scoreboard"
+- tapOn:
+    id: "league-menu"
+- tapOn: ".*Bulk Publish Games.*"
+- extendedWaitUntil:
+    visible:
+      id: "bulk-league-add-game"
+    timeout: 20000
+- evalScript: ${output.gi = 0}
+- repeat:
+    while:
+      true: ${output.gi < output.games.length}
+    commands:
+      - evalScript: ${output.g = output.games[output.gi]}
+      - tapOn:
+          id: "bulk-league-add-game"
+      - extendedWaitUntil:
+          visible:
+            id: "add-game-score-input"
+          timeout: 10000
+      - runFlow:
+          file: pick-player.yaml
+          env:
+            TEAM: "team1"
+            INDEX: "0"
+            USER_ID: ${output.g.team1[0]}
+      - runFlow:
+          when:
+            true: ${output.g.team1.length > 1}
+          file: pick-player.yaml
+          env:
+            TEAM: "team1"
+            INDEX: "1"
+            USER_ID: ${output.g.team1[1]}
+      - runFlow:
+          file: pick-player.yaml
+          env:
+            TEAM: "team2"
+            INDEX: "0"
+            USER_ID: ${output.g.team2[0]}
+      - runFlow:
+          when:
+            true: ${output.g.team2.length > 1}
+          file: pick-player.yaml
+          env:
+            TEAM: "team2"
+            INDEX: "1"
+            USER_ID: ${output.g.team2[1]}
+      - tapOn:
+          id: "add-game-score-input"
+      - inputText: ${output.g.score}
+      - copyTextFrom:
+          id: "add-game-score-input"
+      - assertTrue: ${maestro.copiedText == output.g.score.slice(0, 2) + '-' + output.g.score.slice(2)}
+      - tapOn:
+          id: "add-game-submit"
+      - extendedWaitUntil:
+          notVisible:
+            id: "add-game-score-input"
+          timeout: 10000
+      - evalScript: ${output.gi = output.gi + 1}
+- tapOn:
+    id: "bulk-league-publish"
+- tapOn: "Publish"
+- extendedWaitUntil:
+    visible: "Successfully published ${output.games.length} games!"
+    timeout: 60000
+- tapOn: "Close"
+- waitForAnimationToEnd
+- tapOn:
+    id: "tab-home"

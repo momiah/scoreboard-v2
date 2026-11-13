@@ -24,6 +24,7 @@ interface PlayerItemProps {
 const PlayerItem = memo<PlayerItemProps>(
   ({ player, onSelect, isSelected, isDisabled }) => (
     <PlayerDropDown
+      testID={`add-game-player-option-${player.userId}`}
       onPress={() => !isDisabled && onSelect(player)}
       disabled={isDisabled}
     >
