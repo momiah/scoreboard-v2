@@ -108,7 +108,7 @@ anyone else's registrant document.
 
 ## Server and staff only
 
-`mail` (Trigger Email queue), `signupRateLimits`, `userRoles` (players read
+`mail` (Trigger Email queue), `signupRateLimits`, `deletionTokens` (website delete-account functions), `userRoles` (players read
 their own), `noShowClaims`, `maestroBackups`, `ladders/*/playoffTies` (read
 only), `ladders/*/prizePayouts` (players read their own), `ladders/*/reportCounts`
 (read only), `ladderEligibility` (players read and delete their own), and any
