@@ -1,0 +1,8 @@
+appId: com.courtchamp
+---
+# Signs in if needed and deletes every seed, so a link test leaves live data clean.
+- runFlow: ../../login.yaml
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-cleanup-test-data"

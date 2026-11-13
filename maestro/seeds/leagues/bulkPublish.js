@@ -279,6 +279,7 @@ export const seedLeagueScenario = async ({
   const idOf = scenarioIds(scenario, testUser);
   return {
     expected: {
+      leagueId,
       leagueName: scenario.name,
       ids: JSON.stringify(idOf),
       games: JSON.stringify(

@@ -37,6 +37,24 @@ describe("linking", () => {
     });
   });
 
+  it.each([
+    ["/preview/club/club-1", "Club", { clubId: "club-1" }],
+    ["/join/club/club-1", "Club", { clubId: "club-1" }],
+    ["/join/league/league-1", "League", { leagueId: "league-1" }],
+    ["/preview/league/league-1", "League", { leagueId: "league-1" }],
+    ["/join/tournament/t-1", "Tournament", { tournamentId: "t-1" }],
+    ["/preview/tournament/t-1", "Tournament", { tournamentId: "t-1" }],
+  ])("opens %s on the %s screen, above Home", (path, name, params) => {
+    const { stack } = homeRoutes(path);
+    expect(stack.map((route) => route.name)).toEqual(["HomeMain", name]);
+    expect(stack[1].params).toEqual(params);
+  });
+
+  it("leaves unknown paths to Home", () => {
+    const { stack } = homeRoutes("/preview/video/v-1");
+    expect(stack.map((route) => route.name)).not.toContain("Club");
+  });
+
   it("covers both the site and the app scheme", () => {
     expect(linking.prefixes).toEqual([
       "https://courtchamps.com",
