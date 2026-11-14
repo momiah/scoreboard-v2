@@ -16,7 +16,13 @@ export MAESTRO_LADDER_HOST_ARRANGE_HOURS="$(node -p "require('courtchamps-shared
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
-forward() { [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] && adb -s "$MAESTRO_DEVICE" reverse "tcp:$MAESTRO_METRO_PORT" "tcp:$MAESTRO_METRO_PORT" >/dev/null; true; }
+forward() {
+  [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] || return 0
+  adb -s "$MAESTRO_DEVICE" reverse "tcp:$MAESTRO_METRO_PORT" "tcp:$MAESTRO_METRO_PORT" >/dev/null
+  # Real (not mocked) GPS at maestro-eligibility-court, so free ladders can be joined.
+  adb -s "$MAESTRO_DEVICE" emu geo fix -0.1278 51.5074 >/dev/null
+  true
+}
 pass=0; flaky=(); failed=()
 if [[ "$pattern" == "="* ]]; then flows=(".maestro/flows/${pattern#=}.yaml"); else flows=(.maestro/flows/*${pattern}*.yaml); fi
 for flow in "${flows[@]}"; do

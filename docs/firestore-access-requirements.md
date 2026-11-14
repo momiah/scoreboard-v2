@@ -43,6 +43,10 @@ pairing, so a player must not be able to set an arbitrary location.
 | `ladders/{ladderId}/ladderTeams/{teamKey}` | A team member (doubles) | create | Team built by `createRootTeam` plus `joinedAt` (server timestamp), same rules. The `teams/{teamId}` doc must be `active` with two players. |
 | `ladders/{ladderId}/ladderMembers/{userId}` | A team member (doubles) | create | Claim written in the same transaction as the `ladderTeams` create: `{ userId, teamKey, joinedAt }` (server timestamp), one per player. Must not exist for that player under another `teamKey` — this is what stops two teams sharing a player when they join at the same instant. |
 | `ladders/{ladderId}/ladderMembers/{userId}` | A team member (doubles) | delete | Only in the batch that disbands the team (removes the `ladderTeams` doc and these claims together). |
+| `ladders/{ladderId}/ladderParticipants/{userId}` and `ladders/{ladderId}/ladderTeams/{teamKey}` | Joining player | create (free ladders) | When the ladder's `entryFee` is 0 or unset, also require `exists(/ladderEligibility/{ladderId}_{request.auth.uid})`. Paid ladders have no location check. |
+| `ladderEligibility/{ladderId}_{userId}` | Nobody (app) | create, update | Written only by the `verifyLadderEligibility` callable (Admin SDK) after a fresh, unmocked device reading puts the player within the ladder's `eligibilityRadiusMiles` (default `LADDER_ELIGIBILITY_RADIUS_MILES`) of one of its courts. Holds the distance, never coordinates. |
+| same | That player (app) | delete | Own doc only. Used by the Maestro cleanup; deleting it only takes away the player's own permission to join. |
+| `ladders/{ladderId}` | Admin (website ladder form) | create, update | `eligibilityRadiusMiles`: optional positive number, free ladders only. |
 | `ladders/{ladderId}` | A joining player or team member | update | `participantCount` +1, only in the same transaction as the participant/team create above. |
 | `teams/{teamId}` | A team member | update | `ladderIds` (arrayUnion) after joining a ladder. |
 

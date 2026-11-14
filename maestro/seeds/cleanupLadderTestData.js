@@ -49,6 +49,7 @@ import {
 } from "./seedLadderJoinFlow";
 import { cleanupChatsTabTestData } from "./seedChatsTab";
 import { deleteFixtureUserSubcollections } from "./fixtureUserCleanup";
+import { cleanupLadderEligibilityFixtures } from "./ladderEligibilityFixtures";
 import { cleanupLadderInactivityTestData } from "./seedLadderInactivity";
 import { MAESTRO_JOIN_FIXTURE_USER_IDS } from "./seedLadderJoinFlow";
 import { MAESTRO_DISBAND_FIXTURE_USER_IDS } from "./seedTeamDisbandFlow";
@@ -144,6 +145,7 @@ export const cleanupLadderTestData = async ({
   const deletedCourts = await deleteUserSubmittedCourts(testUser);
   const playoffs = await cleanupLadderPlayoffsTestData();
   const join = await cleanupLadderJoinTestData();
+  await cleanupLadderEligibilityFixtures({ testUser });
   const inactivity = await cleanupLadderInactivityTestData({ testUser });
   const disband = await cleanupTeamDisbandTestData();
   const cancellation = await cleanupMatchCancellationTestData();
