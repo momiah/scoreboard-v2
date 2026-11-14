@@ -14,6 +14,8 @@ module.exports = {
   testPathIgnorePatterns: [
     "/node_modules/",
     "/functions/",
+    // Firestore rules tests run under node --test against the emulator (firestore-tests/package.json).
+    "/firestore-tests/",
     "/__tests__/.*/testUtils\\.tsx$",
   ],
 };
