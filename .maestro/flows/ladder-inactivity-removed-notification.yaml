@@ -21,7 +21,6 @@ onFlowStart:
     element:
       id: "ladder-summary-join"
     direction: DOWN
-    centerElement: true
 - assertVisible:
     id: "ladder-summary-join"
     text: ".*Registration Closed.*"
