@@ -84,17 +84,13 @@ const ResendVerification: React.FC = () => {
 };
 
 interface AccountCreatedStepProps {
-  firstName: string;
   requiresEmailVerification: boolean;
   onExplore: () => void;
-  onCreateLeague: () => void;
 }
 
 const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
-  firstName,
   requiresEmailVerification,
   onExplore,
-  onCreateLeague,
 }) => (
   <ScrollView
     contentContainerStyle={{
@@ -107,9 +103,7 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
     showsVerticalScrollIndicator={false}
   >
     <Reveal>
-      <Eyebrow>
-        {firstName ? `WELCOME, ${firstName.toUpperCase()}` : "WELCOME"}
-      </Eyebrow>
+      <Eyebrow>WELCOME</Eyebrow>
     </Reveal>
     <Reveal order={1}>
       <Title>You&apos;re in.</Title>
@@ -122,9 +116,7 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
       </Hero>
     </Reveal>
     <Reveal order={3}>
-      <RankLine>
-        Beginner · 20 CP. Play your first game to start earning.
-      </RankLine>
+      <RankLine>Beginner · Level 1</RankLine>
       {requiresEmailVerification ? (
         <RankLine>
           Check your email and verify your account, then log in.
@@ -141,13 +133,6 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
         testID="signup-welcome-explore"
       >
         <NavButtonText>Explore Court Champs</NavButtonText>
-      </NavButton>
-      <NavButton
-        style={{ flexGrow: 0, flexShrink: 0, flexBasis: "auto" }}
-        onPress={onCreateLeague}
-        testID="signup-welcome-league"
-      >
-        <NavButtonText>Create a league</NavButtonText>
       </NavButton>
       {requiresEmailVerification ? <ResendVerification /> : null}
     </Actions>

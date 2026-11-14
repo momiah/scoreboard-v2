@@ -69,6 +69,10 @@ onFlowComplete:
     visible:
       id: "signup-welcome-explore"
     timeout: 30000
+- assertVisible: "WELCOME"
+- assertVisible: "Beginner · Level 1"
+- assertNotVisible:
+    id: "signup-welcome-league"
 - assertVisible: ".*verify your account, then log in.*"
 - assertVisible:
     id: "signup-welcome-resend"
