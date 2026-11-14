@@ -47,11 +47,11 @@ onFlowStart:
     id: "ladder-pre-registration-option-maestro-prereg-closed"
 - assertNotVisible:
     id: "ladder-pre-registration-option-maestro-prereg-launched"
-- tapOn: "Community"
 - scrollUntilVisible:
     element:
       text: "Community"
     direction: UP
+- tapOn: "Community"
 - repeat:
     times: 4
     commands:
