@@ -94,7 +94,9 @@ const AllPlayers = () => {
             <PlayerName>{displayName}</PlayerName>
           </PlayerNameCell>
           <TableCell>
-            <Icon name={player.location.countryCode} height="20" width="20" />
+            {player.location?.countryCode ? (
+              <Icon name={player.location.countryCode} height="20" width="20" />
+            ) : null}
           </TableCell>
           <TableCell>
             <StatTitle>CP</StatTitle>

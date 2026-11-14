@@ -13,11 +13,16 @@ import {
   LADDER_TYPE,
   TEAM_STATUS,
   buildLadderParticipant,
+  getLadderEligibilityRadiusMiles,
   normalizeTeamKey,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { deleteAllMaestroFixtureTeams } from "./teamFixtures";
 import { resetHomeCourtNotifications, seedFixtureUser } from "./homeCourtFixtures";
+import {
+  MAESTRO_ELIGIBILITY_COURT_ID,
+  prepareEligibilityCourt,
+} from "./ladderEligibilityFixtures";
 
 export const MAESTRO_JOIN_SINGLES_LADDER_ID = "maestro-join-singles-ladder";
 export const MAESTRO_JOIN_DOUBLES_LADDER_ID = "maestro-join-doubles-ladder";
@@ -102,10 +107,11 @@ const ladderDocument = ({ testUser, ladderId, name, ladderType, variant }) => {
       "Seeded by maestro/seeds/seedLadderJoinFlow for Maestro E2E tests. Safe to ignore.",
     image: "",
     region: "Test",
+    city: "London",
     countryCode: "GB",
     ladderType,
     genderType: "Mixed",
-    courtIds: [],
+    courtIds: [MAESTRO_ELIGIBILITY_COURT_ID],
     status:
       variant === JOIN_VARIANT.STATUS_CLOSED
         ? LADDER_STATUS.REGISTRATION_CLOSED
@@ -138,22 +144,25 @@ export const seedLadderJoinFlowSingles = async ({
     throw new Error("seedLadderJoinFlowSingles: testUser with a userId is required");
   }
   await resetLadderTree(MAESTRO_JOIN_SINGLES_LADDER_ID);
-  await setDoc(
-    doc(db, "ladders", MAESTRO_JOIN_SINGLES_LADDER_ID),
-    ladderDocument({
-      testUser,
-      ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID,
-      name: MAESTRO_JOIN_SINGLES_LADDER_NAME,
-      ladderType: LADDER_TYPE.SINGLES,
-      variant,
-    }),
-  );
+  await prepareEligibilityCourt({ testUser, ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID });
+  const ladder = ladderDocument({
+    testUser,
+    ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID,
+    name: MAESTRO_JOIN_SINGLES_LADDER_NAME,
+    ladderType: LADDER_TYPE.SINGLES,
+    variant,
+  });
+  await setDoc(doc(db, "ladders", MAESTRO_JOIN_SINGLES_LADDER_ID), ladder);
   await resetHomeCourtNotifications({
     testUser,
     ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID,
     ladderName: MAESTRO_JOIN_SINGLES_LADDER_NAME,
   });
-  return { ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID, variant };
+  return {
+    ladderId: MAESTRO_JOIN_SINGLES_LADDER_ID,
+    variant,
+    expected: { joinRadiusMiles: getLadderEligibilityRadiusMiles(ladder) },
+  };
 };
 
 export const seedLadderJoinFlowDoubles = async ({
@@ -172,6 +181,7 @@ export const seedLadderJoinFlowDoubles = async ({
 
   await resetLadderTree(MAESTRO_JOIN_DOUBLES_LADDER_ID);
   await deleteAllMaestroFixtureTeams();
+  await prepareEligibilityCourt({ testUser, ladderId: MAESTRO_JOIN_DOUBLES_LADDER_ID });
 
   await setDoc(
     doc(db, "ladders", MAESTRO_JOIN_DOUBLES_LADDER_ID),

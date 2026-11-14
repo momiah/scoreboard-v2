@@ -2,6 +2,7 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
+- runFlow: ../utilities/ladders/near-eligibility-court.yaml
 - runFlow:
     file: ../utilities/playoffs/harness.yaml
     env:

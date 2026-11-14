@@ -11,6 +11,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
 import { Club, CompetitionAdmins, Player } from "@shared/types";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const ClubAssignAdmin = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -129,6 +130,7 @@ const ClubAssignAdmin = () => {
 
   return (
     <Container>
+      <StatusBarSpacer />
       <Title>Assign Club Admins</Title>
       <FlatList
         data={participants}

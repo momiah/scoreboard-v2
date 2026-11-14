@@ -9,6 +9,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import {
+  MAESTRO_ELIGIBILITY_COURT_ID,
+  prepareEligibilityCourt,
+} from "./ladderEligibilityFixtures";
+import {
   LADDER_MATCH_STATUS,
   LADDER_STATUS,
   LADDER_TYPE,
@@ -123,10 +127,11 @@ const ladderDocument = ({ testUser, ladderId, name, status }) => ({
     "Seeded by maestro/seeds/seedTeamDisbandFlow for Maestro E2E tests. Safe to ignore.",
   image: "",
   region: "Test",
+  city: "London",
   countryCode: "GB",
   ladderType: LADDER_TYPE.DOUBLES,
   genderType: "Mixed",
-  courtIds: [],
+  courtIds: [MAESTRO_ELIGIBILITY_COURT_ID],
   status,
   registrationOpensAt: daysFromNow(-5),
   registrationClosesAt:
@@ -271,6 +276,7 @@ export const seedTeamDisbandFlow = async ({
       : []),
   ];
   for (const ladder of ladders) {
+    await prepareEligibilityCourt({ testUser, ladderId: ladder.id });
     await setDoc(
       doc(db, "ladders", ladder.id),
       ladderDocument({

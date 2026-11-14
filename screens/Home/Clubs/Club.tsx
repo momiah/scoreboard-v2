@@ -34,6 +34,7 @@ import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
 import ClubTournaments from "./tabs/ClubTournaments";
 import UserRoleTag from "../../../components/UserRoleTag";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -260,6 +261,7 @@ const ClubScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+      <StatusBarSpacer />
       <LoadingOverlay visible={loading} loadingText="Club" />
 
       {!loading && clubById && club && (

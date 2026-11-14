@@ -58,6 +58,11 @@ merged (the pinned commit must exist on `main` first).
   `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS`), never literals; Maestro flows read
   them from the `MAESTRO_*` env vars `run-suite.sh` exports. See
   `maestro/README.md`.
+- Every feature or behaviour change ships with Maestro coverage in the same PR:
+  the flows under `.maestro/flows`, any seeds and harness buttons they need,
+  each seed with a matching cleanup, and a line in `docs/testing/maestro.md`
+  saying what is covered. A PR without it is not ready to merge. Put this
+  requirement in every hand-off or new-session prompt too.
 - Naming: use `user` for the current user and `opponent` for the other
   player/team. Do not use `me`/`mine` or `them`/`theirs`.
 

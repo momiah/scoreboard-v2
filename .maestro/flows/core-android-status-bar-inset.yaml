@@ -1,0 +1,56 @@
+appId: com.courtchamp
+# Each screen's top element must sit below the status bar: on Android, anything
+# under it is left out of the hierarchy, so assertVisible fails if it is glued to the top.
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "tab-home"
+- assertVisible:
+    id: "home-logo"
+- tapOn:
+    id: "tab-competitions"
+- assertVisible: "Competitions"
+- assertVisible:
+    id: "competitions-notifications-button"
+- tapOn:
+    id: "tab-chats"
+- assertVisible:
+    id: "chats-header"
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-refresh"
+    timeout: 20000
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-sign-out"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 20000
+- assertVisible:
+    id: "home-logo"
+- tapOn:
+    id: "home-sign-in-link"
+- assertVisible:
+    id: "login-back"
+- assertVisible: "Welcome back"
+- tapOn:
+    id: "login-register"
+- assertVisible:
+    id: "signup-intro-header-right"
+- tapOn:
+    id: "signup-intro-next"
+- assertVisible:
+    id: "signup-intro-header-back"
+- assertVisible:
+    id: "signup-intro-header-right"
+- tapOn:
+    id: "signup-intro-header-right"
+- assertVisible:
+    id: "signup-account-back"

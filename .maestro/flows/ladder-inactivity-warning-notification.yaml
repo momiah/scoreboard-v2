@@ -1,0 +1,21 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-inactivity-warning"
+- copyTextFrom:
+    id: "maestro-expected-inactivityMessage"
+- evalScript: ${output.message = maestro.copiedText}
+- runFlow:
+    file: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*${output.message}.*"
+    timeout: 20000
+- tapOn: ".*${output.message}.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
