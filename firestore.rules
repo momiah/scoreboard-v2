@@ -1,9 +1,443 @@
 rules_version = '2';
 
+// Access requirements: docs/firestore-access-requirements.md. These rules must
+// keep allowing every write made by the app builds still in the stores (3.0.x
+// on runtimes 3.0.0 / 3.0.1 and 3.1.0) as well as the website.
+// Cloud Functions use the Admin SDK and bypass these rules.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // Website staff: userRoles/{uid}.role. The website gives every role the
+    // same admin pages, and Maestro seeds and devFunctions run as staff.
+    function isStaff() {
+      return signedIn()
+        && get(/databases/$(database)/documents/userRoles/$(uid())).data.role
+          in ['owner', 'admin', 'moderator'];
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function changes(key) {
+      return changedKeys().hasAny([key]);
+    }
+
+    function field(data, key, fallback) {
+      return data.get(key, fallback);
+    }
+
+    // Staff can read and write everything (website admin pages, backfills,
+    // Maestro seeds and cleanup).
+    match /{document=**} {
+      allow read, write: if isStaff();
+    }
+
+    // ---------------------------------------------------------------- users
+
+    function zeroPlacings(placings) {
+      return placings == null
+        || placings == {'first': 0, 'second': 0, 'third': 0, 'fourth': 0};
+    }
+
+    function startingStats() {
+      let detail = request.resource.data.get('profileDetail', {});
+      return detail.get('cashWon', 0) == 0
+        && zeroPlacings(detail.get('ladderStats', null))
+        && zeroPlacings(detail.get('leagueStats', null))
+        && zeroPlacings(detail.get('tournamentStats', null));
+    }
+
+    // Placings and cash won are written by Cloud Functions only. Clients
+    // rewrite the whole profileDetail map when scoring a game, so these must
+    // come back unchanged.
+    function functionOnlyStatsUnchanged() {
+      let before = resource.data.get('profileDetail', {});
+      let after = request.resource.data.get('profileDetail', {});
+      return after.get('cashWon', null) == before.get('cashWon', null)
+        && after.get('ladderStats', null) == before.get('ladderStats', null)
+        && after.get('leagueStats', null) == before.get('leagueStats', null)
+        && after.get('tournamentStats', null) == before.get('tournamentStats', null);
+    }
+
+    function profileViewIncrement() {
+      return !changes('profileViews')
+        || request.resource.data.profileViews == resource.data.get('profileViews', 0) + 1;
+    }
+
+    match /users/{userId} {
+      // Public: signed-out Home lists top players, and 3.0.x sign-up checks
+      // usernameLower before the account exists.
+      allow read: if true;
+      allow create: if signedIn()
+        && uid() == userId
+        && request.resource.data.get('userId', userId) == userId
+        && startingStats();
+      // Other players write profileDetail when they approve a game, and
+      // profileViews when they open the profile.
+      allow update: if signedIn()
+        && functionOnlyStatsUnchanged()
+        && (uid() == userId
+          || (changedKeys().hasOnly(['profileDetail', 'profileViews'])
+            && profileViewIncrement()));
+      allow delete: if signedIn() && uid() == userId;
+
+      match /notifications/{notificationId} {
+        allow read, update, delete: if signedIn() && uid() == userId;
+        allow create: if signedIn();
+      }
+
+      // A sender reads and bumps each recipient's chat entry.
+      match /chats/{chatId} {
+        allow read, create, update: if signedIn();
+        allow delete: if signedIn() && uid() == userId;
+      }
+    }
+
+    match /userRoles/{userId} {
+      allow read: if signedIn() && uid() == userId;
+    }
+
+    // ------------------------------------------------- leagues, tournaments
+
+    match /leagues/{leagueId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && field(request.resource.data, 'leagueOwner', {}).get('userId', null) == uid();
+      allow update: if signedIn()
+        && field(request.resource.data, 'leagueOwner', {}).get('userId', null)
+          == field(resource.data, 'leagueOwner', {}).get('userId', null);
+      allow delete: if signedIn()
+        && field(resource.data, 'leagueOwner', {}).get('userId', null) == uid();
+
+      match /chat/{messageId} {
+        allow read, create: if signedIn();
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && field(request.resource.data, 'tournamentOwner', {}).get('userId', null) == uid();
+      allow update: if signedIn()
+        && field(request.resource.data, 'tournamentOwner', {}).get('userId', null)
+          == field(resource.data, 'tournamentOwner', {}).get('userId', null);
+      allow delete: if signedIn()
+        && field(resource.data, 'tournamentOwner', {}).get('userId', null) == uid();
+
+      match /chat/{messageId} {
+        allow read, create: if signedIn();
+      }
+    }
+
+    // ---------------------------------------------------------------- clubs
+
+    function isClubOwner(clubId) {
+      return get(/databases/$(database)/documents/clubs/$(clubId)).data.get('clubOwner', {}).get('userId', null) == uid();
+    }
+
+    match /clubs/{clubId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && field(request.resource.data, 'clubOwner', {}).get('userId', null) == uid();
+      allow update: if signedIn()
+        && field(request.resource.data, 'clubOwner', {}).get('userId', null)
+          == field(resource.data, 'clubOwner', {}).get('userId', null);
+      allow delete: if signedIn()
+        && field(resource.data, 'clubOwner', {}).get('userId', null) == uid();
+
+      // Admins add and remove members, and deleting a club clears these.
+      match /participants/{memberId} {
+        allow read: if true;
+        allow create, update, delete: if signedIn();
+      }
+
+      match /feed/{eventId} {
+        allow read: if true;
+        allow create, update: if signedIn();
+        allow delete: if signedIn() && isClubOwner(clubId);
+      }
+
+      match /chat/{messageId} {
+        allow read, create: if signedIn();
+        allow delete: if signedIn() && isClubOwner(clubId);
+      }
+    }
+
+    // Club stats query every club's participants by userId.
+    match /{path=**}/participants/{memberId} {
+      allow read: if true;
+    }
+
+    // --------------------------------------------------------------- courts
+
+    function notVerifying(data) {
+      return data.get('verified', false) == false
+        && !('verifiedBy' in data)
+        && (!('submission' in data)
+          || (data.submission.get('status', 'pending') == 'pending'
+            && data.submission.get('submittedBy', uid()) == uid()));
+    }
+
+    match /courts/{courtId} {
+      allow read: if true;
+      // Players add unverified courts. The id comes from the court's details,
+      // so adding a court again overwrites it; verified courts are admin-only.
+      allow create: if signedIn() && notVerifying(request.resource.data);
+      allow update: if signedIn()
+        && resource.data.get('verified', false) == false
+        && notVerifying(request.resource.data);
+    }
+
+    // --------------------------------------------------------------- videos
+
+    match /gameVideos/{videoId} {
+      // Public: the website's video share page reads it signed out.
+      allow read: if true;
+      allow update: if signedIn()
+        && changedKeys().hasOnly([
+          'likes', 'likedBy', 'commentCount',
+          'courtPositions', 'courtPositionsSetBy', 'videoApproved'
+        ])
+        && (!changes('videoApproved') || request.resource.data.videoApproved == false);
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create, update: if signedIn();
+
+        match /replies/{replyId} {
+          allow read: if true;
+          allow create, update: if signedIn();
+        }
+      }
+    }
+
+    match /savedVideos/{saveId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.savedBy.userId == uid()
+        && saveId == request.resource.data.videoId + '_' + uid();
+      allow delete: if signedIn() && resource.data.savedBy.userId == uid();
+    }
+
+    match /pendingVideoUploads/{uploadId} {
+      allow read, update, delete: if signedIn() && resource.data.postedBy.userId == uid();
+      allow create: if signedIn() && request.resource.data.postedBy.userId == uid();
+    }
+
+    match /failedVideoUploads/{failureId} {
+      allow create: if signedIn();
+    }
+
+    match /reportedVideos/{reportId} {
+      // A video's poster reads every report against it.
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.reportedBy.userId == uid()
+        && request.resource.data.status == 'pending';
+    }
+
+    match /videoReportAppeals/{appealId} {
+      allow read: if signedIn() && resource.data.appealedBy.userId == uid();
+      allow create: if signedIn()
+        && request.resource.data.appealedBy.userId == uid()
+        && request.resource.data.status == 'pending';
+    }
+
+    // ------------------------------------------------------- support, misc
+
+    match /feedback/{feedbackId} {
+      allow create: if signedIn();
+    }
+
+    match /account-support/{requestId} {
+      allow create: if signedIn();
+    }
+
+    match /scoreboard/{gameId} {
+      allow read: if true;
+    }
+
+    // ------------------------------------------------------- ladder teams
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create, update, delete: if signedIn();
+
+      match /requests/{requestId} {
+        allow read, create, update, delete: if signedIn();
+      }
+    }
+
+    // -------------------------------------------------------------- ladders
+
+    function ladderData(ladderId) {
+      return get(/databases/$(database)/documents/ladders/$(ladderId)).data;
+    }
+
+    function ladderRegistrationOpen(ladderId) {
+      let ladder = ladderData(ladderId);
+      return ladder.get('status', 'registrationOpen') == 'registrationOpen'
+        && (ladder.get('maxPlayers', 0) == null
+          || ladder.get('maxPlayers', 0) <= 0
+          || ladder.get('participantCount', 0) < ladder.maxPlayers);
+    }
+
+    // Free ladders need a ladderEligibility doc written by the
+    // verifyLadderEligibility callable. Paid ladders have no location check.
+    function ladderJoinEligible(ladderId) {
+      let fee = ladderData(ladderId).get('entryFee', 0);
+      return (fee != null && fee > 0)
+        || exists(/databases/$(database)/documents/ladderEligibility/$(ladderId + '_' + uid()));
+    }
+
+    function homeCourtKeys() {
+      return ['homeCourt', 'homeCourtChanges', 'homeCourtUpdatedAt', 'homeCourtUpdatedBy'];
+    }
+
+    function homeCourtChangeAllowed() {
+      return !changedKeys().hasAny(homeCourtKeys())
+        || (request.resource.data.get('homeCourtUpdatedBy', null) == uid()
+          && request.resource.data.get('homeCourtChanges', 0) >= resource.data.get('homeCourtChanges', 0)
+          && request.resource.data.get('homeCourtChanges', 0) <= 1);
+    }
+
+    function memberClaimValid(ladderId, userId) {
+      let team = getAfter(/databases/$(database)/documents/ladders/$(ladderId)/ladderTeams/$(request.resource.data.teamKey)).data;
+      return request.resource.data.userId == userId
+        && uid() in team.playerIds
+        && userId in team.playerIds;
+    }
+
+    match /ladders/{ladderId} {
+      allow read: if true;
+      // Joining and leaving move participantCount by one; every other ladder
+      // field (status, playoffs, prizes, courtIds) is admin or function only.
+      allow update: if signedIn()
+        && changedKeys().hasOnly(['participantCount'])
+        && (request.resource.data.participantCount == resource.data.get('participantCount', 0) + 1
+          || request.resource.data.participantCount == resource.data.get('participantCount', 0) - 1);
+
+      match /ladderParticipants/{userId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && uid() == userId
+          && request.resource.data.joinedAt == request.time
+          && ladderRegistrationOpen(ladderId)
+          && ladderJoinEligible(ladderId);
+        // Opponents write ranking stats when they approve a game; home court
+        // is the player's own.
+        allow update: if signedIn()
+          && request.resource.data.get('joinedAt', null) == resource.data.get('joinedAt', null)
+          && (!changedKeys().hasAny(homeCourtKeys()) || uid() == userId)
+          && homeCourtChangeAllowed();
+        allow delete: if signedIn() && uid() == userId;
+      }
+
+      match /ladderTeams/{teamKey} {
+        allow read: if true;
+        allow create: if signedIn()
+          && uid() in request.resource.data.playerIds
+          && request.resource.data.joinedAt == request.time
+          && ladderRegistrationOpen(ladderId)
+          && ladderJoinEligible(ladderId);
+        allow update: if signedIn()
+          && request.resource.data.get('joinedAt', null) == resource.data.get('joinedAt', null)
+          && (!changedKeys().hasAny(homeCourtKeys()) || uid() in resource.data.playerIds)
+          && homeCourtChangeAllowed();
+        allow delete: if signedIn() && uid() in resource.data.playerIds;
+      }
+
+      // One claim per player, written with the team in one transaction, so a
+      // player can't be on two teams in the same ladder.
+      match /ladderMembers/{userId} {
+        allow read: if true;
+        allow create: if signedIn() && memberClaimValid(ladderId, userId);
+        allow update: if signedIn()
+          && resource.data.teamKey == request.resource.data.teamKey
+          && memberClaimValid(ladderId, userId);
+        allow delete: if signedIn()
+          && (uid() == userId
+            || uid() in get(/databases/$(database)/documents/ladders/$(ladderId)/ladderTeams/$(resource.data.teamKey)).data.playerIds);
+      }
+
+      // The playoff decider (playoffLeg 3) is created by Cloud Functions only.
+      match /ladderMatches/{matchId} {
+        allow read: if true;
+        allow create: if signedIn() && request.resource.data.get('playoffLeg', 0) != 3;
+        allow update: if signedIn()
+          && request.resource.data.get('playoffLeg', 0) == resource.data.get('playoffLeg', 0);
+      }
+
+      match /playoffTies/{tieId} {
+        allow read: if true;
+
+        match /chat/{messageId} {
+          allow read, create: if signedIn();
+        }
+      }
+
+      match /prizePayouts/{payoutId} {
+        allow read: if signedIn() && resource.data.userId == uid();
+      }
+
+      match /reportCounts/{userId} {
+        allow read: if signedIn();
+      }
+    }
+
+    match /ladderEligibility/{eligibilityId} {
+      allow get: if signedIn() && resource.data.userId == uid();
+      // Maestro cleanup; deleting only removes the player's own right to join.
+      allow delete: if signedIn() && resource.data.userId == uid();
+    }
+
+    match /disputes/{disputeId} {
+      allow read, create, update: if signedIn();
+    }
+
+    match /reports/{reportId} {
+      allow read, create: if signedIn();
+    }
+
+    // ------------------------------------------ ladder pre-registration
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    match /ladderPreRegistrations/{preRegistrationId} {
+      // Public: the app's signed-out banner and the website's share page.
+      allow read: if true;
+
+      match /registrants/{userId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && uid() == userId
+          && request.resource.data.keys().hasOnly(['userId', 'username', 'profileImage', 'createdAt', 'notifiedAt'])
+          && request.resource.data.userId == uid()
+          && request.resource.data.username == myProfile().get('username', null)
+          && request.resource.data.profileImage == myProfile().get('profileImage', null)
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.notifiedAt == null
+          && get(/databases/$(database)/documents/ladderPreRegistrations/$(preRegistrationId)).data.status == 'open'
+          && (get(/databases/$(database)/documents/ladderPreRegistrations/$(preRegistrationId)).data.get('countryCode', null) == null
+            || myProfile().get('location', {}).get('countryCode', null)
+              == get(/databases/$(database)/documents/ladderPreRegistrations/$(preRegistrationId)).data.countryCode);
+        allow delete: if signedIn() && uid() == userId;
+      }
+    }
+
+    // Everything else (mail, signupRateLimits, noShowClaims, maestroBackups,
+    // any collection not listed) is Cloud Functions or staff only.
   }
 }
