@@ -48,6 +48,7 @@ import {
 import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
 import { HowToPlayBackground } from "./HowToPlayBackdrop";
 import { SCREEN_BG } from "./howToPlayTheme";
+import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
 import HowToPlayIntro from "./HowToPlayIntro";
 import {
   HOW_TO_PLAY_VARIANTS,
@@ -420,19 +421,23 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const pages = playoffs ? playoffPages : regularPages;
   const pager = usePager(pages.length);
   const { index, lastIndex, goTo } = pager;
+  const topInset = useAndroidTopInset();
 
   return (
     <Screen>
       <HowToPlayBackground />
-      <TopBar>
+      <TopBar style={{ marginTop: topInset }}>
         <TopBarTitle>How to Play</TopBarTitle>
       </TopBar>
       <TouchableOpacity
         onPress={onClose}
+        testID="how-to-play-close"
+        accessibilityRole="button"
+        accessibilityLabel="Close How to Play"
         style={{
           alignSelf: "flex-end",
           position: "absolute",
-          top: 10,
+          top: 10 + topInset,
           right: 10,
           zIndex: 10,
         }}

@@ -195,7 +195,7 @@ const Home = () => {
     () => (
       <HeaderContainer>
         <Overview>
-          <TouchableOpacity onPress={goToWebsite}>
+          <TouchableOpacity onPress={goToWebsite} testID="home-logo">
             <Image
               source={CourtChampLogo}
               style={{ width: 150, height: 150, resizeMode: "contain" }}

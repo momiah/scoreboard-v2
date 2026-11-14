@@ -15,6 +15,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { COLLECTION_NAMES } from "@shared";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../services/firebase.config";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const ClubSettings = () => {
   const route = useRoute();
@@ -144,6 +145,7 @@ const ClubSettings = () => {
 
   return (
     <Container>
+      <StatusBarSpacer />
       <Modal
         transparent
         animationType="fade"

@@ -85,9 +85,9 @@ const Stack = createStackNavigator();
 // per-stack drift.
 const LADDER_SCREENS = {
   Ladder: withStatusBarInset(Ladder),
-  LadderRules: withStatusBarInset(LadderRules),
-  LadderHowToPlay: withStatusBarInset(LadderHowToPlay),
-  LadderTerms: withStatusBarInset(LadderTerms),
+  LadderRules,
+  LadderHowToPlay,
+  LadderTerms,
   MatchDetails: withStatusBarInset(MatchDetails),
   LadderStandings: withStatusBarInset(LadderStandings),
   SelectDoublesTeam: withStatusBarInset(SelectDoublesTeam),
