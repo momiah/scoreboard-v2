@@ -26,6 +26,8 @@ export interface HowToPlayVariantConfig {
   showLadderSize: boolean;
   /** Shows the Achievement Medals and Rank Matters pages. */
   showScoringDetails: boolean;
+  /** Shows the Follow us buttons for Instagram and TikTok on the last page. */
+  showSocialFollow: boolean;
   /** The cards on the pages whose wording differs between variants. */
   cards: Record<HowToPlayTextPage, HowToPlayCardText[]>;
 }
@@ -78,6 +80,7 @@ export const HOW_TO_PLAY_VARIANTS = {
     intro: true,
     showLadderSize: true,
     showScoringDetails: true,
+    showSocialFollow: false,
     cards: {
       matchmaking: [
         WHAT_IS_MATCHMAKING,
@@ -110,6 +113,7 @@ export const HOW_TO_PLAY_VARIANTS = {
     intro: true,
     showLadderSize: false,
     showScoringDetails: false,
+    showSocialFollow: true,
     cards: {
       matchmaking: [
         WHAT_IS_A_LADDER,
