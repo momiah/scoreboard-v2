@@ -1,5 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { PopupContext } from "../../context/PopupContext";
 import { UserContext } from "../../context/UserContext";
@@ -22,9 +23,16 @@ export function renderWithContexts(
   };
   const popupValue = { showBottomToast, ...popup };
   const utils = render(
-    <UserContext.Provider value={userValue}>
-      <PopupContext.Provider value={popupValue}>{ui}</PopupContext.Provider>
-    </UserContext.Provider>,
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 47, left: 0, right: 0, bottom: 34 },
+      }}
+    >
+      <UserContext.Provider value={userValue}>
+        <PopupContext.Provider value={popupValue}>{ui}</PopupContext.Provider>
+      </UserContext.Provider>
+    </SafeAreaProvider>,
   );
   return { ...utils, showBottomToast, userValue };
 }
