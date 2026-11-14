@@ -38,12 +38,6 @@ const SignupIntroScreen: React.FC = () => {
     exitToApp();
   };
 
-  const onCreateLeague = () => {
-    const tabs = navigation.getParent();
-    exitToApp();
-    tabs?.navigate("Competitions");
-  };
-
   return (
     <SignupIntroFlow
       getUserById={getUserById}
@@ -51,7 +45,6 @@ const SignupIntroScreen: React.FC = () => {
       onLogin={() => navigation.navigate("Login")}
       onSignedIn={onSignedIn}
       onExplore={exitToApp}
-      onCreateLeague={onCreateLeague}
       initialSocialSignup={route.params?.socialSignup}
     />
   );
