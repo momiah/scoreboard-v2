@@ -84,6 +84,36 @@
               "scheme": "https",
               "host": "courtchamps.com",
               "pathPrefix": "/preview/ladder-pre-registration/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/preview/club/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/join/club/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/join/league/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/preview/league/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/join/tournament/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/preview/tournament/"
             }
           ],
           "category": [

@@ -1,0 +1,37 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/deep-link/cleanup.yaml
+---
+# A shared club link (https://courtchamps.com/preview/club/<id>, or /join/club/<id>)
+# opens that club in the app, signed in or out, and Back goes to Home.
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-fixture-club"
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://preview/club/maestro-club-fixture-owned"
+- extendedWaitUntil:
+    visible:
+      id: "club-member-count"
+    timeout: 30000
+- assertVisible: ".*Maestro Olive's Club.*"
+- runFlow: ../utilities/deep-link/back.yaml
+
+# The /join/ form of the link, opened by someone who is signed out
+- runFlow: ../utilities/signup/signed-out-home.yaml
+- runFlow:
+    file: ../utilities/prereg/open-link.yaml
+    env:
+      LINK: "courtchamps://join/club/maestro-club-fixture-owned"
+- extendedWaitUntil:
+    visible:
+      id: "club-member-count"
+    timeout: 30000
+- assertVisible: ".*Maestro Olive's Club.*"
+- assertNotVisible:
+    id: "club-settings-button"
+- runFlow: ../utilities/deep-link/back.yaml

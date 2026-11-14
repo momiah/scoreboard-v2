@@ -6,8 +6,10 @@ export type HarnessExpectedValues = Record<string, string>;
 let expected: HarnessExpectedValues = {};
 const listeners = new Set<() => void>();
 
-export const setHarnessExpected = (values: HarnessExpectedValues) => {
-  expected = values;
+export const setHarnessExpected = (values: Record<string, unknown>) => {
+  expected = Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [key, String(value)]),
+  );
   listeners.forEach((listener) => listener());
 };
 
