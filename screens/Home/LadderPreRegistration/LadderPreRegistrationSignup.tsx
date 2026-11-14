@@ -110,7 +110,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
           {registered ? (
             <RegisteredNotice testID="ladder-pre-registration-registered">
               <Ionicons
-                name="checkmark-circle"
+                name="checkmark-circle-outline"
                 size={16}
                 color={COLORS.success}
               />
