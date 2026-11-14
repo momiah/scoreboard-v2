@@ -423,6 +423,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const pager = usePager(pages.length);
   const { index, lastIndex, goTo } = pager;
   const topInset = useAndroidTopInset();
+  const compact = useCompactScreen();
 
   return (
     <Screen>
@@ -435,6 +436,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         testID="how-to-play-close"
         accessibilityRole="button"
         accessibilityLabel="Close How to Play"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={{
           alignSelf: "flex-end",
           position: "absolute",
@@ -443,7 +445,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           zIndex: 10,
         }}
       >
-        <AntDesign name="close-circle" size={30} color="red" />
+        <AntDesign name="close-circle" size={compact ? 24 : 30} color="red" />
       </TouchableOpacity>
 
       <PagerList pager={pager} pages={pages} />
