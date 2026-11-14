@@ -395,6 +395,7 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
   await writeScenarioUsers(scenario);
   await setActiveScenario(key);
 
+  let tournamentId = "";
   if (scenario.seed !== "none") {
     const owner = scenario.ownedByFixture
       ? await actions.getUserById(scenario.users[0].userId)
@@ -402,7 +403,7 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
     const players = scenario.ownedByFixture
       ? [testUser, ...scenario.users.slice(1)]
       : scenario.users;
-    const tournamentId = await createScenarioTournament({ key, scenario, owner, actions, clubId });
+    tournamentId = await createScenarioTournament({ key, scenario, owner, actions, clubId });
     await invitePlayers({
       tournamentId,
       tournamentName: scenario.name,
@@ -421,6 +422,7 @@ export const seedScenario = async ({ key, testUser, actions, fixtureActions, clu
   );
   return {
     expected: {
+      tournamentId,
       tournamentName: scenario.name,
       tournamentMode: modeOf(scenario),
       fixturesTab: isKnockout(scenario) ? "Brackets" : "Fixtures",

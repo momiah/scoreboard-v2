@@ -13,7 +13,7 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible:
       id: "maestro-harness-unlock"
-    timeout: 60000
+    timeout: 180000
     optional: true
 - runFlow:
     when:

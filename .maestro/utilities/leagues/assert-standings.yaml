@@ -1,0 +1,67 @@
+# Checks Player Performance (and Team Performance in doubles) against
+# output.exp: every row's wins, point difference and rank, read from the row's
+# text (a tappable row is one element: iOS joins its texts with spaces,
+# Android with ", "). Android reports a row half under the tab bar as fully
+# visible, so the rows are nudged up until the rank text itself shows.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-league.yaml
+    env:
+      TAB: "Player Performance"
+- evalScript: ${output.groups = [output.exp.players, output.exp.teams]; output.gx = 0}
+- repeat:
+    while:
+      true: ${output.gx < output.groups.length && Object.keys(output.groups[output.gx]).length > 0}
+    commands:
+      - runFlow:
+          when:
+            true: ${output.gx === 1}
+          commands:
+            - repeat:
+                times: 4
+                while:
+                  notVisible: "Team Performance"
+                commands:
+                  - swipe:
+                      from:
+                        id: "league-tabs"
+                      direction: LEFT
+                      duration: 400
+            - tapOn: "Team Performance"
+            - waitForAnimationToEnd
+      - evalScript: ${output.keys = Object.keys(output.groups[output.gx]); output.i = 0}
+      - repeat:
+          while:
+            true: ${output.i < output.keys.length}
+          commands:
+            - evalScript: ${output.cur = output.keys[output.i]; output.row = output.groups[output.gx][output.cur]}
+            - scrollUntilVisible:
+                element:
+                  id: "performance-row-${output.cur}"
+            - repeat:
+                times: 3
+                while:
+                  notVisible:
+                    id: "performance-row-${output.cur}"
+                    text: "${output.row.rank},? .*"
+                commands:
+                  - swipe:
+                      start: 50%, 75%
+                      end: 50%, 55%
+                      duration: 400
+            - extendedWaitUntil:
+                visible:
+                  id: "performance-row-${output.cur}"
+                  text: ".*Wins,? ${output.row.wins}(,? .*)?"
+                timeout: 20000
+            - assertVisible:
+                id: "performance-row-${output.cur}"
+                text: ".*PD,? ${output.row.pd}(,? .*)?"
+            - assertVisible:
+                id: "performance-row-${output.cur}"
+                text: "${output.row.rank},? .*"
+            - evalScript: ${output.i = output.i + 1}
+      - evalScript: ${output.gx = output.gx + 1}
+- tapOn:
+    id: "tab-home"

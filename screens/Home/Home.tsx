@@ -66,7 +66,8 @@ const Home = () => {
 
   const { fetchUpcomingLeagues, fetchUpcomingTournaments, fetchUpcomingClubs } =
     useContext(LeagueContext);
-  const { getTopUsers, currentUser } = useContext(UserContext);
+  const { getTopUsers, currentUser, authInitializing } =
+    useContext(UserContext);
 
   // ─── Home State ─────────────────────────────────────────────────────────────
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -256,7 +257,7 @@ const Home = () => {
           <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser?.firstName}
           </Text>
-        ) : (
+        ) : authInitializing ? null : (
           <TouchableOpacity
             testID="home-sign-in-link"
             onPress={() => navigateTo("Login")}

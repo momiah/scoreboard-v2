@@ -3,8 +3,8 @@
     "name": "Court Champs",
     "slug": "court-champs",
     "scheme": "courtchamps",
-    "version": "3.0.8",
-    "runtimeVersion": "3.0.0",
+    "version": "3.1.0",
+    "runtimeVersion": "ios-3.1.0",
     "orientation": "default",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
@@ -56,6 +56,9 @@
       },
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.devicecheck.appattest-environment": "production"
       }
     },
     "android": {

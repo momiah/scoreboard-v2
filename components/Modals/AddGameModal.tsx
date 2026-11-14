@@ -20,6 +20,7 @@ import {
   ReportLeagueGameResult,
 } from "../../helpers/League/reportLeagueGame";
 import { AppEventsLogger } from "react-native-fbsdk-next";
+import { useAndroidKeyboardHeight } from "../../hooks/useAndroidKeyboardHeight";
 import VideoUploadModal from "./VideoUploadModal";
 import { Game, Player, CollectionName, Teams } from "@shared/types";
 
@@ -55,6 +56,7 @@ const AddGameModal = ({
   const { showBottomToast } = useContext(PopupContext);
   const { currentUser, sendNotification } = useContext(UserContext);
 
+  const keyboardHeight = useAndroidKeyboardHeight();
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
@@ -196,7 +198,14 @@ const AddGameModal = ({
       visible={modalVisible}
       onRequestClose={handleClose}
     >
-      <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+      {/* Android doesn't resize a Modal for the number pad: lift the card
+          above it so the score field stays visible. */}
+      <ModalContainer
+        style={{
+          backgroundColor: "rgba(0,0,0,0.5)",
+          paddingBottom: keyboardHeight,
+        }}
+      >
         <GradientOverlay colors={["#191b37", "#001d2e"]}>
           <ModalContent>
             <TouchableOpacity
@@ -225,6 +234,7 @@ const AddGameModal = ({
             {errorText ? <ErrorText>{errorText}</ErrorText> : null}
 
             <SubmitButton
+              testID="add-game-submit"
               onPress={handleAddGame}
               disabled={isSubmitDisabled()}
               style={{

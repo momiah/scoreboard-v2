@@ -39,6 +39,11 @@ onFlowComplete:
     id: "signup-profile-location"
 - tapOn: "Search countries..."
 - inputText: "United Kingdom"
+- extendedWaitUntil:
+    visible:
+      text: "United Kingdom"
+      index: 1
+    timeout: 60000
 - tapOn:
     text: "United Kingdom"
     index: 1
@@ -47,6 +52,11 @@ onFlowComplete:
     timeout: 10000
 - tapOn: "Search cities..."
 - inputText: "Manchester"
+- extendedWaitUntil:
+    visible:
+      text: "Manchester"
+      index: 1
+    timeout: 60000
 - tapOn:
     text: "Manchester"
     index: 1
@@ -71,9 +81,19 @@ onFlowComplete:
 - assertNotVisible: "Hello, .*"
 - tapOn:
     id: "home-sign-in-link"
-- tapOn:
-    id: "login-email"
-- inputText: ${output.email}
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 30000
+# A busy Android emulator can mistype a key, so check the email and retype it.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "login-email"
+      - eraseText: 120
+      - inputText: ${output.email}
+      - assertVisible: ${output.email}
 - tapOn: "Welcome back"
 - tapOn:
     id: "login-password"

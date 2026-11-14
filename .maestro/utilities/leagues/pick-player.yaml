@@ -1,0 +1,12 @@
+# Picks USER_ID into slot TEAM (team1/team2) INDEX (0/1) of the Add Game card.
+appId: com.courtchamp
+---
+- tapOn:
+    id: "add-game-player-${TEAM}-${INDEX}"
+- extendedWaitUntil:
+    visible:
+      id: "add-game-player-option-${USER_ID}"
+    timeout: 10000
+- tapOn:
+    id: "add-game-player-option-${USER_ID}"
+- waitForAnimationToEnd

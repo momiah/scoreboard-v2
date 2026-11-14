@@ -22,6 +22,8 @@ export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared'
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
 forward() { [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] && adb -s "$MAESTRO_DEVICE" reverse "tcp:$MAESTRO_METRO_PORT" "tcp:$MAESTRO_METRO_PORT" >/dev/null; true; }
+# Gboard's stylus tutorial otherwise takes over the first text field and swallows inputText.
+[[ "${MAESTRO_DEVICE:-}" == emulator-* ]] && adb -s "$MAESTRO_DEVICE" shell settings put secure stylus_handwriting_enabled 0
 pass=0; flaky=(); failed=()
 if [[ "$pattern" == "="* ]]; then flows=(".maestro/flows/${pattern#=}.yaml"); else flows=(.maestro/flows/*${pattern}*.yaml); fi
 for flow in "${flows[@]}"; do
