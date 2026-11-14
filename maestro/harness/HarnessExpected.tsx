@@ -1,7 +1,7 @@
 import React, { useSyncExternalStore } from "react";
 import { Text, View } from "react-native";
 
-export type HarnessExpectedValues = Record<string, string>;
+export type HarnessExpectedValues = Record<string, string | number>;
 
 let expected: HarnessExpectedValues = {};
 const listeners = new Set<() => void>();
@@ -26,10 +26,10 @@ const HarnessExpected = () => {
         <Text
           key={key}
           testID={`maestro-expected-${key}`}
-          accessibilityLabel={value}
+          accessibilityLabel={String(value)}
           style={{ color: "#888", fontSize: 8, marginRight: 6 }}
         >
-          {value}
+          {String(value)}
         </Text>
       ))}
     </View>
