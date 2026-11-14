@@ -38,6 +38,7 @@ import {
   expectedFor,
   fixtureUserFor,
   flattenExpected,
+  otherCountryLabel,
   isFixturePreRegistrationId,
   registrantUserIds,
 } from "./preRegistrationFixtures";
@@ -51,6 +52,7 @@ export const PREREG_SCENARIO = {
   ONLY_FIXTURES: "only-fixtures",
   COMMUNITY_ONLY: "community-only",
   NONE_OPEN: "none-open",
+  OVERSEAS: "overseas",
 };
 
 const preRegistrationsRef = () =>
@@ -186,6 +188,9 @@ const removeTestUserRegistrations = (testUser) =>
 
 const openStatusFor = (key, scenario) => {
   const fixture = PREREG_FIXTURES[key];
+  if (key === "overseas") {
+    return scenario === PREREG_SCENARIO.OVERSEAS ? OPEN : fixture.status;
+  }
   if (!OPEN_FIXTURE_KEYS.includes(key)) return fixture.status;
   if (scenario === PREREG_SCENARIO.NONE_OPEN) return CLOSED;
   if (scenario === PREREG_SCENARIO.COMMUNITY_ONLY && CASH_FIXTURE_KEYS.includes(key)) {
@@ -283,6 +288,7 @@ export const seedPreRegistration = async ({
       "banner-headline": headline?.preRegistrationId ?? "",
       "cash-doubles-registrants-after-join": `${(registrants.cashDoubles.length + 1).toLocaleString("en-GB")} pre-registered`,
       "community-singles-registrants-after-join": "1 pre-registered",
+      "overseas-pre-register": otherCountryLabel("overseas"),
     },
   };
 };

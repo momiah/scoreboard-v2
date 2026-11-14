@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { ActivityIndicator, Alert } from "react-native";
 import {
   useNavigation,
@@ -8,7 +8,10 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LADDER_PLAYOFF_SIZES } from "@shared";
+import { Country } from "country-state-city";
+import { LADDER_PLAYOFF_SIZES, canPreRegisterForLadder } from "@shared";
+import type { UserProfile } from "@shared/types";
+import { UserContext } from "../../../context/UserContext";
 import HowToPlayFlow, {
   HowToPlayButton,
   HowToPlayButtonText,
@@ -28,6 +31,9 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
   const { params } = useRoute<HowToPlayRoute>();
   const { isSignedIn, preRegistrations, registeredIds, preRegister } =
     useLadderPreRegistrations();
+  const { currentUser } = useContext(UserContext) as {
+    currentUser: UserProfile | null;
+  };
   const [submitting, setSubmitting] = useState(false);
   const preRegistration = preRegistrations.find(
     (candidate) => candidate.preRegistrationId === params?.preRegistrationId,
@@ -36,6 +42,15 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
   const registered = preRegistration
     ? registeredIds.has(preRegistration.preRegistrationId)
     : false;
+
+  const otherCountry =
+    isSignedIn &&
+    !!preRegistration &&
+    !canPreRegisterForLadder(currentUser, preRegistration);
+  const ladderCountry = preRegistration
+    ? (Country.getCountryByCode(preRegistration.countryCode)?.name ??
+      preRegistration.countryCode)
+    : "";
 
   const handlePreRegister = async () => {
     if (!preRegistration) return;
@@ -79,6 +94,23 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
     >
       <Ionicons name="checkmark-circle-outline" size={16} color="#22c55e" />
       <HowToPlayButtonText>Pre-registered</HowToPlayButtonText>
+    </HowToPlayButton>
+  ) : otherCountry ? (
+    <HowToPlayButton
+      disabled
+      activeOpacity={1}
+      testID="pre-registration-how-to-play-other-country"
+      style={{
+        backgroundColor: "#16181B",
+        borderWidth: 2,
+        borderColor: "#272727ff",
+      }}
+    >
+      <HowToPlayButtonText>
+        {currentUser?.location?.countryCode
+          ? `Only for players in ${ladderCountry}`
+          : "Add your country to your profile to pre-register"}
+      </HowToPlayButtonText>
     </HowToPlayButton>
   ) : (
     <HowToPlayButton

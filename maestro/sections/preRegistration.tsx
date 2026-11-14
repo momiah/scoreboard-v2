@@ -16,6 +16,7 @@ const SCENARIO_BUTTONS = [
   { suffix: "-only-fixtures-registered", scenario: PREREG_SCENARIO.ONLY_FIXTURES, registered: true },
   { suffix: "-community-only", scenario: PREREG_SCENARIO.COMMUNITY_ONLY, registered: false },
   { suffix: "-none-open", scenario: PREREG_SCENARIO.NONE_OPEN, registered: false },
+  { suffix: "-overseas", scenario: PREREG_SCENARIO.OVERSEAS, registered: false },
 ];
 
 const PreRegistrationButtons = ({ currentUser }: HarnessSectionProps) => (

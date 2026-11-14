@@ -1,0 +1,58 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 20. Free pre-registrations state the join radius; a ladder in another country than the user's profile can't be pre-registered for.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-overseas"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "community-singles-eligibility-rule"
+      NAME: "rule"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "overseas-pre-register"
+      NAME: "overseas"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Community"
+      ID: "maestro-prereg-community-singles"
+- assertVisible:
+    id: "ladder-pre-registration-eligibility-rule"
+    text: ${output.rule_re}
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- assertVisible:
+    id: "pre-registration-how-to-play-pre-register"
+- tapOn:
+    id: "how-to-play-close"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+    timeout: 10000
+- tapOn:
+    id: "ladder-pre-registration-back"
+- runFlow:
+    file: ../utilities/prereg/open-ticket.yaml
+    env:
+      ID: "maestro-prereg-overseas"
+- tapOn:
+    id: "ladder-pre-registration-option-maestro-prereg-overseas"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+    timeout: 15000
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- assertVisible:
+    id: "pre-registration-how-to-play-other-country"
+    text: ${output.overseas_re}
+- assertNotVisible:
+    id: "pre-registration-how-to-play-pre-register"
+- tapOn:
+    id: "how-to-play-close"
