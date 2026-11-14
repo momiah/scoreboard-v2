@@ -490,7 +490,7 @@ const Subtitle = styled.Text({
   fontSize: 13,
   color: "rgba(255,255,255,0.5)",
   textAlign: "center",
-  lineHeight: 18,
+  lineHeight: "18px",
   marginTop: 10,
 });
 

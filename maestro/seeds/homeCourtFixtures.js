@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 import { db } from "../../services/firebase.config";
+import { writeFixtureUser } from "../fixtures/fixtureUsers";
 import {
   LADDER_STATUS,
   LADDER_MATCH_STATUS,
@@ -126,31 +127,11 @@ const UNVERIFIED_LOCATION = {
 const daysFromNow = (days) => moment().add(days, "days").toDate();
 
 export const seedFixtureUser = (user, email) =>
-  setDoc(
-    doc(db, "users", user.userId),
-    {
-      userId: user.userId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      usernameLower: user.username,
-      handPreference: "",
-      provider: "seed",
-      dob: "",
-      profileDetail: baselineProfileDetail(100),
-      profileImage: "",
-      bio: "",
-      headline: "",
-      profileViews: 0,
-      location: {},
-      email,
-      phoneNumber: "",
-      showEmail: false,
-      showPhoneNumber: false,
-      pushTokens: [],
-    },
-    { merge: true },
-  );
+  writeFixtureUser({
+    ...user,
+    email,
+    profileDetail: baselineProfileDetail(100),
+  });
 
 const courtDoc = ({
   courtId,

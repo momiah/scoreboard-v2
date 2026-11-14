@@ -22,7 +22,7 @@ describe("ResultsCloseBanner", () => {
       />,
     );
     expect(getByTestId("results-close-awaiting")).toHaveTextContent(
-      "Ladder results close in 1d 4h. Finish and report your games before then.",
+      /Ladder results close in 1d 4h\. Finish and report your games before then\.$/,
     );
   });
 

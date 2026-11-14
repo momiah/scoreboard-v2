@@ -488,7 +488,7 @@ const ModalTitle = styled.Text({
 const ModalSubtitle = styled.Text({
   fontSize: 13,
   color: "#A9A9A9",
-  lineHeight: 18,
+  lineHeight: "18px",
   marginBottom: 20,
   textAlign: "center",
 });

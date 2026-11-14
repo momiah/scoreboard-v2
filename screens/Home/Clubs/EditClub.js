@@ -3,10 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import SafeAreaView from "../../../components/SafeAreaView";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import * as ImagePicker from "expo-image-picker";

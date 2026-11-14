@@ -33,7 +33,7 @@ import Notifications from "../screens/Notifications";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
-import Signup from "../screens/Authentication/Signup";
+import SignupIntroScreen from "../screens/Authentication/SignupIntroScreen";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Settings/PendingInvites";
 import UserPendingInvites from "../screens/Profile/UserPendingInvites";
@@ -59,6 +59,11 @@ import FAQ from "../screens/Profile/FAQ";
 import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
+import LadderPreRegistrations from "../screens/Home/LadderPreRegistration/LadderPreRegistrations";
+import LadderPreRegistrationSignup from "../screens/Home/LadderPreRegistration/LadderPreRegistrationSignup";
+import LadderPreRegistrationHowToPlay from "../screens/Home/LadderPreRegistration/LadderPreRegistrationHowToPlay";
+import LadderPreRegistrationRules from "../screens/Home/LadderPreRegistration/LadderPreRegistrationRules";
+import LadderPreRegistrationTerms from "../screens/Home/LadderPreRegistration/LadderPreRegistrationTerms";
 import { UserContext } from "../context/UserContext";
 import { LeagueContext } from "../context/LeagueContext";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
@@ -155,9 +160,29 @@ const HomeStack = () => {
       />
       <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
       <Stack.Screen name="EditTournament" component={EditTournament} />
+      <Stack.Screen
+        name="LadderPreRegistrations"
+        component={LadderPreRegistrations}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationSignup"
+        component={LadderPreRegistrationSignup}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationHowToPlay"
+        component={LadderPreRegistrationHowToPlay}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationRules"
+        component={LadderPreRegistrationRules}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationTerms"
+        component={LadderPreRegistrationTerms}
+      />
 
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
     </Stack.Navigator>
   );
 };
@@ -201,7 +226,7 @@ const ProfileStack = () => {
       <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
@@ -251,7 +276,7 @@ const ChatsStack = () => {
         component={CompetitionPendingRequests}
       />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
@@ -304,7 +329,7 @@ const CompetitionsStack = () => {
       />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />

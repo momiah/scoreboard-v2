@@ -309,8 +309,8 @@ const GradientOverlay = styled(LinearGradient)({
   padding: 2,
   maxHeight: "80%",
   shadowColor: "#00A2FF",
-  shadowOffset: { width: 0, height: -4 },
-  shadowOpacity: 0.3,
+  shadowOffset: "0px -4px",
+  shadowOpacity: "0.3",
   shadowRadius: 12,
 });
 

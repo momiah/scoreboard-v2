@@ -24,6 +24,7 @@ const getNextRank = (xp) => {
   return ranks[ranks.length - 1]; // Return the last rank if xp is very high
 };
 
+/** @param {{ xp: number, prevGameXp?: number | null, showMedals?: boolean, testID?: string }} props */
 const MedalProgress = ({ xp, prevGameXp, showMedals = true, testID }) => {
   const [mounted, setMounted] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;

@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import styled from "styled-components/native";
-import { SafeAreaView } from "react-native";
+import SafeAreaView from "../components/SafeAreaView";
 import { AntDesign } from "@expo/vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../components/Tag";
@@ -81,7 +81,6 @@ type RouteParams = {
   InvitePlayer: CompetitionRouteParams | ClubRouteParams | TeamRouteParams;
 };
 
-
 const InvitePlayer = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<RouteParams, "InvitePlayer">>();
@@ -105,8 +104,8 @@ const InvitePlayer = () => {
   // existing club members are added directly (no invite/accept step).
   const clubId = isClubContext
     ? club.clubId
-    : (competitionDetails as League & { clubId?: string | null })?.clubId ??
-      null;
+    : ((competitionDetails as League & { clubId?: string | null })?.clubId ??
+      null);
   const isClubCompetition = !isClubContext && !!clubId;
 
   // Whether the Search / Recent Players tabs (and Recent Players modal) show.
@@ -213,10 +212,11 @@ const InvitePlayer = () => {
           competitionType: competitionType as CompetitionType,
         }) as NormalizedCompetition);
 
-  const collectionName =
-    (competitionType === COMPETITION_TYPES.LEAGUE
+  const collectionName = (
+    competitionType === COMPETITION_TYPES.LEAGUE
       ? COLLECTION_NAMES.leagues
-      : COLLECTION_NAMES.tournaments) as CollectionName;
+      : COLLECTION_NAMES.tournaments
+  ) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
     if (isTeamContext) {
@@ -232,7 +232,9 @@ const InvitePlayer = () => {
       );
       return isMember || isPendingInvite || isPendingRequest;
     }
-    const inLeague = competition!.participants?.some((u) => u.userId === userId);
+    const inLeague = competition!.participants?.some(
+      (u) => u.userId === userId,
+    );
     const inPendingInvites = competition!.pendingInvites?.some(
       (u) => u.userId === userId,
     );
@@ -471,10 +473,7 @@ const InvitePlayer = () => {
             await sendNotification(payload);
           }
         } catch (notifyError) {
-          console.error(
-            "Players added but notification failed:",
-            notifyError,
-          );
+          console.error("Players added but notification failed:", notifyError);
         }
 
         handleShowPopup("Players added successfully!");
@@ -545,9 +544,7 @@ const InvitePlayer = () => {
       const last = (user.lastName ?? "").toLowerCase();
       const full = `${first} ${last}`;
       return (
-        first.startsWith(term) ||
-        last.startsWith(term) ||
-        full.startsWith(term)
+        first.startsWith(term) || last.startsWith(term) || full.startsWith(term)
       );
     });
     setSuggestions(filtered);
@@ -841,16 +838,10 @@ const InvitePlayer = () => {
 
       {/* ── Club mode: checkbox member list ── */}
       {isClubCompetition ? (
-        <TouchableWithoutFeedback
-          onPress={Keyboard.dismiss}
-          accessible={false}
-        >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={{ flex: 1 }}>
             {clubMembersLoading ? (
-              <ActivityIndicator
-                color="#00A2FF"
-                style={{ marginTop: 30 }}
-              />
+              <ActivityIndicator color="#00A2FF" style={{ marginTop: 30 }} />
             ) : clubMembersError ? (
               <EmptyText>
                 Couldn&apos;t load club members. Please try again.
@@ -877,10 +868,7 @@ const InvitePlayer = () => {
         </TouchableWithoutFeedback>
       ) : (
         /* ── Normal mode: search suggestions + chips ── */
-        <TouchableWithoutFeedback
-          onPress={Keyboard.dismiss}
-          accessible={false}
-        >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

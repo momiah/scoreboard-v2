@@ -15,16 +15,22 @@ import { onLadderPrizePayoutReviewed } from "./onLadderPrizePayoutReviewed";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
 import { recordLadderArrival } from "./recordLadderArrival";
+import { verifyLadderEligibility } from "./verifyLadderEligibility";
 import { sendLadderMatchReminders } from "./sendLadderMatchReminders";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
+import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
   checkR2VideoExists,
 } from "./videoFunctions";
+import {
+  checkEmailAvailable,
+  checkUsernameAvailable,
+} from "./signupAvailability";
 
 admin.initializeApp();
 
@@ -43,6 +49,7 @@ export {
   autoVoidLadderDisputes,
   processLadderPhases,
   recordLadderArrival,
+  verifyLadderEligibility,
   sendLadderMatchReminders,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
@@ -51,4 +58,7 @@ export {
   transcodeVideo,
   deleteVideo,
   onVideoReported,
+  processLadderPreRegistrationLaunches,
+  checkEmailAvailable,
+  checkUsernameAvailable,
 };

@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import {
   Image,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   Platform,
@@ -19,6 +18,7 @@ import {
   ViewabilityConfig,
   RefreshControl,
 } from "react-native";
+import SafeAreaView from "../../components/SafeAreaView";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
@@ -45,8 +45,14 @@ import HomeLadderSection from "../../components/Home/HomeLadderSection";
 import { LadderContext } from "../../context/LadderContext";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
+import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
+const MaestroHarness = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../../maestro/MaestroHarness").default
+  : null;
+
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
@@ -224,6 +230,10 @@ const Home = () => {
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
 
+        {MaestroHarness && currentUser ? (
+          <MaestroHarness currentUser={currentUser} />
+        ) : null}
+
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser?.firstName}
@@ -236,6 +246,8 @@ const Home = () => {
             <Text style={{ color: "white" }}>Sign In</Text>
           </TouchableOpacity>
         )}
+
+        <LadderPreRegistrationBanner />
 
         <HomeLeagueSection
           loading={loading}
