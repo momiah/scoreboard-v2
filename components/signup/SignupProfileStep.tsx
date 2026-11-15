@@ -67,7 +67,7 @@ interface SignupProfileStepProps {
   initialLastName?: string;
   setCurrentUser?: (user: UserProfile) => void;
   onBack: () => void;
-  onCreated: (requiresEmailVerification: boolean, firstName: string) => void;
+  onCreated: (requiresEmailVerification: boolean) => void;
 }
 
 const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
@@ -212,7 +212,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
         socialIsNewUser,
         setCurrentUser,
       });
-      onCreated(!created.isSocialSignup, name.firstName);
+      onCreated(!created.isSocialSignup);
     } catch (error) {
       const reason =
         typeof error === "object" && error && "code" in error

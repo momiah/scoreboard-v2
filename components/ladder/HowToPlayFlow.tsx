@@ -257,8 +257,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
               hero={<MatchmakingHero />}
               title="Matchmaking, Made Simple"
               paragraphs={[]}
+              dense
             >
-              <CardList cards={toCards(config.cards.matchmaking, noun)} />
+              <CardList cards={toCards(config.cards.matchmaking, noun)} dense />
             </PageBody>
           ),
         },
@@ -422,6 +423,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const pager = usePager(pages.length);
   const { index, lastIndex, goTo } = pager;
   const topInset = useAndroidTopInset();
+  const compact = useCompactScreen();
 
   return (
     <Screen>
@@ -434,6 +436,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         testID="how-to-play-close"
         accessibilityRole="button"
         accessibilityLabel="Close How to Play"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={{
           alignSelf: "flex-end",
           position: "absolute",
@@ -442,7 +445,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           zIndex: 10,
         }}
       >
-        <AntDesign name="close-circle" size={30} color="red" />
+        <AntDesign name="close-circle" size={compact ? 24 : 30} color="red" />
       </TouchableOpacity>
 
       <PagerList pager={pager} pages={pages} />
@@ -486,6 +489,8 @@ interface PageBodyProps {
   cardIcons?: (keyof typeof Ionicons.glyphMap)[];
   children?: React.ReactNode;
   image?: ImageSourcePropType;
+  /** Keeps the title on one line and tightens the gaps, for pages with a hero and many cards. */
+  dense?: boolean;
 }
 
 const PageBody: React.FC<PageBodyProps> = ({
@@ -496,6 +501,7 @@ const PageBody: React.FC<PageBodyProps> = ({
   cardIcons,
   children,
   image,
+  dense = false,
 }) => {
   const compact = useCompactScreen();
   return (
@@ -504,7 +510,7 @@ const PageBody: React.FC<PageBodyProps> = ({
         flexGrow: 1,
         justifyContent: "center",
         alignItems: "center",
-        gap: compact ? 14 : 20,
+        gap: dense && compact ? 10 : dense || compact ? 14 : 20,
         paddingHorizontal: 30,
         paddingVertical: 16,
       }}
@@ -518,7 +524,14 @@ const PageBody: React.FC<PageBodyProps> = ({
         </Reveal>
       )}
       <Reveal order={1}>
-        <PageTitle compact={compact}>{title}</PageTitle>
+        <PageTitle
+          compact={compact}
+          numberOfLines={dense ? 1 : undefined}
+          adjustsFontSizeToFit={dense}
+          minimumFontScale={0.7}
+        >
+          {title}
+        </PageTitle>
       </Reveal>
       {cardIcons ? (
         <CardList
@@ -582,35 +595,50 @@ interface Card {
   red?: boolean;
 }
 
-const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
-  cards,
-  firstOrder = 2,
-}) => (
-  <BeatList>
-    {cards.map((card, index) => (
-      <Reveal key={index} order={firstOrder + index} from="right">
-        <Beat>
-          <BeatIcon gold={card.gold} red={card.red}>
-            {card.image ? (
-              <TrophyImage source={card.image} resizeMode="contain" size={22} />
-            ) : (
-              <Ionicons
-                name={card.icon}
-                size={18}
-                color={accentColour({
-                  gold: card.gold,
-                  red: card.red,
-                  blue: true,
-                })}
-              />
-            )}
-          </BeatIcon>
-          <BeatText>{card.text}</BeatText>
-        </Beat>
-      </Reveal>
-    ))}
-  </BeatList>
-);
+/** Card text size: dense pages drop a step, and a step more on short screens. */
+const useBeatSize = (dense: boolean): BeatSize => {
+  const compact = useCompactScreen();
+  if (!dense) return "regular";
+  return compact ? "smallest" : "small";
+};
+
+const CardList: React.FC<{
+  cards: Card[];
+  firstOrder?: number;
+  dense?: boolean;
+}> = ({ cards, firstOrder = 2, dense = false }) => {
+  const size = useBeatSize(dense);
+  return (
+    <BeatList size={size}>
+      {cards.map((card, index) => (
+        <Reveal key={index} order={firstOrder + index} from="right">
+          <Beat size={size}>
+            <BeatIcon gold={card.gold} red={card.red}>
+              {card.image ? (
+                <TrophyImage
+                  source={card.image}
+                  resizeMode="contain"
+                  size={22}
+                />
+              ) : (
+                <Ionicons
+                  name={card.icon}
+                  size={18}
+                  color={accentColour({
+                    gold: card.gold,
+                    red: card.red,
+                    blue: true,
+                  })}
+                />
+              )}
+            </BeatIcon>
+            <BeatText size={size}>{card.text}</BeatText>
+          </Beat>
+        </Reveal>
+      ))}
+    </BeatList>
+  );
+};
 
 interface ObjectiveTile {
   icon: keyof typeof Ionicons.glyphMap;
@@ -1598,22 +1626,37 @@ const StepLine = styled.View({
   backgroundColor: "rgba(0, 162, 255, 0.35)",
 });
 
-const BeatList = styled.View({
-  alignSelf: "stretch",
-  gap: 10,
-});
+type BeatSize = "regular" | "small" | "smallest";
 
-const Beat = styled.View({
+interface BeatSizeProps {
+  size?: BeatSize;
+}
+
+const BEAT_SIZES: Record<
+  BeatSize,
+  { gap: number; padding: number; fontSize: number; lineHeight: number }
+> = {
+  regular: { gap: 10, padding: 12, fontSize: 15, lineHeight: 21 },
+  small: { gap: 8, padding: 10, fontSize: 14, lineHeight: 19 },
+  smallest: { gap: 6, padding: 8, fontSize: 13, lineHeight: 17 },
+};
+
+const BeatList = styled.View<BeatSizeProps>(({ size }: BeatSizeProps) => ({
+  alignSelf: "stretch",
+  gap: BEAT_SIZES[size ?? "regular"].gap,
+}));
+
+const Beat = styled.View<BeatSizeProps>(({ size }: BeatSizeProps) => ({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,
-  paddingVertical: 12,
+  paddingVertical: BEAT_SIZES[size ?? "regular"].padding,
   paddingHorizontal: 14,
   borderRadius: 12,
   backgroundColor: "rgba(255, 255, 255, 0.04)",
   borderWidth: 1,
   borderColor: "rgba(255, 255, 255, 0.06)",
-});
+}));
 
 const beatIconTint = ({ gold, red }: AccentColour) => {
   if (red) return "rgba(255, 107, 107, 0.14)";
@@ -1630,12 +1673,12 @@ const BeatIcon = styled.View<AccentColour>((icon: AccentColour) => ({
   backgroundColor: beatIconTint(icon),
 }));
 
-const BeatText = styled.Text({
+const BeatText = styled.Text<BeatSizeProps>(({ size }: BeatSizeProps) => ({
   flex: 1,
   color: "#c9d6e3",
-  fontSize: 15,
-  lineHeight: "21px",
-});
+  fontSize: BEAT_SIZES[size ?? "regular"].fontSize,
+  lineHeight: `${BEAT_SIZES[size ?? "regular"].lineHeight}px`,
+}));
 
 interface AccentColour {
   blue?: boolean;

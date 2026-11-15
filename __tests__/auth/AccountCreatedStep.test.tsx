@@ -11,10 +11,8 @@ const VERIFY_LINE = "Check your email and verify your account, then log in.";
 
 const setup = (requiresEmailVerification: boolean) => {
   const props = {
-    firstName: "Mo",
     requiresEmailVerification,
     onExplore: jest.fn(),
-    onCreateLeague: jest.fn(),
   };
   const utils = renderWithContexts(<AccountCreatedStep {...props} />);
   const button = () => utils.getByTestId("signup-welcome-resend");
@@ -49,7 +47,8 @@ it("hides the verify line and resend button for social sign-ups", () => {
   const utils = setup(false);
   expect(utils.queryByText(VERIFY_LINE)).toBeNull();
   expect(utils.queryByTestId("signup-welcome-resend")).toBeNull();
-  expect(utils.getByText("WELCOME, MO")).toBeTruthy();
+  expect(utils.getByText("WELCOME")).toBeTruthy();
+  expect(utils.getByText("Beginner · Level 1")).toBeTruthy();
 });
 
 it("shows the verify line and a faded countdown for email sign-ups", () => {
@@ -116,10 +115,9 @@ it("asks to log in when no user is signed in", async () => {
   );
 });
 
-it("wires the Explore and Create a league buttons", () => {
+it("wires the Explore button and has no Create a league button", () => {
   const utils = setup(false);
   fireEvent.press(utils.getByTestId("signup-welcome-explore"));
-  fireEvent.press(utils.getByTestId("signup-welcome-league"));
   expect(utils.props.onExplore).toHaveBeenCalled();
-  expect(utils.props.onCreateLeague).toHaveBeenCalled();
+  expect(utils.queryByTestId("signup-welcome-league")).toBeNull();
 });

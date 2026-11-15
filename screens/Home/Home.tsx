@@ -254,7 +254,7 @@ const Home = () => {
         ) : null}
 
         {currentUser ? (
-          <Text style={{ color: "white", marginVertical: 10 }}>
+          <Text style={{ color: "white", marginBottom: 10 }}>
             Hello, {currentUser?.firstName}
           </Text>
         ) : authInitializing ? null : (
@@ -262,7 +262,7 @@ const Home = () => {
             testID="home-sign-in-link"
             onPress={() => navigateTo("Login")}
           >
-            <Text style={{ color: "white", marginVertical: 10 }}>Sign In</Text>
+            <Text style={{ color: "white", marginBottom: 10 }}>Sign In</Text>
           </TouchableOpacity>
         )}
 
@@ -404,9 +404,11 @@ const HeaderContainer = styled.View({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
+// The logo image has transparent space above and below the wordmark, so a
+// shorter row keeps the Sign In / Hello line close under it.
 const Overview = styled.View({
   flexDirection: "row",
-  height: "100px",
+  height: "70px",
   width: "100%",
   justifyContent: "space-between",
   alignItems: "center",
