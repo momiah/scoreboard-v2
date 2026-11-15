@@ -21,7 +21,11 @@ import type {
 export type { CreateReportOutcome };
 import type { LadderJoinUser } from "@shared/helpers";
 
-export type LadderJoinFailureReason = "closed" | "not_open" | "full";
+export type LadderJoinFailureReason =
+  | "closed"
+  | "not_open"
+  | "full"
+  | "account_blocked";
 
 export type AddLadderTeamFailureReason =
   | LadderJoinFailureReason

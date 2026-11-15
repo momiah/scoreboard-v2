@@ -1,3 +1,4 @@
+import { findBlockedUserIds } from "../helpers/accountStrikes";
 import React, {
   createContext,
   useState,
@@ -285,6 +286,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           LADDER_PARTICIPANTS_COLLECTION,
           user.userId,
         );
+
+        const joinedBefore = (await getDoc(participantRef)).exists();
+        if (!joinedBefore && (await findBlockedUserIds([user.userId])).length > 0) {
+          return { success: false, alreadyJoined: false, reason: "account_blocked" };
+        }
 
         const alreadyJoined = await runTransaction(db, async (transaction) => {
           const [ladderSnap, existing] = await Promise.all([
@@ -909,6 +915,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         const teamBlock = getTeamRegistrationBlock(serverTeam);
         if (teamBlock || !serverTeam)
           return failure(teamBlock ?? "team_not_found");
+
+        if ((await findBlockedUserIds(teamMemberIds(serverTeam))).length > 0) {
+          return failure("account_blocked");
+        }
 
         const conflictUserIds = await fetchLadderMemberConflicts(
           ladderId,
