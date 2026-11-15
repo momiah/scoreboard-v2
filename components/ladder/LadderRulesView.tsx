@@ -4,6 +4,8 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import FormattedBlocks from "./FormattedBlocks";
+import { HowToPlayBackground } from "./HowToPlayBackdrop";
+import { SCREEN_BG } from "./howToPlayTheme";
 import { rulesFor } from "./ladderRulesContent";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
@@ -17,6 +19,7 @@ const LadderRulesView: React.FC<{
 
   return (
     <Screen>
+      <HowToPlayBackground />
       <TopBar style={{ marginTop: topInset }}>
         <BackButton onPress={onBack} testID="ladder-rules-back">
           <Ionicons name="chevron-back" size={26} color="#ffffff" />
@@ -39,9 +42,10 @@ const LadderRulesView: React.FC<{
 
 export default LadderRulesView;
 
+// Same background as the How to Play guide and sign-up screens.
 const Screen = styled.View({
   flex: 1,
-  backgroundColor: "#00152B",
+  backgroundColor: SCREEN_BG,
 });
 
 const TopBar = styled.View({

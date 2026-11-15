@@ -137,7 +137,7 @@ it("splits a multi-word, accented name without changing capitalisation", async (
       lastName: "María O’Brien-Smith",
     }),
   );
-  expect(utils.props.onCreated).toHaveBeenCalledWith(true, "josé");
+  expect(utils.props.onCreated).toHaveBeenCalledWith(true);
 });
 
 it("caps the name and username inputs", () => {
@@ -192,7 +192,7 @@ it("creates the account with the form values (email path)", async () => {
       setCurrentUser: utils.props.setCurrentUser,
     }),
   );
-  expect(utils.props.onCreated).toHaveBeenCalledWith(true, "Mo");
+  expect(utils.props.onCreated).toHaveBeenCalledWith(true);
 });
 
 it("stores Both as Ambidextrous", async () => {
@@ -241,7 +241,7 @@ it("social sign-up pre-fills the name and reports no verification needed", async
       socialIsNewUser: true,
     }),
   );
-  expect(utils.props.onCreated).toHaveBeenCalledWith(false, "Mo");
+  expect(utils.props.onCreated).toHaveBeenCalledWith(false);
 });
 
 it("shows an error toast and logs when creation fails", async () => {

@@ -36,14 +36,12 @@ interface Draft {
   email: string;
   password: string;
   social?: SocialSignupParams;
-  firstName: string;
   requiresEmailVerification: boolean;
 }
 
 const emptyDraft: Draft = {
   email: "",
   password: "",
-  firstName: "",
   requiresEmailVerification: false,
 };
 
@@ -51,7 +49,6 @@ const socialDraft = (params: SocialSignupParams): Draft => ({
   ...emptyDraft,
   email: params.userEmail,
   social: params,
-  firstName: params.userName,
 });
 
 interface SignupIntroFlowProps {
@@ -60,7 +57,6 @@ interface SignupIntroFlowProps {
   onLogin: () => void;
   onSignedIn: (profile: Record<string, unknown>, method: string) => void;
   onExplore: () => void;
-  onCreateLeague: () => void;
   /** Opens straight at the profile step for a new Google / Apple player (from Login). */
   initialSocialSignup?: SocialSignupParams;
 }
@@ -72,7 +68,6 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   onLogin,
   onSignedIn,
   onExplore,
-  onCreateLeague,
   initialSocialSignup,
 }) => {
   const pager = usePager(PAGES.length);
@@ -145,10 +140,9 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
             initialLastName={draft.social?.userLastName}
             setCurrentUser={setCurrentUser}
             onBack={() => setStep("account")}
-            onCreated={(requiresEmailVerification, firstName) => {
+            onCreated={(requiresEmailVerification) => {
               setDraft((current) => ({
                 ...current,
-                firstName,
                 requiresEmailVerification,
               }));
               setStep("welcome");
@@ -157,10 +151,8 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         ) : null}
         {step === "welcome" ? (
           <AccountCreatedStep
-            firstName={draft.firstName}
             requiresEmailVerification={draft.requiresEmailVerification}
             onExplore={onExplore}
-            onCreateLeague={onCreateLeague}
           />
         ) : null}
       </SignupChrome>
