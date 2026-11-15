@@ -30,7 +30,10 @@ import {
   getLadderPlayoffStructure,
   calculateLadderPrizePool,
   ccImageEndpoint,
+  socialMediaPlatforms,
+  ICON_MAP,
 } from "@shared";
+import { handleSocialPress } from "../../helpers/handleSocialPress";
 import { medalIcons } from "@/rankingMedals";
 import { ladders } from "@/mockImages";
 
@@ -127,6 +130,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         onInvite={onInvite}
         inTheMoney={inTheMoney}
         isPaid={(ladder?.entryFee ?? 0) > 0}
+        showSocialFollow={config.showSocialFollow}
       />
     ),
   };
@@ -1200,7 +1204,8 @@ const FinalsPage: React.FC<{
   onInvite?: () => void;
   inTheMoney: number;
   isPaid: boolean;
-}> = ({ onReadRules, onInvite, inTheMoney, isPaid }) => {
+  showSocialFollow: boolean;
+}> = ({ onReadRules, onInvite, inTheMoney, isPaid, showSocialFollow }) => {
   const compact = useCompactScreen();
   const [champion, ...placed] = ladders;
   const heroSize = compact ? 104 : 128;
@@ -1281,11 +1286,41 @@ const FinalsPage: React.FC<{
           ) : null}
         </FinalsActions>
       </Reveal>
-      <Reveal order={8}>
-        <FootNote>
-          You can also open the rules anytime from the ladder page&apos;s menu.
-        </FootNote>
-      </Reveal>
+      {showSocialFollow ? (
+        <Reveal order={8} style={{ alignSelf: "stretch" }}>
+          <FollowCard testID="how-to-play-follow-us">
+            <FollowTitle>Don&apos;t miss the launch</FollowTitle>
+            <FootNote>
+              Follow us to hear first when ladders open near you.
+            </FootNote>
+            <FollowIcons>
+              {socialMediaPlatforms.map((platform) => (
+                <TouchableOpacity
+                  key={platform}
+                  onPress={() => handleSocialPress(platform)}
+                  hitSlop={8}
+                  testID={`how-to-play-follow-${platform.toLowerCase()}`}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Follow Court Champs on ${platform}`}
+                >
+                  <Ionicons
+                    name={ICON_MAP[platform as keyof typeof ICON_MAP]}
+                    size={30}
+                    color="#00A2FF"
+                  />
+                </TouchableOpacity>
+              ))}
+            </FollowIcons>
+          </FollowCard>
+        </Reveal>
+      ) : (
+        <Reveal order={8}>
+          <FootNote>
+            You can also open the rules anytime from the ladder page&apos;s
+            menu.
+          </FootNote>
+        </Reveal>
+      )}
     </ScrollView>
   );
 };
@@ -1837,6 +1872,25 @@ const ReadRulesButton = styled.TouchableOpacity({
   justifyContent: "center",
   flexDirection: "row",
   gap: 8,
+});
+
+const FollowCard = styled.View({
+  alignItems: "center",
+  gap: 6,
+});
+
+const FollowTitle = styled.Text({
+  color: "white",
+  fontSize: 15,
+  fontWeight: "bold",
+  textAlign: "center",
+});
+
+const FollowIcons = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  gap: 32,
+  marginTop: 4,
 });
 
 const FinalsActions = styled.View({
