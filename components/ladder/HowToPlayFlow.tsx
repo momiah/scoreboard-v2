@@ -1265,25 +1265,24 @@ const FinalsPage: React.FC<{
             <FootNote>
               Follow us to hear first when ladders open near you.
             </FootNote>
-            <FinalsActions>
+            <FollowIcons>
               {socialMediaPlatforms.map((platform) => (
-                <FollowButton
+                <TouchableOpacity
                   key={platform}
                   onPress={() => handleSocialPress(platform)}
-                  style={{ flex: 1 }}
+                  hitSlop={8}
                   testID={`how-to-play-follow-${platform.toLowerCase()}`}
                   accessibilityRole="link"
                   accessibilityLabel={`Follow Court Champs on ${platform}`}
                 >
                   <Ionicons
                     name={ICON_MAP[platform as keyof typeof ICON_MAP]}
-                    size={17}
-                    color="white"
+                    size={30}
+                    color="#00A2FF"
                   />
-                  <ButtonText>{platform}</ButtonText>
-                </FollowButton>
+                </TouchableOpacity>
               ))}
-            </FinalsActions>
+            </FollowIcons>
           </FollowCard>
         </Reveal>
       ) : (
@@ -1833,12 +1832,7 @@ const ReadRulesButton = styled.TouchableOpacity({
 });
 
 const FollowCard = styled.View({
-  paddingVertical: 12,
-  paddingHorizontal: 14,
-  borderRadius: 14,
-  backgroundColor: "rgba(255, 255, 255, 0.04)",
-  borderWidth: 1,
-  borderColor: "#192336",
+  alignItems: "center",
   gap: 6,
 });
 
@@ -1849,17 +1843,11 @@ const FollowTitle = styled.Text({
   textAlign: "center",
 });
 
-const FollowButton = styled.TouchableOpacity({
-  paddingVertical: 10,
-  borderRadius: 12,
-  backgroundColor: "#16181B",
-  borderWidth: 1,
-  borderColor: "#2a2f36",
-  alignItems: "center",
-  justifyContent: "center",
+const FollowIcons = styled.View({
   flexDirection: "row",
-  gap: 8,
-  marginTop: 2,
+  justifyContent: "center",
+  gap: 32,
+  marginTop: 4,
 });
 
 const FinalsActions = styled.View({
