@@ -70,3 +70,12 @@ appId: com.courtchamp
 - assertVisible: ".*Read the full rules.*"
 - assertVisible:
     id: "how-to-play-invite-players"
+- scrollUntilVisible:
+    element:
+      id: "how-to-play-follow-tiktok"
+    direction: DOWN
+- assertVisible: "Don.t miss the launch"
+- assertVisible:
+    id: "how-to-play-follow-instagram"
+- assertVisible:
+    id: "how-to-play-follow-tiktok"
