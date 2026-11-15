@@ -199,8 +199,11 @@ const CompetitionsScreen = memo(() => {
   );
 
   const openAddCompetition = useCallback(
-    () => setAddCompetitionVisible(true),
-    [],
+    () =>
+      currentUser?.userId
+        ? setAddCompetitionVisible(true)
+        : navigation.navigate("Login"),
+    [currentUser?.userId, navigation],
   );
   const goToNotifications = useCallback(
     () => navigation.navigate("Notifications"),

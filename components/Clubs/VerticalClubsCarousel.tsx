@@ -107,10 +107,10 @@ const CarouselItem = styled(TouchableOpacity)({
   backgroundColor: "#00152B",
   borderRadius: 10,
   shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
+  shadowOffset: "0px 2px",
+  shadowOpacity: "0.3",
   shadowRadius: 5,
-  elevation: 3,
+  elevation: "3",
   height: 200,
 });
 

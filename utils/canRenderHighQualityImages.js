@@ -19,15 +19,12 @@ export const canHandleHighQualityImages = () => {
         "ipad mini",
       ];
       const isOldDevice = oldDevices.some((device) =>
-        modelName.includes(device)
+        modelName.includes(device),
       );
 
       if (isOldDevice) {
-        console.log("📱 Old iOS device detected, using low quality images");
         return false;
       }
-
-      console.log("📱 Modern iOS device detected, using high quality images");
       return true;
     }
 
@@ -38,9 +35,6 @@ export const canHandleHighQualityImages = () => {
 
       // If device year is available and recent
       if (deviceYear && deviceYear >= 2020) {
-        console.log(
-          `📱 Recent Android device (${deviceYear}), using high quality images`
-        );
         return true;
       }
 
@@ -53,29 +47,21 @@ export const canHandleHighQualityImages = () => {
         "xiaomi mi",
       ];
       const isHighEnd = highEndBrands.some((brand) =>
-        modelName.includes(brand)
+        modelName.includes(brand),
       );
 
       if (isHighEnd) {
-        console.log(
-          "📱 High-end Android device detected, using high quality images"
-        );
         return true;
       }
-
-      console.log(
-        "📱 Budget/older Android device detected, using low quality images"
-      );
       return false;
     }
 
     // Default to low quality for unknown platforms
-    console.log("📱 Unknown platform, using low quality images");
     return false;
   } catch (error) {
     console.warn(
       "Device check failed, defaulting to low quality images:",
-      error
+      error,
     );
     return false;
   }

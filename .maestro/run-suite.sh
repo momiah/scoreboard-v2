@@ -6,14 +6,23 @@
 #   .maestro/run-suite.sh team-      # flows whose name contains "team-"
 #   .maestro/run-suite.sh =team-disband-open   # exactly that flow
 #   MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh   # a specific device (needed with more than one booted)
+#   MAESTRO_METRO_PORT (from .maestro/.env, default 8081) is the Metro this checkout serves
 cd "$(dirname "$0")/.."
 set -a; source .maestro/.env; set +a
+export MAESTRO_METRO_PORT="${MAESTRO_METRO_PORT:-8081}"
+export MAESTRO_METRO_URL="http://localhost:${MAESTRO_METRO_PORT}"
 export MAESTRO_PLAYOFF_TIE_DAYS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")"
 export MAESTRO_LADDER_HOST_ARRANGE_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_HOST_ARRANGE_HOURS")"
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
-forward() { [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] && adb -s "$MAESTRO_DEVICE" reverse tcp:8090 tcp:8090 >/dev/null; true; }
+forward() {
+  [[ "${MAESTRO_DEVICE:-}" == emulator-* ]] || return 0
+  adb -s "$MAESTRO_DEVICE" reverse "tcp:$MAESTRO_METRO_PORT" "tcp:$MAESTRO_METRO_PORT" >/dev/null
+  # Real (not mocked) GPS at maestro-eligibility-court, so free ladders can be joined.
+  adb -s "$MAESTRO_DEVICE" emu geo fix -0.1278 51.5074 >/dev/null
+  true
+}
 pass=0; flaky=(); failed=()
 if [[ "$pattern" == "="* ]]; then flows=(".maestro/flows/${pattern#=}.yaml"); else flows=(.maestro/flows/*${pattern}*.yaml); fi
 for flow in "${flows[@]}"; do

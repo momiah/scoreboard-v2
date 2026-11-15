@@ -139,10 +139,10 @@ const CarouselItem = styled.TouchableOpacity({
   backgroundColor: "#fff",
   borderRadius: 10,
   shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.8,
+  shadowOffset: "0px 2px",
+  shadowOpacity: "0.8",
   shadowRadius: 2,
-  elevation: 5,
+  elevation: "5",
 });
 
 const ImageWrapper = styled.View({

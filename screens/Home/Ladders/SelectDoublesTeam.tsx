@@ -18,6 +18,7 @@ import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
 import TeamListSkeleton from "../../../components/Skeletons/TeamListSkeleton";
+import { checkLadderEligibility } from "../../../helpers/ladderEligibility";
 
 interface SelectDoublesTeamParams {
   ladder: Ladder;
@@ -83,6 +84,11 @@ const SelectDoublesTeam: React.FC = () => {
     }
     setJoining(true);
     try {
+      const ineligible = await checkLadderEligibility(ladder);
+      if (ineligible) {
+        showBottomToast(ineligible, "error");
+        return;
+      }
       const { success, conflict, reason } = await joinLadderAsTeam(
         ladder.ladderId,
         selectedTeam,

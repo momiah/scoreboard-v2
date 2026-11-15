@@ -2,6 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
+    "scheme": "courtchamps",
     "version": "3.0.9",
     "runtimeVersion": "3.0.1",
     "orientation": "portrait",
@@ -18,6 +19,9 @@
       "supportsTablet": true,
       "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
+      "associatedDomains": [
+        "applinks:courtchamps.com"
+      ],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "FacebookAppID": "1264178202106496",
@@ -41,6 +45,11 @@
           {
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "courtchamps"
             ]
           }
         ],
@@ -129,9 +138,24 @@
       "expo-video",
       "expo-font",
       "@react-native-community/datetimepicker",
+      "expo-apple-authentication",
       "react-native-compressor",
       "expo-asset",
-      "expo-screen-orientation"
+      "expo-screen-orientation",
+      "@react-native-firebase/app",
+      "@react-native-firebase/app-check",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAppCheck"
+            ]
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

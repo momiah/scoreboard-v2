@@ -1,109 +1,91 @@
-# Maestro flows — reject-game (dispute)
+# Maestro flows
 
-E2E flows for the ladder reject-game/dispute journey, run against a dev-client
-build on the iOS simulator. See [docs/testing/maestro.md](../docs/testing/maestro.md)
-for install + build steps, and
-[docs/testing/reject-game-flow-test-plan.md](../docs/testing/reject-game-flow-test-plan.md)
-for the scenarios each flow covers.
+E2E flows run against a dev-client build on the iOS simulator (and Android).
+See [docs/testing/maestro.md](../docs/testing/maestro.md) for install and build
+steps and the list of flows, and [maestro/README.md](../maestro/README.md) for
+the in-app harness, seeds and fixture users.
 
 ## Layout
 
-- `config.yaml` — workspace config (which files count as flows). `appId` and
-  the login `onFlowStart` hook live in each flow file's own header, not here —
-  Maestro doesn't support them at the workspace level.
-- `login.yaml` — shared login subflow, invoked via `onFlowStart` from every
-  flow below. Idempotent: skips itself if a session is already active.
-- `flows/` — the reject-game/dispute flows.
-- `utilities/` — flows that are not part of the suite (not matched by
-  `config.yaml`), e.g. `cleanup-ladder-test-data.yaml`, which taps the Home
-  cleanup button to delete all seeded Maestro fixtures. Run on request only.
-- `.env` (gitignored) — the throwaway test account's credentials.
+- `config.yaml`: workspace config (which files count as flows). `appId` and
+  the login `onFlowStart` hook live in each flow file's header; Maestro doesn't
+  support them at the workspace level.
+- `login.yaml`: shared login subflow, run from every flow's `onFlowStart`. It
+  opens the dev client on `${MAESTRO_METRO_URL}`, signs in only if no one is,
+  and taps the harness unlock five times.
+- `flows/`: the suite, one YAML per scenario, named `<feature>-<behaviour>.yaml`.
+- `utilities/`: subflows and run-on-request flows, not matched by
+  `config.yaml`:
+  - `harness.yaml` taps a harness button: filters to `${BUTTON}`, taps it and
+    dismisses the "Seeded" / "Cleaned up" / "Signed out" alert.
+  - `cleanup-test-data.yaml` runs every section's cleanup.
+  - `pick-date.yaml` picks a date on iOS and Android.
+  - `cleanup-ladder-test-data.yaml` runs only the ladder cleanup.
+  - `playoffs/*` and `profile/*`: ladder subflows (`playoffs/harness.yaml`
+    also scrolls the harness list on Android, where off-screen buttons aren't
+    in the accessibility tree; flows whose button sits far down on iOS use
+    `harness-scrolled.yaml`).
+- `.env` (gitignored): the test account and this checkout's Metro port. Copy
+  `.env.example` and fill it in.
 
 ## One-time setup
 
-1. Install Maestro and build the dev client — see `docs/testing/maestro.md`.
-2. Create `.maestro/.env` (gitignored) with:
+1. Install Maestro and build the dev client: see `docs/testing/maestro.md`.
+2. Create `.maestro/.env` from `.env.example`:
    ```
    MAESTRO_TEST_USER_EMAIL=...
    MAESTRO_TEST_USER_PASSWORD=...
+   MAESTRO_METRO_PORT=8081
    ```
-   Maestro auto-passes any shell variable prefixed `MAESTRO_` into flows as
-   `${VAR}`, so these just need to be exported before running — no `-e` flags
-   needed.
-
-> The harness is currently detached from Home (see `maestro/README.md`,
-> "Re-attaching the harness"). Put it back before running any flow.
+   Use a different port per worktree, so each checkout runs its own Metro.
+   Maestro passes any shell variable prefixed `MAESTRO_` into flows as `${VAR}`.
 
 ## Running
 
-Export the test credentials, then run a flow (or the whole suite) against a
-booted simulator with the dev client installed:
-
 ```bash
-set -a && source .maestro/.env && set +a
-export MAESTRO_PLAYOFF_TIE_DAYS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")
-export MAESTRO_LADDER_HOST_ARRANGE_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_HOST_ARRANGE_HOURS")
-export MAESTRO_LADDER_AUTO_ACCEPT_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")
-maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
-maestro test .maestro/flows                                     # whole suite
-.maestro/run-suite.sh                                           # whole suite, retrying a failed flow once
-.maestro/run-suite.sh team-                                     # only flows whose name contains "team-"
+.maestro/run-suite.sh                    # whole suite, retrying a failed flow once
+.maestro/run-suite.sh core-              # flows whose name contains "core-"
+.maestro/run-suite.sh =core-harness-unlock-and-sign-out   # exactly that flow
+MAESTRO_DEVICE=<udid> .maestro/run-suite.sh               # a specific device
 ```
 
-`run-suite.sh` runs the flows one at a time (Maestro cannot share a simulator),
-retries a failed flow once, and prints `FLAKY` for one that passed on the retry
-and `FAIL` only for one that fails twice. Use it for full runs: a long run
-occasionally loses a login or a wait to simulator timing.
+`run-suite.sh` sources `.env`, exports `MAESTRO_METRO_URL` and the rule numbers
+from `courtchamps-shared` (`MAESTRO_PLAYOFF_TIE_DAYS`,
+`MAESTRO_LADDER_HOST_ARRANGE_HOURS`, `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`), runs
+the flows one at a time, retries a failed flow once, and prints `FLAKY` for one
+that passed on the retry and `FAIL` only for one that failed twice. Logs go to
+`/tmp/maestro-<flow>.log`. To run one flow with plain `maestro test`, export the
+same variables first.
 
-Each flow's `onFlowStart` seeds nothing itself — the composer/timeline flows
-tap the **Seed Reject-Game Flow** button on the Home screen first (a
-`maestro/seeds/seedRejectGameFlow.js` helper) to get a freshly
-reported ladder game + notification to act on. Re-running the seed resets
-game 1 and clears any dispute from a previous run, so flows are safe to
-re-run back to back.
-
-## Test-only Home-screen buttons
-
-The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
-live in `maestro/MaestroHarness.tsx` and the helpers in `maestro/seeds/`. Home
-loads the harness through a `require` guarded by `__DEV__`, so it renders in a
-dev-client build and is not included in a production/release build. The
-buttons stay hidden until a transparent strip (`maestro-harness-unlock`) is
-tapped five times, which `login.yaml` does at the start of every flow. The
-**Delete Ladder Test Data** button (`maestro/seeds/cleanupLadderTestData.js`)
-removes every ladder/match/dispute/fixture-user doc any of these flows create
-(reject-game and add-game both). See [maestro/README.md](../maestro/README.md).
+Each flow seeds what it needs by tapping its harness button through
+`utilities/harness.yaml`; re-running a seed overwrites its fixtures, so flows are
+safe to re-run back to back.
 
 ## Known limitation: native pickers
 
-The video-evidence picker (`expo-image-picker` → iOS `PHPickerViewController`)
-runs out-of-process via ExtensionKit — it opens fine, but Maestro's
-accessibility tree can't see or tap into it at all. Any scenario that needs a
-specific video/photo selected from the library isn't Maestro-testable on iOS;
-see `docs/testing/reject-game-flow-test-plan.md` scenario 2.8 for the case
-this ruled out (covered by a Jest test on the guard function instead).
-
-## CI
-
-Not wired up yet — see `docs/testing/maestro.md`.
+The iOS photo/video picker runs out of process, and Maestro cannot see or tap
+into it. Cover a scenario that needs a specific library item with a Jest test on
+the guard function instead.
 
 ## Android
 
-Android is built from `android-build` (reanimated 3.19.5, pinned compressor and background-upload fork,
-`patch-package`, native date picker), so run these flows from a branch cut from it
-(`claude/ladder-playoffs-android`), never from a main-based checkout: that one doesn't compile natively.
+Android builds from `android-build`, so run flows from a branch cut from it,
+never from a main-based checkout: that one doesn't compile natively.
 
 ```
-cd android-worktree && npm ci && npx expo prebuild --platform android --no-install
+npm ci && npx expo prebuild --platform android --no-install
 cd android && ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
-adb install -r app/build/outputs/apk/debug/app-debug.apk   # an emulator wiped with -wipe-data has the space
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh <pattern>
 ```
 
-- `run-suite.sh` re-applies `adb reverse tcp:8090 tcp:8090` before each flow and `login.yaml` taps the
-  `http://localhost:8090` dev-client entry. Grant notification, location and camera permissions with `adb shell pm grant`.
-- `utilities/playoffs/harness.yaml` scrolls the harness list on Android (off-screen buttons aren't in the
-  accessibility tree); flows whose button sits far down on iOS use `harness-scrolled.yaml`.
-- `utilities/pick-date.yaml` picks a date: iOS spinner plus "Confirm Date", Android native dialog and "OK".
-  The native Android dialog has no range message, so flows that assert it do so on iOS only.
+- `run-suite.sh` re-applies `adb reverse` for `MAESTRO_METRO_PORT` before each
+  flow. Grant notification, location and camera permissions with
+  `adb shell pm grant`.
+- `utilities/pick-date.yaml` handles the iOS spinner plus "Confirm Date" and
+  the Android native dialog.
 - Copy `.env` into a new worktree, or Firebase fails with `auth/invalid-api-key`.
+
+## CI
+
+Not wired up yet: see `docs/testing/maestro.md`.

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { COMPETITION_TYPES, COLLECTION_NAMES, prizeTypes } from "@shared";
+import { COMPETITION_TYPES, COLLECTION_NAMES, getPrizeType } from "@shared";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -337,7 +337,7 @@ const Tournament = () => {
                 >
                   <View style={{ flexDirection: "row", gap: 5 }}>
                     <Tag name={tournamentType} />
-                    <Tag name={prizeTypes.MEDAL} />
+                    <Tag name={getPrizeType(tournamentById?.entryFee)} />
                   </View>
                   <UserRoleTag
                     userRole={userRole}

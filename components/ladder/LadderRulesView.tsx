@@ -6,16 +6,18 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import FormattedBlocks from "./FormattedBlocks";
 import { rulesFor } from "./ladderRulesContent";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
+import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
 
 const LadderRulesView: React.FC<{
   ladderType?: string;
   onBack: () => void;
 }> = ({ ladderType, onBack }) => {
   const rules = rulesFor(ladderEntrantNoun(ladderType));
+  const topInset = useAndroidTopInset();
 
   return (
     <Screen>
-      <TopBar>
+      <TopBar style={{ marginTop: topInset }}>
         <BackButton onPress={onBack} testID="ladder-rules-back">
           <Ionicons name="chevron-back" size={26} color="#ffffff" />
         </BackButton>

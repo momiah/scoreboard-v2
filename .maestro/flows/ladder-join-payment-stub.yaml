@@ -27,6 +27,8 @@ onFlowStart:
     id: "join-ladder-price"
     text: "£22"
 - assertVisible: ".*£20 entry.*£2 platform fee.*"
+- assertNotVisible:
+    id: "join-ladder-eligibility-rule"
 - tapOn:
     id: "join-ladder-terms"
 - tapOn:

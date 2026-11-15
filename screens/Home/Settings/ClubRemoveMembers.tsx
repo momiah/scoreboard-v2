@@ -12,6 +12,7 @@ import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
 import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
 import { Club, CompetitionAdmins, Player } from "@shared/types";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const ClubRemoveMembers = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -136,6 +137,7 @@ const ClubRemoveMembers = () => {
 
   return (
     <Container>
+      <StatusBarSpacer />
       <Title>Remove Members</Title>
       <FlatList
         data={sortedParticipants}

@@ -10,6 +10,7 @@ import {
 import { LeagueContext } from "../../../context/LeagueContext";
 import { COLLECTION_NAMES } from "@shared";
 import type { UserProfile } from "@shared/types";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const ClubPendingInvites = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -75,6 +76,7 @@ const ClubPendingInvites = () => {
 
   return (
     <Container>
+      <StatusBarSpacer />
       <Title>Pending Invites</Title>
       {pendingUsers.length === 0 ? (
         <EmptyText>

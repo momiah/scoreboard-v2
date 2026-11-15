@@ -1,7 +1,9 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
-import { SafeAreaView, Platform, Modal } from "react-native";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { Platform, Modal } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import SafeAreaView from "./components/SafeAreaView";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -21,10 +23,14 @@ import { UserContext } from "./context/UserContext";
 import { usePendingUpload } from "./hooks/usePendingUpload";
 import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
+import { linking } from "./navigation/linking";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import VideoFullscreen from "./screens/VideoFullScreen";
 import { getPlayoffTieRoute } from "./helpers/playoffTieRoute";
+import { initAppCheck } from "./services/appCheck";
+
+initAppCheck();
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
@@ -50,7 +56,7 @@ const AppContent = () => {
   }, [currentUser?.userId]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <BottomSheetModalProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
           <UploadToast pendingUploads={pendingUploads} />
@@ -127,8 +133,6 @@ export default function App() {
         const userId = await AsyncStorage.getItem("userId");
         if (userId) {
           await registerForPushNotificationsAsync(userId);
-        } else {
-          console.log("App.js: No userId found in AsyncStorage");
         }
       } catch (error) {
         console.error("App.js: Error registering push notifications:", error);

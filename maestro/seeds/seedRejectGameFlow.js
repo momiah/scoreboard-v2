@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 import { db } from "../../services/firebase.config";
+import { writeFixtureUser } from "../fixtures/fixtureUsers";
 import {
   LADDER_TYPE,
   LADDER_STATUS,
@@ -78,31 +79,11 @@ export const seedRejectGameFlow = async ({
     username: "maestro_opponent",
   };
 
-  await setDoc(
-    doc(db, "users", MAESTRO_OPPONENT_ID),
-    {
-      userId: MAESTRO_OPPONENT_ID,
-      firstName: opponent.firstName,
-      lastName: opponent.lastName,
-      username: opponent.username,
-      usernameLower: opponent.username,
-      handPreference: "",
-      provider: "seed",
-      dob: "",
-      profileDetail: baselineProfileDetail(100),
-      profileImage: "",
-      bio: "",
-      headline: "",
-      profileViews: 0,
-      location: {},
-      email: "maestro-opponent@example.com",
-      phoneNumber: "",
-      showEmail: false,
-      showPhoneNumber: false,
-      pushTokens: [],
-    },
-    { merge: true },
-  );
+  await writeFixtureUser({
+    ...opponent,
+    email: "maestro-opponent@example.com",
+    profileDetail: baselineProfileDetail(100),
+  });
 
   await setDoc(
     doc(db, "users", testUser.userId),

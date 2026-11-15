@@ -3,10 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import SafeAreaView from "../../../components/SafeAreaView";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import * as ImagePicker from "expo-image-picker";
@@ -19,6 +19,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
 import { File } from "expo-file-system";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const EditClub = () => {
   const route = useRoute();
@@ -173,6 +174,7 @@ const EditClub = () => {
 
   return (
     <SafeAreaWrapper>
+      <StatusBarSpacer />
       <Popup
         visible={showPopup}
         message={popupMessage}

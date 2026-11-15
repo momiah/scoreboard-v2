@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 import { db } from "../../services/firebase.config";
+import { writeFixtureUser } from "../fixtures/fixtureUsers";
 import {
   LADDER_TYPE,
   LADDER_STATUS,
@@ -77,31 +78,11 @@ export const seedAddApproveGameFlowDoubles = async ({
   };
 
   const seedUserDoc = (user, email) =>
-    setDoc(
-      doc(db, "users", user.userId),
-      {
-        userId: user.userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        username: user.username,
-        usernameLower: user.username,
-        handPreference: "",
-        provider: "seed",
-        dob: "",
-        profileDetail: baselineProfileDetail(100),
-        profileImage: "",
-        bio: "",
-        headline: "",
-        profileViews: 0,
-        location: {},
-        email,
-        phoneNumber: "",
-        showEmail: false,
-        showPhoneNumber: false,
-        pushTokens: [],
-      },
-      { merge: true },
-    );
+    writeFixtureUser({
+      ...user,
+      email,
+      profileDetail: baselineProfileDetail(100),
+    });
 
   await Promise.all([
     seedUserDoc(partner, "maestro-add-game-doubles-partner@example.com"),

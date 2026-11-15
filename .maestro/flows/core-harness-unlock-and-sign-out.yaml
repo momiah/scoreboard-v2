@@ -1,0 +1,21 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- assertVisible:
+    id: "maestro-cleanup-test-data"
+- assertVisible:
+    id: "maestro-sign-out"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-sign-out"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 20000
+- assertNotVisible:
+    id: "maestro-harness-unlock"
+- runFlow: ../login.yaml
+- assertVisible:
+    id: "maestro-sign-out"

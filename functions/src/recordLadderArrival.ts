@@ -16,7 +16,7 @@ import type {
 const isNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const toReading = (value: unknown): LadderArrivalReading | null => {
+export const toReading = (value: unknown): LadderArrivalReading | null => {
   const reading = value as Partial<LadderArrivalReading> | null;
   if (!reading || !isNumber(reading.latitude) || !isNumber(reading.longitude)) {
     return null;

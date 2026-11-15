@@ -4,10 +4,10 @@ import {
   Text,
   Dimensions,
   Platform,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import SafeAreaView from "../../components/SafeAreaView";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
@@ -31,6 +31,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
+import { validateCompetitionName } from "../../helpers/validateCompetitionName";
 import OptionSelector from "../OptionSelector";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import SearchCourt from "./SearchLocationModal";
@@ -39,7 +40,12 @@ import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId = null }) => {
+const AddTournamentModal = ({
+  modalVisible,
+  setModalVisible,
+  onSuccess,
+  clubId = null,
+}) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -176,7 +182,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
         tournamentAdmins: [adminData.tournamentAdmin],
         tournamentParticipants: [adminData.tournamentParticipant],
         tournamentImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.MEDAL,
+        prizeType: prizeTypes.COMMUNITY,
         location,
         countryCode: location.countryCode || "",
         tournamentOwner: adminData.tournamentOwner,
@@ -207,9 +213,12 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
     }
   };
 
+  const nameError = validateCompetitionName(tournamentName);
+
   // Step 1 validation check
   const canProceedToNext =
     tournamentName?.trim() &&
+    !nameError &&
     selectedLocation &&
     Object.values(selectedLocation).some((value) => value.trim() !== "");
 
@@ -270,7 +279,10 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
                   label="Tournament Name"
                   name="tournamentName"
                   control={control}
-                  error={errors.tournamentName}
+                  error={
+                    errors.tournamentName ||
+                    (nameError && { message: nameError })
+                  }
                   required
                 />
 

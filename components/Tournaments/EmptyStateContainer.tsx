@@ -70,7 +70,7 @@ const EmptyStateSubtext = styled.Text({
   color: "#ccc",
   textAlign: "center",
   marginBottom: 32,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const GenerateButton = styled.TouchableOpacity({
@@ -81,10 +81,10 @@ const GenerateButton = styled.TouchableOpacity({
   paddingVertical: 14,
   borderRadius: 8,
   shadowColor: "#00A2FF",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
+  shadowOffset: "0px 4px",
+  shadowOpacity: "0.3",
   shadowRadius: 8,
-  elevation: 5,
+  elevation: "5",
 });
 
 const GenerateButtonText = styled.Text({

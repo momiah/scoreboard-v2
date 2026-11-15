@@ -14,6 +14,7 @@ import { getModalTypeForNotification } from "../../../helpers/handleNotification
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
 import { Notification } from "@shared";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const ClubPendingRequests = () => {
   const { currentUser, notifications } = useContext(UserContext);
@@ -75,6 +76,7 @@ const ClubPendingRequests = () => {
 
   return (
     <Container>
+      <StatusBarSpacer />
       <HeaderRow>
         <BackButton onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="white" />

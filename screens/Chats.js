@@ -102,7 +102,7 @@ const Chats = () => {
 
   return (
     <Container>
-      <Header>Chats</Header>
+      <Header testID="chats-header">Chats</Header>
       {chatSummaries.length === 0 && (
         <LoadingContainer>
           <NoChatsText testID="chats-empty">

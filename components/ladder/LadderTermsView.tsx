@@ -4,22 +4,26 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import LadderTermsList from "./LadderTermsContent";
+import { useAndroidTopInset } from "../../hooks/useAndroidTopInset";
 
-const LadderTermsView: React.FC<{ onBack: () => void }> = ({ onBack }) => (
-  <Screen>
-    <TopBar>
-      <BackButton onPress={onBack} testID="ladder-terms-back">
-        <Ionicons name="chevron-back" size={26} color="#ffffff" />
-      </BackButton>
-      <TopBarTitle>Terms &amp; Conditions</TopBarTitle>
-      <View style={{ width: 26 }} />
-    </TopBar>
+const LadderTermsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const topInset = useAndroidTopInset();
+  return (
+    <Screen>
+      <TopBar style={{ marginTop: topInset }}>
+        <BackButton onPress={onBack} testID="ladder-terms-back">
+          <Ionicons name="chevron-back" size={26} color="#ffffff" />
+        </BackButton>
+        <TopBarTitle>Terms &amp; Conditions</TopBarTitle>
+        <View style={{ width: 26 }} />
+      </TopBar>
 
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-      <LadderTermsList />
-    </ScrollView>
-  </Screen>
-);
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
+        <LadderTermsList />
+      </ScrollView>
+    </Screen>
+  );
+};
 
 export default LadderTermsView;
 

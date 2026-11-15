@@ -5,14 +5,83 @@ imported by app code except `screens/Home/Home.tsx`, which loads
 `MaestroHarness` through a `require` guarded by `__DEV__`, so none of it is
 bundled into a release build.
 
-- `MaestroHarness.tsx` — the test-only buttons the flows tap (seed, mock
-  resolve/request evidence, cleanup). Each button has a `maestro-*` testID. The
-  buttons are hidden until a transparent strip at the top of the harness
-  (`maestro-harness-unlock`) is tapped five times; `.maestro/login.yaml` does
-  this for every flow, so normal dev use sees a clean Home screen. The buttons
-  are a compact wrapped grid so every one stays on screen: Maestro cannot find
-  a button that sits below the fold or under the tab bar, so keep the harness
-  small when adding buttons.
+## Harness
+
+- `MaestroHarness.tsx` is the shell: a transparent strip
+  (`maestro-harness-unlock`) that shows the buttons after five taps, a filter
+  input (`maestro-harness-filter`) that hides every button whose testID doesn't
+  contain the text, the `maestro-expected-*` labels, the
+  `maestro-cleanup-test-data` button and every section's buttons.
+  `.maestro/login.yaml` does the five taps for every flow, so normal dev use
+  sees a clean Home.
+- `harness/HarnessButton.tsx`: `HarnessButton` (a quarter-width grid cell that
+  honours the filter), `Text`, and `SeedButton({ id, label, run })`, which runs
+  a seed and shows "Seeded" with the outcome, or "Seed failed" with the error.
+  Flows wait for that alert (`.maestro/utilities/harness.yaml`).
+- `harness/HarnessExpected.tsx`: when a seed returns `{ expected: { key: value } }`,
+  each value is shown as `maestro-expected-<key>`. Use it for any number a flow
+  asserts that comes from a rule or a shared helper (a prize pool, a ladder
+  size): the seed computes it with the `courtchamps-shared` helper, and the flow
+  reads it with `copyTextFrom: { id: "maestro-expected-<key>" }` and asserts
+  `${maestro.copiedText}`. Flows never contain the literal.
+- The buttons are a compact wrapped grid so every one stays on screen: Maestro
+  cannot find a button below the fold or under the tab bar.
+
+## Sections
+
+Each feature owns one file in `sections/`, so feature branches never edit the
+same harness file:
+
+```ts
+const preRegistration: HarnessSection = {
+  id: "preRegistration",
+  Buttons: ({ currentUser }) => <>{/* SeedButtons */}</>,
+  cleanup: ({ testUser }) => cleanupPreRegistrationTestData({ testUser }),
+};
+export default preRegistration;
+```
+
+Register it with one line in `sections/index.ts`. `maestro-cleanup-test-data`
+runs every section's `cleanup` in order and keeps going past a failure, then
+reports "Cleanup failed" with `CLEANUP INCOMPLETE` and the sections that
+failed. `sections/core.tsx` holds the buttons every feature uses, including
+`maestro-sign-out` (the app's own `Logout`), so signed-out flows can seed while
+signed in and then sign out.
+
+Put a feature's seeds and mocks next to its section (e.g.
+`maestro/seeds/<feature>/`), each with a delete keyed on the same fixture ids.
+
+## Fixture users
+
+`fixtures/fixtureUsers.js` builds every fixture user a seed writes:
+`buildFixtureUser` / `writeFixtureUser` give the same shape `createAccount.ts`
+saves (the shared `userProfileSchema`, `usernameLower`, `provider:
+"email_password"`, the default profile image) with a full location (city,
+country, countryCode, postCode, address) picked from `FIXTURE_LOCATIONS` by the
+user id, so a reused user keeps the same place. Emails are
+`<userId>@example.com`, which can never be delivered. Seeds that create or
+reuse a fixture user write it through `writeFixtureUser`, never a hand-built
+user doc. `deleteFixtureUsers(ids)` removes the user docs and their
+`notifications` and `chats`.
+
+Fixture user ids start with `maestro`. Cleanup only runs when testing is
+finished; re-seeding overwrites fixture docs, so stale data is not a reason to
+clean up.
+
+## Seeds model production
+
+A seed must look like data production would have written, or the flow proves
+nothing. Every number that is a rule comes from `courtchamps-shared`, never a
+literal; flows read rule numbers from the `MAESTRO_*` env vars that
+`.maestro/run-suite.sh` exports, or from `maestro-expected-*`.
+
+## Ladder section
+
+`sections/ladders.tsx` holds the ladder buttons. Its
+`maestro-cleanup-ladder-test-data` button runs `cleanupLadderTestData` alone, as
+the ladder flows expect; `maestro-cleanup-test-data` runs it with every other
+section's cleanup.
+
 - `seeds/` — client-SDK seed and cleanup helpers. Every seed has a matching
   delete, keyed on the same hardcoded fixture ids, via
   `seeds/cleanupLadderTestData.js`.
@@ -55,10 +124,7 @@ bundled into a release build.
   tie-chat assertion. Notification ids start `maestro-po-` and the backend's
   start with the ladder id, so cleanup removes them.
 
-## Seeds model production
-
-A seed must look like data production would have written, or the flow proves
-nothing. Before adding or changing one, check that:
+Ladder seeds also check that:
 
 - matches are played inside their tie's window (start to deadline), and a tie
   that has started has the matches that got it there;
@@ -74,10 +140,25 @@ nothing. Before adding or changing one, check that:
 `seeds/realWorldChecks.helper.js` asserts the first three and runs against every
 playoff stage in the seed tests. Add a stage to those tests when you add one.
 
+## Live data
+
+Seeds write to the live Firebase project through the client SDK (`db` from
+`services/firebase.config`), the same way the app does.
+
+Pre-registration seeds may write open `ladderPreRegistrations` to live data only
+until pre-registration ships in a store build or OTA update, because the app
+lists every open pre-registration to every user. Seeds that change live
+documents (e.g. closing the `launch-*` pre-registrations to force an empty
+state) record the previous value and their cleanup restores it exactly; a
+failed restore must fail loudly. Once pre-registration ships, these flows and
+seeds move to the Firestore emulator: a test-run config that points the app at
+the emulator, guarded by `__DEV__` and an env flag so release builds can never
+reach it.
+
 ## Re-attaching the harness
 
-The harness is not mounted in the app while testing is finished, so Maestro
-flows cannot find its buttons. To run them again, put these back in
+When testing is finished, the harness is detached from Home and Maestro flows
+cannot find its buttons. To run them again, put these back in
 `screens/Home/Home.tsx`:
 
 ```tsx
@@ -87,8 +168,7 @@ const MaestroHarness = __DEV__
   : null;
 ```
 
-(above the video feed config), and, where the Home content renders (above the
-"Hello" greeting):
+(above the video feed config), and, above the "Hello" greeting:
 
 ```tsx
 {MaestroHarness && currentUser ? (
@@ -96,5 +176,5 @@ const MaestroHarness = __DEV__
 ) : null}
 ```
 
-When testing is done again, remove those two pieces and run the cleanup utility
-first (`.maestro/utilities/cleanup-ladder-test-data.yaml`).
+When testing is done again, run `.maestro/utilities/cleanup-test-data.yaml`
+first, then remove those two pieces.

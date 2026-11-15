@@ -175,7 +175,7 @@ const SectionTitle = styled.Text({
 const DescriptionText = styled.Text({
   color: "#cccccc",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const DisabledText = styled.Text({

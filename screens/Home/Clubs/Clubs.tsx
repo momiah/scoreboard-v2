@@ -22,6 +22,7 @@ import LeaguesSkeleton from "../../../components/Skeletons/LeaguesSkeleton";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import type { Club } from "@shared/types";
+import StatusBarSpacer from "../../../components/StatusBarSpacer";
 
 const FILTERS_STORAGE_KEY = "@courtchamp_club_filters";
 
@@ -163,6 +164,7 @@ const Clubs = () => {
 
   return (
     <ClubsContainer>
+      <StatusBarSpacer />
       <Overview>
         <Image
           source={CourtChampLogo}

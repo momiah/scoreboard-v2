@@ -40,7 +40,7 @@ const Blocks = styled.View({
 const Paragraph = styled.Text({
   color: "#cccccc",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const List = styled.View({
@@ -56,12 +56,12 @@ const Point = styled.View({
 const Bullet = styled.Text({
   color: "#00A2FF",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const PointText = styled.Text({
   flex: 1,
   color: "#cccccc",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });

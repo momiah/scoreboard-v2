@@ -28,4 +28,7 @@ const gameMedals = canHandleHighQualityImages()
   ? highQualityMedals
   : lowQualityMedals;
 
+/** Medal artwork sized for small icons, whatever the device. */
+export { lowQualityMedals as medalIcons };
+
 export default gameMedals;

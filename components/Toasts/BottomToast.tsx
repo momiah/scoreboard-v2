@@ -65,6 +65,7 @@ const ToastContainer = styled(Animated.View)({
   position: "absolute",
   bottom: 100,
   alignSelf: "center",
+  maxWidth: "90%",
   flexDirection: "row",
   alignItems: "center",
   gap: 8,
@@ -81,6 +82,7 @@ const ToastMessage = styled.Text({
   color: "white",
   fontSize: 13,
   fontWeight: "500",
+  flexShrink: 1,
 });
 
 export default BottomToast;

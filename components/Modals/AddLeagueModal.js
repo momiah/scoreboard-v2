@@ -4,10 +4,10 @@ import {
   Text,
   Dimensions,
   Platform,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import SafeAreaView from "../../components/SafeAreaView";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
@@ -31,6 +31,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
+import { validateCompetitionName } from "../../helpers/validateCompetitionName";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import SearchCourt from "./SearchLocationModal";
 import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
@@ -38,7 +39,12 @@ import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = null }) => {
+const AddLeagueModal = ({
+  modalVisible,
+  setModalVisible,
+  onSuccess,
+  clubId = null,
+}) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -171,7 +177,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.TROPHY,
+        prizeType: prizeTypes.COMMUNITY,
         location,
         countryCode: location.countryCode || "",
         leagueOwner: adminData.leagueOwner,
@@ -202,9 +208,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
     }
   };
 
+  const nameError = validateCompetitionName(leagueName);
+
   // Step 1 validation check
   const canProceedToNext =
     leagueName?.trim() &&
+    !nameError &&
     selectedLocation &&
     Object.values(selectedLocation).some((value) => value.trim() !== "");
 
@@ -265,7 +274,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
                   label="League Name"
                   name="leagueName"
                   control={control}
-                  error={errors.leagueName}
+                  error={
+                    errors.leagueName || (nameError && { message: nameError })
+                  }
                   required
                 />
 
