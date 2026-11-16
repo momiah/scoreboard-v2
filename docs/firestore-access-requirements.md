@@ -244,6 +244,23 @@ allow those starting values on create and nothing else.
 Players read their own `prizePayouts` records (the app's ladder Summary shows a
 prize under review); admins read all of them.
 
+## Firebase Storage (`storage.rules`)
+
+Storage holds images only; game videos and thumbnails live on Cloudflare R2
+behind signed URLs from Cloud Functions. Upload paths have not changed since
+May 2026, so 3.0.x, 3.1.0 and the Android line all upload the same way.
+
+| Client | Path | Who |
+|---|---|---|
+| App sign-up, Edit Profile | create `ProfileImages/{uid}_{ms}.jpg` | The signed-in player, own uid only |
+| App league and tournament create/edit | create `LeagueImages/{leagueId}_{ms}.jpg` | Any signed-in player (uploads before the league exists) |
+| App club create/edit | create `ClubImages/{clubId}_{ms}.jpg` | Any signed-in player |
+| Website admin, ladder form | create `LadderImages/{prefix}-{name}` | Staff only (`userRoles`) |
+
+Uploads must be new files (no overwrites), `image/*`, and under 10 MB. Every
+image is publicly readable by exact path (signed-out screens show them);
+listing, overwriting and deleting are staff only. Staff can do anything.
+
 ## Known gaps (not enforced by rules yet)
 
 - **Profiles are public, including email.** Guests and 3.0.x sign-up read
@@ -259,6 +276,9 @@ prize under review); admins read all of them.
   any signed-in player. Playoff tie chat is not limited to the tie's players.
 - **Ladder registration window** (`registrationOpensAt` / `registrationClosesAt`)
   is not checked by rules; status, `maxPlayers` and free-ladder eligibility are.
+- **Storage uploads are not tied to a competition.** Any signed-in player can
+  add an image to `LeagueImages` / `ClubImages`, because the app uploads before
+  the league or club exists. They cannot replace or delete existing images.
 - **iOS cannot detect fake GPS** for check-in (`recordLadderArrival`) or
   eligibility: expo-location only reports `mocked` on Android. Needs a native
   build.
@@ -267,12 +287,17 @@ prize under review); admins read all of them.
 
 `firestore-tests/rules.test.js` replays the writes above (3.0.x and 3.1.0
 shapes, ladder line) against the emulator, plus the abuses the rules must block.
+`firestore-tests/storage.test.js` does the same for `storage.rules` (it needs
+the Firestore emulator too, for the staff check).
+
+With Java 21+:
 
 ```bash
-cd firestore-tests && npm install
-java -jar ~/.cache/firebase/emulators/cloud-firestore-emulator-v*.jar --host 127.0.0.1 --port 8188 &
-npm test
+cd firestore-tests && npm install && npm run test:emulator
 ```
 
-With Java 21+, `npm run test:emulator` starts and stops the emulator itself.
+With Java 17, use firebase-tools 13 from the repo root:
 
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 npx firebase-tools@13.35.1 emulators:exec --only firestore,storage --project demo-courtchamps-rules "cd firestore-tests && node --test --test-concurrency=1 rules.test.js storage.test.js"
+```
