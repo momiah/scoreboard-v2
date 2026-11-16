@@ -1,11 +1,8 @@
 import { LADDER_PLAYOFF_TIE_DAYS } from "@shared";
 import {
-  LADDER_MIN_ENTRANTS_TO_START,
   LADDER_PLAYOFF_HOST_ARRANGE_HOURS,
   LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
-  LADDER_REGISTRATION_CLOSE_DAYS,
-  LADDER_SEASON_EXTENSION_DAYS,
-  LADDER_SEASON_START_DAYS,
+  getLadderSeasonStartRules,
 } from "@shared/helpers";
 import type { TextBlock } from "./FormattedBlocks";
 
@@ -26,9 +23,7 @@ export const rulesFor = (noun: "player" | "team"): RuleSection[] => [
     title: "Registration",
     body: [
       "Join while registration is open.",
-      `Matches open when the season starts, ${LADDER_SEASON_START_DAYS} days after registration opens, once ${LADDER_MIN_ENTRANTS_TO_START} ${noun}s have joined.`,
-      `If fewer have joined by then, the season start moves back ${LADDER_SEASON_EXTENSION_DAYS} days. If there are still too few, the ladder is cancelled and every entry fee is refunded in full.`,
-      `Registration stays open for the first ${LADDER_REGISTRATION_CLOSE_DAYS} days of the season.`,
+      ...getLadderSeasonStartRules(noun),
       "Paid ladders require the entry fee before you are added to the standings.",
     ],
   },
