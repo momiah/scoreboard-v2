@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Firebase Storage holds images only (videos live on Cloudflare R2):
+//   ProfileImages/{uid}_{ms}.jpg       app sign-up and Edit Profile
+//   LeagueImages/{leagueId}_{ms}.jpg   app league and tournament create/edit
+//   ClubImages/{clubId}_{ms}.jpg       app club create/edit
+//   LadderImages/{prefix}-{name}       web admin (staff only)
+//   court-champ-logo-icon.png etc.     shared app icons at the root
+//
+// Every upload gets a new timestamped name, so players only ever create
+// files: nobody but staff can overwrite, delete or list them. Images stay
+// publicly readable because signed-out screens show them.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/userRoles/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/userRoles/$(request.auth.uid)).data.role
+          in ['owner', 'admin', 'moderator'];
+    }
+
+    // A new file only (an upload over an existing name would replace someone
+    // else's image). The app never uploads anything near 10 MB; current files
+    // are under 1 MB.
+    function isImageUpload() {
+      return resource == null
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Staff manage every file (web admin ladder images, cleanups).
+    match /{allPaths=**} {
+      allow read, write: if isStaff();
+    }
+
+    // Shared icons at the bucket root.
+    match /{fileName} {
+      allow get: if true;
+    }
+
+    match /ProfileImages/{fileName} {
+      allow get: if true;
+      // Only your own picture: the app names it {uid}_{milliseconds}.jpg.
+      allow create: if signedIn()
+        && fileName.matches(request.auth.uid + '_[0-9]+[.]jpg')
+        && isImageUpload();
+    }
+
+    // League and tournament images upload before the league exists, so any
+    // signed-in player may add one.
+    match /LeagueImages/{fileName} {
+      allow get: if true;
+      allow create: if signedIn() && isImageUpload();
+    }
+
+    match /ClubImages/{fileName} {
+      allow get: if true;
+      allow create: if signedIn() && isImageUpload();
+    }
+
+    // Uploaded from the web admin; writes fall to the staff rule above.
+    match /LadderImages/{fileName} {
+      allow get: if true;
+    }
+  }
+}
