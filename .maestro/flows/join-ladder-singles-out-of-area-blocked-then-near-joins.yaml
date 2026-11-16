@@ -1,0 +1,59 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# iOS only: Android can't move its real GPS mid-flow (setLocation is reported as mocked).
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setLocation:
+          latitude: 53.4808
+          longitude: -2.2426
+      - runFlow:
+          file: ../utilities/playoffs/harness.yaml
+          env:
+            BUTTON: "maestro-seed-join-singles-open"
+      - copyTextFrom:
+          id: "maestro-expected-joinRadiusMiles"
+      - evalScript: ${output.radius = maestro.copiedText}
+      - runFlow:
+          file: ../utilities/playoffs/open-notifications.yaml
+      - extendedWaitUntil:
+          visible: ".*open Maestro Join Singles on Summary.*"
+          timeout: 30000
+      - tapOn: ".*open Maestro Join Singles on Summary.*"
+      - scrollUntilVisible:
+          element:
+            id: "ladder-summary-join"
+          direction: DOWN
+          centerElement: true
+      - tapOn:
+          id: "ladder-summary-join"
+      - extendedWaitUntil:
+          visible:
+            id: "join-ladder-modal"
+          timeout: 10000
+      - assertVisible:
+          id: "join-ladder-eligibility-rule"
+          text: ".*within ${output.radius} miles of the ladder's courts.*"
+      - tapOn:
+          id: "join-ladder-terms"
+      - tapOn:
+          id: "join-ladder-confirm"
+      - extendedWaitUntil:
+          visible:
+            id: "join-ladder-error"
+            text: ".*within ${output.radius} miles of its courts.*from the nearest one.*"
+          timeout: 30000
+      - assertNotVisible:
+          id: "join-ladder-confirmation"
+      - setLocation:
+          latitude: 51.5074
+          longitude: -0.1278
+      - tapOn:
+          id: "join-ladder-confirm"
+      - extendedWaitUntil:
+          visible:
+            id: "join-ladder-confirmation"
+          timeout: 30000

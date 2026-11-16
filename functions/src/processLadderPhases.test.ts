@@ -328,6 +328,7 @@ describe("registration close", () => {
       seasonsStarted: [],
       seasonsExtended: [],
       registrationClosed: [],
+      inactiveRemoved: [],
       cancelled: [],
       playoffsGenerated: [],
       standingsFinalised: [],

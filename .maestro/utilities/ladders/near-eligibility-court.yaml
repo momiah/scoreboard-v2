@@ -1,0 +1,12 @@
+appId: com.courtchamp
+---
+# The seeded free ladders list maestro-eligibility-court (Trafalgar Square).
+# Android emulators are put there by run-suite.sh (adb emu geo fix), since
+# Maestro's Android setLocation is reported as a mock location and refused.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setLocation:
+          latitude: 51.5074
+          longitude: -0.1278

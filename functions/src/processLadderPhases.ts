@@ -44,6 +44,7 @@ import type {
 import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
 import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
 import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
+import { processLadderInactivity } from "./helpers/ladderInactivity";
 import {
   completeAndPayLadder,
   completeLadderPlayoffsIfFinished,
@@ -164,6 +165,7 @@ export interface ProcessLadderPhasesSummary {
   seasonsStarted: string[];
   seasonsExtended: string[];
   registrationClosed: string[];
+  inactiveRemoved: string[];
   cancelled: string[];
   playoffsGenerated: string[];
   standingsFinalised: string[];
@@ -837,6 +839,7 @@ export const runProcessLadderPhases = async (
     seasonsStarted: [],
     seasonsExtended: [],
     registrationClosed: [],
+    inactiveRemoved: [],
     cancelled: [],
     playoffsGenerated: [],
     standingsFinalised: [],
@@ -873,6 +876,16 @@ export const runProcessLadderPhases = async (
           if (outcome === "cancelled") summary.cancelled.push(ladder.ladderId);
           continue;
         }
+      }
+
+      const inactivity = await processLadderInactivity({
+        db,
+        ladderRef: ladderDoc.ref,
+        ladder,
+        now,
+      });
+      if (inactivity?.removed) {
+        summary.inactiveRemoved.push(ladder.ladderId);
       }
 
       if (
