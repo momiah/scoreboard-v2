@@ -178,6 +178,11 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // The double-booking check queries a player's matches across every ladder.
+    match /{path=**}/ladderMatches/{matchId} {
+      allow read: if true;
+    }
+
     // --------------------------------------------------------------- courts
 
     function notVerifying(data) {
