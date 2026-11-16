@@ -49,10 +49,17 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "The Season"
     timeout: 10000
+# Registration comes first and matches open at the season start; season days count from there.
+- assertVisible: "${MAESTRO_LADDER_SEASON_START_DAYS} days"
+- assertVisible: ".*The season starts once ${MAESTRO_LADDER_MIN_ENTRANTS} .*s have joined\\. If not, it waits ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days more, then the ladder is cancelled.*"
+- assertNotVisible: ".*straight away.*"
+- assertVisible: "Season Starts"
 - assertVisible: "Day 1 - ${MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS}"
 - assertVisible: "Day ${Number(MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS) + 1} - ${MAESTRO_LADDER_PLAYOFF_START_DAYS}"
+- scrollUntilVisible:
+    element: ".*${output[KEY + '-season-playoffs']} Each round is two matches, home and away, played within ${MAESTRO_PLAYOFF_TIE_DAYS} days\\..*"
+    direction: DOWN
 - assertVisible: ${output[KEY + "-season-rounds"]}
-- assertVisible: ".*${output[KEY + '-season-playoffs']} Each round is two matches, home and away, played within ${MAESTRO_PLAYOFF_TIE_DAYS} days\\..*"
 - tapOn:
     id: "how-to-play-next"
 - extendedWaitUntil:

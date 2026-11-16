@@ -22,6 +22,10 @@ onFlowStart:
 - extendedWaitUntil:
     visible: "Ladder Rules"
     timeout: 10000
+- scrollUntilVisible:
+    element: ".*Matches open when the season starts, ${MAESTRO_LADDER_SEASON_START_DAYS} days after registration opens, once ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined.*"
+    direction: DOWN
+- assertVisible: ".*If fewer have joined by then, the season start moves back ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days\\. If there are still too few, the ladder is cancelled and every entry fee is refunded in full.*"
 - tapOn:
     id: "ladder-rules-back"
 - scrollUntilVisible:
