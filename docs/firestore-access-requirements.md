@@ -46,6 +46,7 @@ and `eas update:view <group> --json` (`gitCommitHash`). 3.0.x builds do not use
 | `gameVideos` and `comments` / `replies` | App feed, website `VideoPage` | Video feed and share page. |
 | `ladderPreRegistrations` and `registrants` | App banner, website share page | Lists and the "+N more" count. |
 | `ladders`, `ladderParticipants`, `ladderTeams`, `ladderMembers`, `ladderMatches`, `playoffTies`, `teams` | App, website | Ladder browsing and standings. |
+| Collection group `ladderMatches` | App | Double-booking check: a player's matches on one date across every ladder (`participants` array-contains-any, `matchDate` ==) before posting, accepting or rescheduling a match. |
 
 ## Profiles, notifications and chats
 
