@@ -31,7 +31,7 @@ import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
-import { useLadderJoin } from "../../hooks/useLadderJoin";
+import { LADDER_JOIN_MODE_LABELS, useLadderJoin } from "../../hooks/useLadderJoin";
 import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { useLadderHeldPrize } from "../../hooks/useLadderHeldPrize";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
@@ -483,7 +483,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             />
           )}
           <ParticipantText>
-            {mode === "participant" ? "Participant" : "Registration Closed"}
+            {LADDER_JOIN_MODE_LABELS[mode]}
           </ParticipantText>
         </ParticipantButton>
       )}

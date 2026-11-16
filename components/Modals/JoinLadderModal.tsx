@@ -1,3 +1,4 @@
+import { ACCOUNT_BLOCKED_MESSAGE } from "../../helpers/accountStrikes";
 import React, { useContext, useState } from "react";
 import { Dimensions, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -7,11 +8,12 @@ import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
-import { getLadderEntryPrice } from "@shared/helpers";
+import { getLadderEligibilityRule, getLadderEntryPrice } from "@shared/helpers";
 import type { Ladder } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { formatCurrency } from "../../helpers/formatCurrency";
+import { checkLadderEligibility } from "../../helpers/ladderEligibility";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -19,6 +21,7 @@ const JOIN_FAILURE_MESSAGES: Record<string, string> = {
   closed: "Registration for this ladder has closed.",
   not_open: "Registration for this ladder hasn't opened yet.",
   full: "This ladder is full.",
+  account_blocked: ACCOUNT_BLOCKED_MESSAGE,
 };
 
 interface JoinLadderModalProps {
@@ -38,6 +41,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
 
   const isPaid = ladder.entryFee > 0;
   const price = getLadderEntryPrice(ladder.entryFee);
+  const eligibilityRule = getLadderEligibilityRule(ladder);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -66,6 +70,11 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
     setErrorMessage(null);
     setProcessing(true);
     try {
+      const ineligible = await checkLadderEligibility(ladder);
+      if (ineligible) {
+        setErrorMessage(ineligible);
+        return;
+      }
       const { success, reason } = await joinLadder(
         ladder.ladderId,
         currentUser,
@@ -177,7 +186,15 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </TermsLink>
           </TermsRow>
 
-          {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+          {!!eligibilityRule && (
+            <PayNote testID="join-ladder-eligibility-rule">
+              {eligibilityRule}
+            </PayNote>
+          )}
+
+          {errorMessage && (
+            <ErrorText testID="join-ladder-error">{errorMessage}</ErrorText>
+          )}
 
           {isPaid && (
             <PayNote>

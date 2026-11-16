@@ -1,6 +1,8 @@
 import React from "react";
 import styled from "styled-components/native";
 
+import { ACCOUNT_STRIKE_LIMIT, ACCOUNT_STRIKE_MONTHS } from "@shared/helpers";
+
 import FormattedBlocks from "./FormattedBlocks";
 import type { TextBlock } from "./FormattedBlocks";
 
@@ -84,6 +86,12 @@ export const LADDER_TERMS: TermsSection[] = [
         "A disqualified player can no longer post or accept matches.",
         "In the playoffs, their opponent goes through on a walkover.",
         "There is no refund of their entry fee.",
+      ],
+      "Strikes also count against your account, across every ladder:",
+      [
+        `${ACCOUNT_STRIKE_LIMIT} strikes upheld in the last ${ACCOUNT_STRIKE_MONTHS} months stops you joining new ladders.`,
+        `Each strike stops counting ${ACCOUNT_STRIKE_MONTHS} months after it was upheld.`,
+        "A report can still be upheld after a ladder has finished. It adds a strike but doesn't change results or prizes already paid.",
       ],
       "If a player is disqualified once they are in the money, their prize is held for review:",
       [

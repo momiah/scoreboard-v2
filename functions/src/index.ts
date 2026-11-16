@@ -15,6 +15,7 @@ import { onLadderPrizePayoutReviewed } from "./onLadderPrizePayoutReviewed";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
 import { recordLadderArrival } from "./recordLadderArrival";
+import { verifyLadderEligibility } from "./verifyLadderEligibility";
 import { sendLadderMatchReminders } from "./sendLadderMatchReminders";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
@@ -48,6 +49,7 @@ export {
   autoVoidLadderDisputes,
   processLadderPhases,
   recordLadderArrival,
+  verifyLadderEligibility,
   sendLadderMatchReminders,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,

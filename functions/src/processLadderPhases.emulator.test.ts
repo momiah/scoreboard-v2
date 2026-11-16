@@ -199,7 +199,10 @@ describe("playoffs generated for a 2048-player ladder", () => {
     const summary = await runProcessLadderPhases(now);
 
     expect(summary).toEqual({
+      seasonsStarted: [],
+      seasonsExtended: [],
       registrationClosed: [],
+      inactiveRemoved: [],
       cancelled: [],
       playoffsGenerated: ["L2048"],
       standingsFinalised: ["L2048"],
@@ -327,6 +330,7 @@ describe("a ladder with fewer than 128 registrations", () => {
 describe("registration close with enough players", () => {
   it("closes registration without a bracket or any notification", async () => {
     await seedLadder("L300", {
+      entryFee: 10,
       status: LADDER_STATUS.REGISTRATION_OPEN,
       registrationClosesAt: daysFromNow(-1),
       playoffStartsAt: daysFromNow(30),

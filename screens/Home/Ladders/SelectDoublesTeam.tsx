@@ -1,3 +1,4 @@
+import { TEAM_ACCOUNT_BLOCKED_MESSAGE } from "../../../helpers/accountStrikes";
 import React, { useCallback, useContext, useState } from "react";
 import { Alert } from "react-native";
 import styled from "styled-components/native";
@@ -18,6 +19,8 @@ import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
 import TeamListSkeleton from "../../../components/Skeletons/TeamListSkeleton";
+import { checkLadderEligibility } from "../../../helpers/ladderEligibility";
+import { isLadderInactivityRemovedUser } from "@shared/helpers";
 
 interface SelectDoublesTeamParams {
   ladder: Ladder;
@@ -27,6 +30,7 @@ const TEAM_JOIN_FAILURE_MESSAGES: Record<string, string> = {
   closed: "Registration for this ladder has closed.",
   not_open: "Registration for this ladder hasn't opened yet.",
   full: "This ladder is full.",
+  account_blocked: TEAM_ACCOUNT_BLOCKED_MESSAGE,
   team_not_found: "This team no longer exists.",
   team_pending: "Your partner needs to accept before the team can join.",
   team_incomplete: "A team needs two players before it can join.",
@@ -81,8 +85,23 @@ const SelectDoublesTeam: React.FC = () => {
       Alert.alert("Payment", "Paid entry isn't wired up yet.");
       return;
     }
+    const removedMember = (selectedTeam.playerIds ?? []).some((userId) =>
+      isLadderInactivityRemovedUser(ladder, userId),
+    );
+    if (removedMember) {
+      showBottomToast(
+        "A member of this team was removed from this ladder for inactivity, so the team can't join until next season.",
+        "error",
+      );
+      return;
+    }
     setJoining(true);
     try {
+      const ineligible = await checkLadderEligibility(ladder);
+      if (ineligible) {
+        showBottomToast(ineligible, "error");
+        return;
+      }
       const { success, conflict, reason } = await joinLadderAsTeam(
         ladder.ladderId,
         selectedTeam,
