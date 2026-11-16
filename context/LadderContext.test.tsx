@@ -19,6 +19,7 @@ jest.mock("firebase/firestore", () => ({
   arrayRemove: jest.fn((value: unknown) => ({ __remove: value })),
   arrayUnion: jest.fn(),
   collection: jest.fn((_db, ...path: string[]) => ({ __col: path.join("/") })),
+  collectionGroup: jest.fn((_db, id: string) => ({ __group: id })),
   deleteDoc: jest.fn(),
   doc: jest.fn((_db, ...path: string[]) => ({ path: path.join("/") })),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
@@ -829,6 +830,101 @@ describe("playoff freeze", () => {
 
     expect(outcome).toEqual({ success: false, reason: "frozen" });
     expect(tx.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("double booking across ladders", () => {
+  const slot = { matchDate: "01-01-2027", matchTime: { start: "18:00" } };
+  const otherLadderMatch = {
+    id: "doubles-1",
+    data: () => ({
+      ...slot,
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: ["me", "partner"],
+    }),
+  };
+
+  it("refuses to accept a match at the same time as one already posted on another ladder", async () => {
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1)], {
+        ...slot,
+        matchStatus: LADDER_MATCH_STATUS.POSTED,
+        participants: ["opp"],
+      }),
+      ...withLadder("active"),
+    });
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      id: MATCH,
+      data: () => ({ ...slot, participants: ["opp"] }),
+    });
+    mockGetDocs.mockResolvedValue({ docs: [otherLadderMatch] });
+    const result = await renderLadder();
+
+    const outcome = await result.current.acceptLadderMatch(LADDER, MATCH, "me");
+
+    expect(outcome).toMatchObject({
+      success: false,
+      reason: "clash",
+      clash: { ladderMatchId: "doubles-1" },
+    });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to post a match at the same time as one already booked", async () => {
+    const { setDoc } = jest.requireMock("firebase/firestore");
+    setDoc.mockClear();
+    mockGetDocs.mockResolvedValue({ docs: [otherLadderMatch] });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      {
+        ...slot,
+        court: { courtId: "c1", courtName: "Court" },
+        bestOf: 5,
+        courtFee: 0,
+        currencyType: "GBP",
+        shuttleType: "Feather",
+      } as Parameters<typeof result.current.createLadderMatch>[1],
+      "me",
+    );
+
+    expect(outcome).toMatchObject({ success: false, reason: "clash" });
+    expect(setDoc).not.toHaveBeenCalled();
+  });
+
+  it("posts when the player's other match is at a different time", async () => {
+    const { setDoc } = jest.requireMock("firebase/firestore");
+    setDoc.mockClear();
+    mockGetDocs.mockResolvedValue({
+      docs: [
+        {
+          ...otherLadderMatch,
+          data: () => ({
+            ...otherLadderMatch.data(),
+            matchTime: { start: "20:00" },
+          }),
+        },
+      ],
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      {
+        ...slot,
+        court: { courtId: "c1", courtName: "Court" },
+        bestOf: 5,
+        courtFee: 0,
+        currencyType: "GBP",
+        shuttleType: "Feather",
+      } as Parameters<typeof result.current.createLadderMatch>[1],
+      "me",
+    );
+
+    expect(outcome.success).toBe(true);
+    expect(setDoc).toHaveBeenCalledTimes(1);
   });
 });
 

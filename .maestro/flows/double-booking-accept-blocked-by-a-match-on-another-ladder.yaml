@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-double-booking-clash"
+- runFlow:
+    file: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "matchmaking-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-modal"
+    timeout: 15000
+- tapOn:
+    id: "accept-ladder-match-terms"
+- tapOn:
+    id: "accept-ladder-match-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-error"
+    timeout: 15000
+- assertVisible: ".*You already have a ladder match at .*, so you can.t book another within .* minutes of it.*"
+- assertVisible:
+    id: "accept-ladder-match-modal"
