@@ -199,6 +199,8 @@ describe("playoffs generated for a 2048-player ladder", () => {
     const summary = await runProcessLadderPhases(now);
 
     expect(summary).toEqual({
+      seasonsStarted: [],
+      seasonsExtended: [],
       registrationClosed: [],
       inactiveRemoved: [],
       cancelled: [],

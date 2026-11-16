@@ -5,6 +5,8 @@ import {
   LADDER_TYPE,
 } from "courtchamps-shared/types";
 import {
+  LADDER_INACTIVITY_JOIN_GRACE_DAYS,
+  LADDER_INACTIVITY_REMOVAL_DAYS_BEFORE_CLOSE,
   LADDER_INACTIVITY_WARNING_DAYS,
   LADDER_MIN_PLAYOFF_SIZE,
   getLadderInactivityRemoval,
@@ -28,6 +30,9 @@ import { LADDER_INACTIVITY_CANCELLED_REASON } from "./helpers/ladderInactivity";
 const db = admin.firestore();
 const now = new Date();
 const daysFromNow = (days: number) => new Date(now.getTime() + days * DAY_MS);
+/** registrationClosesAt for a ladder whose inactivity removal date is `days` from now. */
+const closesWithRemovalIn = (days: number) =>
+  daysFromNow(days + LADDER_INACTIVITY_REMOVAL_DAYS_BEFORE_CLOSE);
 
 const clearEmulator = async () => {
   await fetch(
@@ -47,8 +52,9 @@ const seedLadder = (ladderId: string, overrides: Record<string, unknown> = {}) =
     name: `Ladder ${ladderId}`,
     ladderType: LADDER_TYPE.SINGLES,
     status: LADDER_STATUS.REGISTRATION_OPEN,
-    registrationClosesAt: daysFromNow(-0.01),
-    playoffStartsAt: daysFromNow(30),
+    seasonStartedAt: daysFromNow(-16),
+    registrationClosesAt: closesWithRemovalIn(-0.01),
+    playoffStartsAt: daysFromNow(74),
     maxPlayers: 2048,
     entryFee: 0,
     currencyType: "GBP",
@@ -86,7 +92,7 @@ beforeEach(clearEmulator);
 describe("inactivity warnings", () => {
   it("warns only players without a completed match, once per warning day", async () => {
     const [first, second] = LADDER_INACTIVITY_WARNING_DAYS;
-    await seedLadder("L1", { registrationClosesAt: daysFromNow(second - 0.5) });
+    await seedLadder("L1", { registrationClosesAt: closesWithRemovalIn(second - 0.5) });
     await writeAll([
       ["ladders/L1/ladderParticipants/user", { userId: "user" }],
       ["ladders/L1/ladderParticipants/opponent", { userId: "opponent" }],
@@ -107,9 +113,24 @@ describe("inactivity warnings", () => {
     await runProcessLadderPhases(now);
     expect((await notification("idle", `inactivity-warning-${second}-L1-idle`)).exists).toBe(false);
   });
+
+  it("warns nobody before the season has started", async () => {
+    const [, second] = LADDER_INACTIVITY_WARNING_DAYS;
+    await seedLadder("L1", {
+      seasonStartedAt: null,
+      seasonStartsAt: daysFromNow(1),
+      registrationClosesAt: closesWithRemovalIn(second - 0.5),
+    });
+    await writeAll([["ladders/L1/ladderParticipants/idle", { userId: "idle" }]]);
+
+    await runProcessLadderPhases(now);
+
+    expect((await notification("idle", `inactivity-warning-${second}-L1-idle`)).exists).toBe(false);
+    expect((await db.doc("ladders/L1").get()).data()?.inactivityWarningDaysSent).toBeUndefined();
+  });
 });
 
-describe("inactivity removal at registration close", () => {
+describe("inactivity removal 14 days before registration closes", () => {
   it("removes singles players without a completed match and cancels their open matches", async () => {
     await seedLadder("L1");
     const { ids, writes } = activeSingles("L1", LADDER_MIN_PLAYOFF_SIZE);
@@ -130,7 +151,7 @@ describe("inactivity removal at registration close", () => {
     const summary = await runProcessLadderPhases(now);
 
     expect(summary.inactiveRemoved).toEqual(["L1"]);
-    expect(summary.registrationClosed).toEqual(["L1"]);
+    expect(summary.registrationClosed).toEqual([]);
     expect((await db.doc("ladders/L1/ladderParticipants/idle").get()).exists).toBe(false);
     expect((await db.doc("ladders/L1/ladderParticipants/noShow").get()).exists).toBe(false);
     expect((await db.doc(`ladders/L1/ladderParticipants/${ids[0]}`).get()).exists).toBe(true);
@@ -140,7 +161,7 @@ describe("inactivity removal at registration close", () => {
     });
     const ladder = (await db.doc("ladders/L1").get()).data();
     expect(ladder).toMatchObject({
-      status: LADDER_STATUS.REGISTRATION_CLOSED,
+      status: LADDER_STATUS.REGISTRATION_OPEN,
       participantCount: LADDER_MIN_PLAYOFF_SIZE,
     });
     expect(ladder?.inactivityRemovedAt).toBeInstanceOf(admin.firestore.Timestamp);
@@ -186,6 +207,23 @@ describe("inactivity removal at registration close", () => {
     expect((await db.doc("teams/idleTeam").get()).data()?.ladderIds).toEqual(["other"]);
     expect((await db.doc("ladders/D1/ladderTeams/team0").get()).exists).toBe(true);
     expect((await notification("idleB", "inactivity-removed-D1-idleB")).exists).toBe(true);
+  });
+
+  it("keeps players who joined within the grace period", async () => {
+    await seedLadder("L1");
+    const justJoined = daysFromNow(-(LADDER_INACTIVITY_JOIN_GRACE_DAYS - 1));
+    const joinedEarly = daysFromNow(-(LADDER_INACTIVITY_JOIN_GRACE_DAYS + 1));
+    await writeAll([
+      ["ladders/L1/ladderParticipants/newcomer", { userId: "newcomer", joinedAt: justJoined }],
+      ["ladders/L1/ladderParticipants/idle", { userId: "idle", joinedAt: joinedEarly }],
+    ]);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.inactiveRemoved).toEqual(["L1"]);
+    expect((await db.doc("ladders/L1/ladderParticipants/newcomer").get()).exists).toBe(true);
+    expect((await db.doc("ladders/L1/ladderParticipants/idle").get()).exists).toBe(false);
+    expect((await notification("newcomer", "inactivity-removed-L1-newcomer")).exists).toBe(false);
   });
 
   it("leaves paid ladders alone", async () => {
