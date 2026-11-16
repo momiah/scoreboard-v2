@@ -5,6 +5,8 @@ import {
   LADDER_TYPE,
 } from "courtchamps-shared/types";
 import {
+  LADDER_ELIGIBILITY_COLLECTION,
+  getLadderEligibilityId,
   LADDER_INACTIVITY_JOIN_GRACE_DAYS,
   LADDER_INACTIVITY_REMOVAL_DAYS_BEFORE_CLOSE,
   LADDER_INACTIVITY_WARNING_DAYS,
@@ -28,6 +30,8 @@ import { runProcessLadderPhases } from "./processLadderPhases";
 import { LADDER_INACTIVITY_CANCELLED_REASON } from "./helpers/ladderInactivity";
 
 const db = admin.firestore();
+const eligibilityPath = (ladderId: string, userId: string) =>
+  `${LADDER_ELIGIBILITY_COLLECTION}/${getLadderEligibilityId(ladderId, userId)}`;
 const now = new Date();
 const daysFromNow = (days: number) => new Date(now.getTime() + days * DAY_MS);
 /** registrationClosesAt for a ladder whose inactivity removal date is `days` from now. */
@@ -138,6 +142,8 @@ describe("inactivity removal 14 days before registration closes", () => {
       ...writes,
       ["ladders/L1/ladderParticipants/idle", { userId: "idle" }],
       ["ladders/L1/ladderParticipants/noShow", { userId: "noShow" }],
+      [eligibilityPath("L1", "idle"), { userId: "idle", ladderId: "L1" }],
+      [eligibilityPath("L1", ids[0]), { userId: ids[0], ladderId: "L1" }],
       [
         "ladders/L1/ladderMatches/walkover",
         playedMatch([ids[0], "noShow"], { walkover: true, walkoverWinner: ids[0] }),
@@ -165,6 +171,9 @@ describe("inactivity removal 14 days before registration closes", () => {
       participantCount: LADDER_MIN_PLAYOFF_SIZE,
     });
     expect(ladder?.inactivityRemovedAt).toBeInstanceOf(admin.firestore.Timestamp);
+    expect([...(ladder?.inactivityRemovedUserIds ?? [])].sort()).toEqual(["idle", "noShow"]);
+    expect((await db.doc(eligibilityPath("L1", "idle")).get()).exists).toBe(false);
+    expect((await db.doc(eligibilityPath("L1", ids[0])).get()).exists).toBe(true);
     expect((await notification("idle", "inactivity-removed-L1-idle")).data()).toMatchObject(
       getLadderInactivityRemoval({ name: "Ladder L1" }),
     );

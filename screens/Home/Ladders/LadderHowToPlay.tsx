@@ -13,7 +13,7 @@ import HowToPlayFlow, {
 } from "../../../components/ladder/HowToPlayFlow";
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
-import { useLadderJoin } from "../../../hooks/useLadderJoin";
+import { LADDER_JOIN_MODE_LABELS, useLadderJoin } from "../../../hooks/useLadderJoin";
 
 type HowToPlayParams = {
   ladderId: string;
@@ -55,7 +55,7 @@ const LadderHowToPlay: React.FC = () => {
           <Ionicons name="checkmark-circle-outline" size={16} color="#22c55e" />
         )}
         <HowToPlayButtonText>
-          {mode === "participant" ? "Participant" : "Registration Closed"}
+          {LADDER_JOIN_MODE_LABELS[mode]}
         </HowToPlayButtonText>
       </HowToPlayButton>
     );

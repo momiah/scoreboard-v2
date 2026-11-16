@@ -9,6 +9,12 @@ onFlowStart:
 - copyTextFrom:
     id: "maestro-expected-inactivityMessage"
 - evalScript: ${output.message = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-inactivityRuleFirst"
+- evalScript: ${output.ruleFirst = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-inactivityRuleLast"
+- evalScript: ${output.ruleLast = maestro.copiedText}
 - runFlow:
     file: ../utilities/playoffs/open-notifications.yaml
 - extendedWaitUntil:
@@ -19,3 +25,18 @@ onFlowStart:
     visible:
       id: "matchmaking-post-match"
     timeout: 20000
+# The Rules explain the removal, with the numbers from courtchamps-shared.
+- tapOn:
+    id: "ladder-burger"
+- tapOn:
+    id: "ladder-menu-LadderRules"
+- extendedWaitUntil:
+    visible: "Ladder Rules"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "Keep your place"
+    direction: DOWN
+- assertVisible: ".*${output.ruleFirst}.*"
+- scrollUntilVisible:
+    element: ".*${output.ruleLast}.*"
+    direction: DOWN

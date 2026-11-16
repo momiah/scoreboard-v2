@@ -3,6 +3,8 @@ import * as admin from "firebase-admin";
 import { LADDER_MATCH_STATUS, LADDER_TYPE } from "courtchamps-shared/types";
 import type { Ladder, LadderMatch, TeamStats } from "courtchamps-shared/types";
 import {
+  LADDER_ELIGIBILITY_COLLECTION,
+  getLadderEligibilityId,
   getInactiveLadderEntrants,
   getLadderInactivityRemoval,
   getLadderInactivityRemovalMs,
@@ -107,6 +109,14 @@ const removeEntrants = async ({
     );
   entrants.forEach((entrant) => {
     writer.delete(entrant.ref);
+    // Their location check would otherwise still let them write a join.
+    entrant.playerIds.forEach((userId) =>
+      writer.delete(
+        db
+          .collection(LADDER_ELIGIBILITY_COLLECTION)
+          .doc(getLadderEligibilityId(ladder.ladderId, userId)),
+      ),
+    );
     if (ladder.ladderType === LADDER_TYPE.DOUBLES) {
       entrant.playerIds.forEach((userId) =>
         writer.delete(ladderRef.collection("ladderMembers").doc(userId)),
@@ -126,7 +136,8 @@ const removeEntrants = async ({
  * completed season match as the removal date (14 days before registration
  * closes) approaches, then removes them on it, so their places can be filled
  * while registration is open. Entrants who joined within 14 days of the removal
- * date keep their place.
+ * date keep their place. Removed players are listed on the ladder so they can't
+ * rejoin it this season.
  */
 export const processLadderInactivity = async ({
   db,
@@ -172,6 +183,9 @@ export const processLadderInactivity = async ({
   await ladderRef.update({
     inactivityRemovedAt: now,
     participantCount: remaining.data().count,
+    ...(userIds.length
+      ? { inactivityRemovedUserIds: admin.firestore.FieldValue.arrayUnion(...userIds) }
+      : {}),
   });
   const { title, message } = getLadderInactivityRemoval(ladder);
   await notifyLadderPlayers({
