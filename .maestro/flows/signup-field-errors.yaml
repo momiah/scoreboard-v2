@@ -117,4 +117,4 @@ onFlowStart:
 - assertNotVisible: "Enter your first and last name"
 - assertVisible: "Country and city are required"
 - assertNotVisible:
-    id: "signup-welcome-explore"
+    id: "signup-welcome-resend"

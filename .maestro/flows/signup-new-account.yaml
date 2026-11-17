@@ -67,17 +67,18 @@ onFlowComplete:
     id: "signup-profile-continue"
 - extendedWaitUntil:
     visible:
-      id: "signup-welcome-explore"
+      id: "signup-welcome-resend"
     timeout: 30000
 - assertVisible: "WELCOME"
 - assertVisible: "Beginner · Level 1"
 - assertNotVisible:
     id: "signup-welcome-league"
 - assertVisible: ".*verify your account, then log in.*"
-- assertVisible:
-    id: "signup-welcome-resend"
-- tapOn:
+# Email sign-ups get only the Resend button; leave through the tab bar.
+- assertNotVisible:
     id: "signup-welcome-explore"
+- tapOn:
+    id: "tab-home"
 - extendedWaitUntil:
     visible:
       id: "home-sign-in-link"

@@ -62,6 +62,7 @@ const ResendVerification: React.FC = () => {
 
   return (
     <NavButton
+      primary
       style={{
         flexGrow: 0,
         flexShrink: 0,
@@ -126,15 +127,20 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
 
     <Spacer />
     <Actions>
-      <NavButton
-        primary
-        style={{ flexGrow: 0, flexShrink: 0, flexBasis: "auto" }}
-        onPress={onExplore}
-        testID="signup-welcome-explore"
-      >
-        <NavButtonText>Explore Court Champs</NavButtonText>
-      </NavButton>
-      {requiresEmailVerification ? <ResendVerification /> : null}
+      {/* Email sign-ups see only Resend, so verifying stays the one next step;
+          the tab bar is still there to leave. */}
+      {requiresEmailVerification ? (
+        <ResendVerification />
+      ) : (
+        <NavButton
+          primary
+          style={{ flexGrow: 0, flexShrink: 0, flexBasis: "auto" }}
+          onPress={onExplore}
+          testID="signup-welcome-explore"
+        >
+          <NavButtonText>Explore Court Champs</NavButtonText>
+        </NavButton>
+      )}
     </Actions>
   </ScrollView>
 );
