@@ -10,6 +10,7 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  collectionGroup,
   deleteDoc,
   deleteField,
   doc,
@@ -109,6 +110,10 @@ import {
   teamHasOpenLadderMatch,
 } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
+import {
+  findLadderMatchClash,
+  type LadderMatchSlot,
+} from "../helpers/ladderMatchClash";
 import { toMoment } from "../helpers/ladderPhases";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
@@ -190,6 +195,40 @@ const LADDER_MEMBERS_COLLECTION = "ladderMembers";
 const TEAMS_COLLECTION = "teams";
 const COURTS_COLLECTION = "courts";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
+
+const findBookedLadderMatchClash = async ({
+  slot,
+  userIds,
+  excludeMatchId,
+}: {
+  slot: LadderMatchSlot;
+  userIds: string[];
+  excludeMatchId?: string;
+}): Promise<LadderMatch | null> => {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!ids.length || !slot.matchDate) return null;
+  try {
+    const snapshot = await getDocs(
+      query(
+        collectionGroup(db, LADDER_MATCHES_COLLECTION),
+        where("participants", "array-contains-any", ids),
+        where("matchDate", "==", slot.matchDate),
+      ),
+    );
+    return findLadderMatchClash({
+      slot,
+      userIds: ids,
+      matches: snapshot.docs.map(
+        (docSnap) =>
+          ({ ...docSnap.data(), ladderMatchId: docSnap.id }) as LadderMatch,
+      ),
+      excludeMatchId,
+    });
+  } catch (error) {
+    console.error("Error checking ladder match clashes:", error);
+    return null;
+  }
+};
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -986,6 +1025,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         if (!isLadderSeasonStarted(ladderSnap.data() as Ladder | undefined)) {
           return { success: false, ladderMatch: null, reason: "not_started" };
         }
+        const clash = await findBookedLadderMatchClash({
+          slot: input,
+          userIds: team ? team.playerIds : [userId],
+        });
+        if (clash) {
+          return { success: false, ladderMatch: null, reason: "clash", clash };
+        }
         const matchesRef = collection(
           db,
           LADDERS_COLLECTION,
@@ -1523,6 +1569,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         matchId,
       );
       try {
+        const userSide = [tie.side1, tie.side2].find((side) =>
+          side?.playerIds?.includes(userId),
+        );
+        const clash = await findBookedLadderMatchClash({
+          slot: input,
+          userIds: userSide?.playerIds ?? [userId],
+          excludeMatchId: matchId,
+        });
+        if (clash) return { success: false, reason: "clash", clash };
         return await runTransaction(db, async (transaction) => {
           const [existing, otherLegSnap] = await Promise.all([
             transaction.get(matchRef),
@@ -1682,6 +1737,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         matchId,
       );
       try {
+        if (accept) {
+          const current = await getDoc(matchRef);
+          const clash = current.exists()
+            ? await findBookedLadderMatchClash({
+                slot: current.data() as LadderMatch,
+                userIds: getSameSideIds(current.data() as LadderMatch, userId),
+                excludeMatchId: matchId,
+              })
+            : null;
+          if (clash) return { success: false, reason: "clash", clash };
+        }
         return await runTransaction(db, async (transaction) => {
           const snap = await transaction.get(matchRef);
           if (!snap.exists())
@@ -1835,6 +1901,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       ) as DocumentReference<LadderMatch, LadderMatch>;
 
       try {
+        const current = await getDoc(matchRef);
+        const clash = current.exists()
+          ? await findBookedLadderMatchClash({
+              slot: current.data(),
+              userIds: team ? team.playerIds : [userId],
+              excludeMatchId: matchId,
+            })
+          : null;
+        if (clash) return { success: false, reason: "clash", clash };
+
         await runTransaction(db, async (transaction) => {
           const [snap, ladderSnap] = await Promise.all([
             transaction.get(matchRef),
@@ -2585,6 +2661,14 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         deadlineMs: deadline?.getTime() ?? null,
       });
       if (invalid) return { success: false, reason: "invalid_time" };
+      if (matchSnap?.exists()) {
+        const clash = await findBookedLadderMatchClash({
+          slot: { matchDate, matchTime },
+          userIds: getSameSideIds(matchSnap.data() as LadderMatch, userId),
+          excludeMatchId: matchId,
+        });
+        if (clash) return { success: false, reason: "clash", clash };
+      }
       const matchRef = doc(
         db,
         LADDERS_COLLECTION,
@@ -2648,6 +2732,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         matchId,
       );
       try {
+        if (accept) {
+          const current = await getDoc(matchRef);
+          const pending = current.exists()
+            ? (current.data() as LadderMatch)
+            : null;
+          const clash = pending?.rescheduleRequest
+            ? await findBookedLadderMatchClash({
+                slot: pending.rescheduleRequest,
+                userIds: getSameSideIds(pending, userId),
+                excludeMatchId: matchId,
+              })
+            : null;
+          if (clash) return { success: false, reason: "clash", clash };
+        }
         return await runTransaction(db, async (transaction) => {
           const snap = await transaction.get(matchRef);
           if (!snap.exists())

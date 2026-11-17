@@ -26,6 +26,7 @@ import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useLadderMatchCancellation } from "../../hooks/useLadderMatchCancellation";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+import { formatLadderMatchClashMessage } from "../../helpers/ladderMatchClash";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import MatchCard from "../ladder/MatchCard";
 import LadderTermsModal from "./LadderTermsModal";
@@ -203,7 +204,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     setErrorMessage(null);
     setProcessing(true);
     try {
-      const { success, reason } = await acceptLadderMatch(
+      const { success, reason, clash } = await acceptLadderMatch(
         ladder.ladderId,
         match.ladderMatchId,
         userId,
@@ -225,6 +226,10 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         setErrorMessage(LADDER_FROZEN_MESSAGE);
       } else if (reason === "not_started") {
         setErrorMessage(LADDER_SEASON_NOT_STARTED_MESSAGE);
+      } else if (clash) {
+        setErrorMessage(
+          formatLadderMatchClashMessage(clash, { team: isDoubles }),
+        );
       } else {
         setErrorMessage("Something went wrong. Please try again.");
       }
@@ -342,7 +347,11 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
               {LADDER_FROZEN_MESSAGE}
             </ErrorText>
           ) : (
-            !!errorMessage && <ErrorText>{errorMessage}</ErrorText>
+            !!errorMessage && (
+              <ErrorText testID="accept-ladder-match-error">
+                {errorMessage}
+              </ErrorText>
+            )
           )}
 
           {isOwnMatch && match ? (

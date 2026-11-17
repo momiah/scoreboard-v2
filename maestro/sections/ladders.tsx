@@ -37,6 +37,10 @@ import {
   seedTeamFlow,
 } from "../seeds/seedTeamFlow";
 import { CHAT_VARIANT, seedChatsTab } from "../seeds/seedChatsTab";
+import {
+  DOUBLE_BOOKING_VARIANT,
+  seedDoubleBookingFlow,
+} from "../seeds/seedDoubleBookingFlow";
 import { mockOpponentCheckIn } from "../seeds/mockOpponentCheckIn";
 import { assertReportFiled } from "../seeds/assertReportFiled";
 import { assertChatMessageDelivered } from "../seeds/assertChatMessageDelivered";
@@ -1011,6 +1015,14 @@ const LadderButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
         label: `Seed Cancel (${key})`,
         run: () =>
           seedMatchCancellationFlow({ testUser: currentUser, variant }),
+      })),
+      ...[
+        ["clash", DOUBLE_BOOKING_VARIANT.CLASH],
+        ["clear", DOUBLE_BOOKING_VARIANT.CLEAR],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-double-booking-${key}`,
+        label: `Seed Double Booking (${key})`,
+        run: () => seedDoubleBookingFlow({ testUser: currentUser, variant }),
       })),
       ...[
         ["accept", true],

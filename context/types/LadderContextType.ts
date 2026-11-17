@@ -84,19 +84,25 @@ export interface AcceptTeamJoinRequestOutcome {
   full: boolean;
 }
 
-export interface CreateLadderMatchOutcome {
+/** The player's existing match that a new booking would clash with. */
+interface LadderMatchClashOutcome {
+  clash?: LadderMatch;
+}
+
+export interface CreateLadderMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
-  reason?: "not_started";
+  reason?: "not_started" | "clash";
 }
 
 export type AcceptLadderMatchFailureReason =
   | "unavailable"
   | "frozen"
   | "not_started"
+  | "clash"
   | "error";
 
-export interface AcceptLadderMatchOutcome {
+export interface AcceptLadderMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
   reason?: AcceptLadderMatchFailureReason;
 }
@@ -125,15 +131,15 @@ export type CancelLadderMatchFailureReason =
   | "not_cancellable"
   | "error";
 
-export interface PlayoffMatchOutcome {
+export interface PlayoffMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
-  reason?: "exists" | "not_allowed" | "order" | "error";
+  reason?: "exists" | "not_allowed" | "order" | "clash" | "error";
   notifyUserIds?: string[];
 }
 
-export interface LadderMatchChangeOutcome {
+export interface LadderMatchChangeOutcome extends LadderMatchClashOutcome {
   success: boolean;
-  reason?: "not_allowed" | "invalid_time" | "error";
+  reason?: "not_allowed" | "invalid_time" | "clash" | "error";
   notifyUserIds?: string[];
   expiresAt?: Date;
 }

@@ -66,6 +66,10 @@ import {
   cleanupMatchCancellationTestData,
 } from "./seedMatchCancellationFlow";
 import {
+  MAESTRO_DOUBLE_BOOKING_LADDER_ID,
+  cleanupDoubleBookingTestData,
+} from "./seedDoubleBookingFlow";
+import {
   MAESTRO_DISBAND_LADDER_IDS,
   cleanupTeamDisbandTestData,
 } from "./seedTeamDisbandFlow";
@@ -151,6 +155,7 @@ export const cleanupLadderTestData = async ({
   const inactivity = await cleanupLadderInactivityTestData({ testUser });
   const disband = await cleanupTeamDisbandTestData();
   const cancellation = await cleanupMatchCancellationTestData();
+  const doubleBooking = await cleanupDoubleBookingTestData();
   const teams = await cleanupTeamFlowTestData();
   const chats = await cleanupChatsTabTestData(testUser);
   const proLevel = await cleanupProLevel(testUser);
@@ -161,6 +166,7 @@ export const cleanupLadderTestData = async ({
     ...MAESTRO_JOIN_LADDER_IDS,
     ...MAESTRO_DISBAND_LADDER_IDS,
     MAESTRO_CANCEL_LADDER_ID,
+    MAESTRO_DOUBLE_BOOKING_LADDER_ID,
     MAESTRO_TEAM_LADDER_ID,
   ];
   await Promise.all(notificationLadderIds.map(deleteReportsForLadder));
@@ -197,6 +203,7 @@ export const cleanupLadderTestData = async ({
     inactivity,
     disband,
     cancellation,
+    doubleBooking,
     teams,
     chats,
     proLevel,

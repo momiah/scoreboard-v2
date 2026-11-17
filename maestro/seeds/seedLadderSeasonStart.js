@@ -123,9 +123,11 @@ const ladderState = (variant, now) => {
       participantCount: LADDER_MIN_ENTRANTS_TO_START,
     };
   }
-  const registrationOpensAt = daysAgo(
-    now,
-    LADDER_SEASON_START_DAYS + LADDER_SEASON_EXTENSION_DAYS,
+  // Two hours of margin: the dates add calendar days, so a clock change
+  // inside the window would otherwise put the moved-back start in the future.
+  const registrationOpensAt = new Date(
+    daysAgo(now, LADDER_SEASON_START_DAYS + LADDER_SEASON_EXTENSION_DAYS).getTime() -
+      2 * 60 * 60 * 1000,
   );
   const { seasonStartsAt } = deriveLadderDates(registrationOpensAt);
   return {

@@ -45,6 +45,7 @@ import { toMoment } from "../../helpers/ladderPhases";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
+import { formatLadderMatchClashMessage } from "../../helpers/ladderMatchClash";
 import {
   COURT_SUBMITTED_MESSAGE,
   useLadderCourts,
@@ -301,7 +302,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     setErrorMessage(null);
     setSubmitting(true);
     try {
-      const { success, reason } = await createLadderMatch(
+      const { success, reason, clash } = await createLadderMatch(
         ladder.ladderId,
         input,
         currentUser.userId,
@@ -312,6 +313,10 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
         resetAndClose();
       } else if (reason === "not_started") {
         setErrorMessage(LADDER_SEASON_NOT_STARTED_MESSAGE);
+      } else if (clash) {
+        setErrorMessage(
+          formatLadderMatchClashMessage(clash, { team: isDoubles }),
+        );
       } else {
         setErrorMessage("Something went wrong posting the match.");
       }

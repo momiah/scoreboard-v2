@@ -51,6 +51,7 @@ import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
 import { usePlayoffMatchScheduling } from "../../../hooks/usePlayoffMatchScheduling";
 import { toMoment } from "../../../helpers/ladderPhases";
 import { formatTimeLeft } from "../../../helpers/ladderMatchTime";
+import { formatLadderMatchClashMessage } from "../../../helpers/ladderMatchClash";
 import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
 type TieTab = "Chat Room" | "Tie Lobby";
@@ -261,6 +262,11 @@ const PlayoffMatchDetails: React.FC = () => {
       return null;
     }
     if (outcome.reason === "order") return "Match 1 has to be arranged first.";
+    if (outcome.clash) {
+      return formatLadderMatchClashMessage(outcome.clash, {
+        team: (tie.side1?.playerIds?.length ?? 1) > 1,
+      });
+    }
     return outcome.reason === "exists"
       ? "This match has already been arranged."
       : "Couldn't arrange this match. Try again.";
