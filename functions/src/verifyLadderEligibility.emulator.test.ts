@@ -76,6 +76,12 @@ describe("verifyEligibility", () => {
     expect((await db.doc(eligibilityPath).get()).exists).toBe(false);
   });
 
+  it("refuses a player removed from the ladder for inactivity and writes nothing", async () => {
+    await db.doc("ladders/L1").update({ inactivityRemovedUserIds: ["u1"] });
+    await expect(verify()).rejects.toThrow("Removed for inactivity");
+    expect((await db.doc(eligibilityPath).get()).exists).toBe(false);
+  });
+
   it("refuses paid ladders, which have no location check", async () => {
     await db.doc("ladders/L1").update({ entryFee: 10 });
     await expect(verify()).rejects.toThrow("no location check");

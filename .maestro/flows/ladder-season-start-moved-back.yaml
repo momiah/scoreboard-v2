@@ -1,0 +1,27 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Too few joined by the season start, so it moved back once: the player is told
+# how many more are needed, and the Summary warns the ladder will be cancelled
+# if there are still too few.
+- runFlow:
+    file: ../utilities/season/open-from-notification.yaml
+    env:
+      BUTTON: "maestro-seed-season-start-extended"
+      NOTIFICATION: ".*Maestro Season Start needs .* more players to start, so the season now starts ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days later.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-preseason-notice"
+    timeout: 30000
+- assertVisible:
+    id: "ladder-preseason-title"
+    text: "Season start moved back .*"
+- assertVisible:
+    id: "ladder-preseason-body"
+    text: ".*If fewer than ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined by then, the ladder will be cancelled and any entry fees refunded in full.*"
+- tapOn:
+    id: "ladder-tab-Matchmaking"
+- extendedWaitUntil:
+    visible: "Matches open .*"
+    timeout: 20000

@@ -6,6 +6,7 @@ import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { formatDisplayName } from "../helpers/formatDisplayName";
 import { getSameSideIds } from "../helpers/ladderMatchCancellation";
+import { formatLadderMatchClashMessage } from "../helpers/ladderMatchClash";
 import { playoffMatchMessages } from "../helpers/playoffMatchMessages";
 import { useNotifyMatchPlayers } from "./useNotifyMatchPlayers";
 
@@ -67,9 +68,13 @@ export const usePlayoffMatchScheduling = () => {
       });
       if (!outcome.success) {
         showBottomToast(
-          outcome.reason === "not_allowed"
-            ? "This match can no longer be changed"
-            : ERROR_MESSAGE,
+          outcome.clash
+            ? formatLadderMatchClashMessage(outcome.clash, {
+                team: (match.participants?.length ?? 0) > 2,
+              })
+            : outcome.reason === "not_allowed"
+              ? "This match can no longer be changed"
+              : ERROR_MESSAGE,
           "error",
         );
         return;

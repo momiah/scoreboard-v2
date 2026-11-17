@@ -50,6 +50,13 @@ pairing, so a player must not be able to set an arbitrary location.
 | `ladders/{ladderId}` | A joining player or team member | update | `participantCount` +1, only in the same transaction as the participant/team create above. |
 | `teams/{teamId}` | A team member | update | `ladderIds` (arrayUnion) after joining a ladder. |
 
+## Ladder match posting
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{matchId}` | A ladder entrant (the poster, or either partner of a doubles team) | create | Built by `buildLadderMatchDocument`, `matchStatus: "posted"`, `createdBy` = the writer. Only once the season has started (`isLadderSeasonStarted`: the ladder has `seasonStartedAt`, or its status is past `registrationOpen`) and before the posting deadline. |
+| same | A ladder entrant who is not in the match | update | Accept: `matchStatus: "accepted"` and the accepter added (`buildAcceptedLadderMatch`). Same season-started condition. |
+
 ## Ladder match reporting
 
 | Path | Writer | Operation | Fields / conditions |
@@ -139,3 +146,16 @@ allow those starting values on create and nothing else.
 
 Players read their own `prizePayouts` records (the app's ladder Summary shows a
 prize under review); admins read all of them.
+
+## Account strikes
+
+A player's account strikes are derived from their upheld `reports` (any
+ladder, last 12 months); nothing new is stored for them. Joining a ladder reads
+the player's own reports (`reports` where `target.userIds` contains them) and
+their `users/{uid}` profile, so rules must let a signed-in player read reports
+that name them.
+
+| Client | Write | Who | Fields |
+|---|---|---|---|
+| Website admin, Reports page | update `users/{uid}` | Admins only (`userRoles`) | `ladderBlockLiftedAt` only (lifts the ladder block: strikes upheld before it stop counting) |
+| Website admin, Reports page | approve a report on a ladder whose standings are final (including finished ladders) | Admins only | same writes as any approval (`reports`, `ladders/{ladderId}/reportCounts`, `users/{uid}.conduct`), but never a walkover |

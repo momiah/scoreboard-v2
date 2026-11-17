@@ -8,6 +8,7 @@ import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { formatDisplayName } from "../helpers/formatDisplayName";
 import { getMatchStart } from "../helpers/ladderMatchTime";
+import { formatLadderMatchClashMessage } from "../helpers/ladderMatchClash";
 import { useNotifyMatchPlayers } from "./useNotifyMatchPlayers";
 
 interface MatchArgs {
@@ -63,6 +64,10 @@ export const useLadderMatchChanges = () => {
           return "Pick a time in the future, before the deadline.";
         if (outcome.reason === "not_allowed")
           return "This match can no longer be rescheduled.";
+        if (outcome.clash)
+          return formatLadderMatchClashMessage(outcome.clash, {
+            team: (args.match.participants?.length ?? 0) > 2,
+          });
         return ERROR_MESSAGE;
       }
       await notify(
@@ -88,7 +93,11 @@ export const useLadderMatchChanges = () => {
       });
       if (!outcome.success) {
         showBottomToast(
-          outcome.reason === "invalid_time"
+          outcome.clash
+            ? formatLadderMatchClashMessage(outcome.clash, {
+                team: (args.match.participants?.length ?? 0) > 2,
+              })
+            : outcome.reason === "invalid_time"
             ? "That time has already passed, so the request was cleared"
             : outcome.reason === "not_allowed"
               ? "This reschedule request is no longer open"

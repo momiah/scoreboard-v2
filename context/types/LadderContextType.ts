@@ -21,7 +21,11 @@ import type {
 export type { CreateReportOutcome };
 import type { LadderJoinUser } from "@shared/helpers";
 
-export type LadderJoinFailureReason = "closed" | "not_open" | "full";
+export type LadderJoinFailureReason =
+  | "closed"
+  | "not_open"
+  | "full"
+  | "account_blocked";
 
 export type AddLadderTeamFailureReason =
   | LadderJoinFailureReason
@@ -80,14 +84,25 @@ export interface AcceptTeamJoinRequestOutcome {
   full: boolean;
 }
 
-export interface CreateLadderMatchOutcome {
-  success: boolean;
-  ladderMatch: LadderMatch | null;
+/** The player's existing match that a new booking would clash with. */
+interface LadderMatchClashOutcome {
+  clash?: LadderMatch;
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
+export interface CreateLadderMatchOutcome extends LadderMatchClashOutcome {
+  success: boolean;
+  ladderMatch: LadderMatch | null;
+  reason?: "not_started" | "clash";
+}
 
-export interface AcceptLadderMatchOutcome {
+export type AcceptLadderMatchFailureReason =
+  | "unavailable"
+  | "frozen"
+  | "not_started"
+  | "clash"
+  | "error";
+
+export interface AcceptLadderMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
   reason?: AcceptLadderMatchFailureReason;
 }
@@ -116,15 +131,15 @@ export type CancelLadderMatchFailureReason =
   | "not_cancellable"
   | "error";
 
-export interface PlayoffMatchOutcome {
+export interface PlayoffMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
-  reason?: "exists" | "not_allowed" | "order" | "error";
+  reason?: "exists" | "not_allowed" | "order" | "clash" | "error";
   notifyUserIds?: string[];
 }
 
-export interface LadderMatchChangeOutcome {
+export interface LadderMatchChangeOutcome extends LadderMatchClashOutcome {
   success: boolean;
-  reason?: "not_allowed" | "invalid_time" | "error";
+  reason?: "not_allowed" | "invalid_time" | "clash" | "error";
   notifyUserIds?: string[];
   expiresAt?: Date;
 }

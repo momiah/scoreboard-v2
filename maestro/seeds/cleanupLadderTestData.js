@@ -48,6 +48,7 @@ import {
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
 import { cleanupChatsTabTestData } from "./seedChatsTab";
+import { cleanupLadderSeasonStartTestData } from "./seedLadderSeasonStart";
 import { deleteFixtureUserSubcollections } from "./fixtureUserCleanup";
 import { cleanupLadderEligibilityFixtures } from "./ladderEligibilityFixtures";
 import { cleanupLadderInactivityTestData } from "./seedLadderInactivity";
@@ -64,6 +65,10 @@ import {
   MAESTRO_CANCEL_LADDER_ID,
   cleanupMatchCancellationTestData,
 } from "./seedMatchCancellationFlow";
+import {
+  MAESTRO_DOUBLE_BOOKING_LADDER_ID,
+  cleanupDoubleBookingTestData,
+} from "./seedDoubleBookingFlow";
 import {
   MAESTRO_DISBAND_LADDER_IDS,
   cleanupTeamDisbandTestData,
@@ -145,10 +150,12 @@ export const cleanupLadderTestData = async ({
   const deletedCourts = await deleteUserSubmittedCourts(testUser);
   const playoffs = await cleanupLadderPlayoffsTestData();
   const join = await cleanupLadderJoinTestData();
+  const seasonStart = await cleanupLadderSeasonStartTestData(testUser);
   await cleanupLadderEligibilityFixtures({ testUser });
   const inactivity = await cleanupLadderInactivityTestData({ testUser });
   const disband = await cleanupTeamDisbandTestData();
   const cancellation = await cleanupMatchCancellationTestData();
+  const doubleBooking = await cleanupDoubleBookingTestData();
   const teams = await cleanupTeamFlowTestData();
   const chats = await cleanupChatsTabTestData(testUser);
   const proLevel = await cleanupProLevel(testUser);
@@ -159,6 +166,7 @@ export const cleanupLadderTestData = async ({
     ...MAESTRO_JOIN_LADDER_IDS,
     ...MAESTRO_DISBAND_LADDER_IDS,
     MAESTRO_CANCEL_LADDER_ID,
+    MAESTRO_DOUBLE_BOOKING_LADDER_ID,
     MAESTRO_TEAM_LADDER_ID,
   ];
   await Promise.all(notificationLadderIds.map(deleteReportsForLadder));
@@ -191,9 +199,11 @@ export const cleanupLadderTestData = async ({
     deletedCourts: [...courtIds, ...deletedCourts],
     playoffs,
     join,
+    seasonStart,
     inactivity,
     disband,
     cancellation,
+    doubleBooking,
     teams,
     chats,
     proLevel,

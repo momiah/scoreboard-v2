@@ -9,6 +9,9 @@ onFlowStart:
 - copyTextFrom:
     id: "maestro-expected-inactivityMessage"
 - evalScript: ${output.message = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-joinLabel"
+- evalScript: ${output.joinLabel = maestro.copiedText}
 - runFlow:
     file: ../utilities/playoffs/open-notifications.yaml
 - scrollUntilVisible:
@@ -23,5 +26,5 @@ onFlowStart:
     direction: DOWN
 - assertVisible:
     id: "ladder-summary-join"
-    text: ".*Registration Closed.*"
+    text: ".*${output.joinLabel}.*"
 - assertNotVisible: "Participant"

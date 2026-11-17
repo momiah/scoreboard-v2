@@ -155,6 +155,7 @@ export const seedAddApproveGameFlow = async ({
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
+    seasonStartedAt: new Date(),
     playoffStartsAt:
       playoffStartsInDays === null
         ? new Date()

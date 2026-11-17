@@ -163,3 +163,8 @@ jest.mock("firebase/app", () => ({
   getApp: jest.fn(() => ({ name: "[DEFAULT]" })),
   initializeApp: jest.fn(() => ({})),
 }));
+
+// Screens read safe-area insets (useAndroidTopInset); tests render without a SafeAreaProvider.
+jest.mock("react-native-safe-area-context", () =>
+  require("react-native-safe-area-context/jest/mock").default,
+);

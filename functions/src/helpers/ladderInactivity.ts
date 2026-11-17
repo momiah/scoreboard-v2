@@ -3,8 +3,11 @@ import * as admin from "firebase-admin";
 import { LADDER_MATCH_STATUS, LADDER_TYPE } from "courtchamps-shared/types";
 import type { Ladder, LadderMatch, TeamStats } from "courtchamps-shared/types";
 import {
+  LADDER_ELIGIBILITY_COLLECTION,
+  getLadderEligibilityId,
   getInactiveLadderEntrants,
   getLadderInactivityRemoval,
+  getLadderInactivityRemovalMs,
   getLadderInactivityStep,
   getLadderInactivityWarning,
   markLadderInactivityWarningSent,
@@ -34,6 +37,7 @@ const loadEntrants = async (
       return {
         entrantId: team.teamKey || teamDoc.id,
         playerIds: team.playerIds ?? [],
+        joinedAt: team.joinedAt ?? null,
         ref: teamDoc.ref,
         teamId: team.teamId ?? null,
       };
@@ -43,12 +47,17 @@ const loadEntrants = async (
   return snapshot.docs.map((participantDoc) => ({
     entrantId: participantDoc.id,
     playerIds: [participantDoc.id],
+    joinedAt: participantDoc.get("joinedAt") ?? null,
     ref: participantDoc.ref,
     teamId: null,
   }));
 };
 
-const findInactiveEntrants = async (ladderRef: DocRef, ladder: Ladder) => {
+const findInactiveEntrants = async (
+  ladderRef: DocRef,
+  ladder: Ladder,
+  removalMs: number,
+) => {
   const [entrants, completed] = await Promise.all([
     loadEntrants(ladderRef, ladder),
     ladderRef
@@ -59,6 +68,7 @@ const findInactiveEntrants = async (ladderRef: DocRef, ladder: Ladder) => {
   return getInactiveLadderEntrants(
     entrants,
     completed.docs.map((matchDoc) => matchDoc.data() as LadderMatch),
+    removalMs,
   );
 };
 
@@ -99,6 +109,14 @@ const removeEntrants = async ({
     );
   entrants.forEach((entrant) => {
     writer.delete(entrant.ref);
+    // Their location check would otherwise still let them write a join.
+    entrant.playerIds.forEach((userId) =>
+      writer.delete(
+        db
+          .collection(LADDER_ELIGIBILITY_COLLECTION)
+          .doc(getLadderEligibilityId(ladder.ladderId, userId)),
+      ),
+    );
     if (ladder.ladderType === LADDER_TYPE.DOUBLES) {
       entrant.playerIds.forEach((userId) =>
         writer.delete(ladderRef.collection("ladderMembers").doc(userId)),
@@ -114,9 +132,12 @@ const removeEntrants = async ({
 };
 
 /**
- * Free ladders: warns entrants without a completed season match as
- * registration close approaches, then removes them when it closes. Runs before
- * the registration-close step so the entrant count it uses is already final.
+ * Free ladders: once the season has started, warns entrants without a
+ * completed season match as the removal date (14 days before registration
+ * closes) approaches, then removes them on it, so their places can be filled
+ * while registration is open. Entrants who joined within 14 days of the removal
+ * date keep their place. Removed players are listed on the ladder so they can't
+ * rejoin it this season.
  */
 export const processLadderInactivity = async ({
   db,
@@ -130,8 +151,9 @@ export const processLadderInactivity = async ({
   now: Date;
 }): Promise<{ warned: number; removed: number } | null> => {
   const step = getLadderInactivityStep(ladder, now.getTime());
-  if (!step) return null;
-  const inactive = await findInactiveEntrants(ladderRef, ladder);
+  const removalMs = getLadderInactivityRemovalMs(ladder);
+  if (!step || removalMs === null) return null;
+  const inactive = await findInactiveEntrants(ladderRef, ladder, removalMs);
   const userIds = inactive.flatMap(({ playerIds }) => playerIds);
 
   if (step.kind === "warn") {
@@ -161,6 +183,9 @@ export const processLadderInactivity = async ({
   await ladderRef.update({
     inactivityRemovedAt: now,
     participantCount: remaining.data().count,
+    ...(userIds.length
+      ? { inactivityRemovedUserIds: admin.firestore.FieldValue.arrayUnion(...userIds) }
+      : {}),
   });
   const { title, message } = getLadderInactivityRemoval(ladder);
   await notifyLadderPlayers({

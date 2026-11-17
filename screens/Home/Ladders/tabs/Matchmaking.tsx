@@ -9,7 +9,11 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 
-import { isLadderPostingClosed } from "@shared/helpers";
+import {
+  LADDER_SEASON_NOT_STARTED_MESSAGE,
+  isLadderPostingClosed,
+  isLadderSeasonStarted,
+} from "@shared/helpers";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
@@ -21,9 +25,9 @@ import {
   ALL_DAYS_KEY,
   buildMatchmakingDayTabs,
   filterMatchesByDay,
-  ladderRegistrationOpen,
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
+import { formatSeasonStart } from "../../../../helpers/ladderPhases";
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMatchModal";
 import MatchCard from "../../../../components/ladder/MatchCard";
@@ -120,18 +124,15 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     }, [subscribeToLadderMatches, ladder.ladderId]),
   );
 
-  const registrationOpen = useMemo(
-    () => ladderRegistrationOpen(ladder),
-    [ladder],
-  );
+  const seasonStarted = isLadderSeasonStarted(ladder);
   const postingClosed = useMemo(
     () => isLadderPostingClosed(ladder, new Date()),
     [ladder],
   );
   const nonParticipant = isSignedIn && !isParticipant;
-  const cannotPost = nonParticipant || !registrationOpen || postingClosed;
-  const buttonLabel = !registrationOpen
-    ? "Registration not open yet"
+  const cannotPost = nonParticipant || !seasonStarted || postingClosed;
+  const buttonLabel = !seasonStarted
+    ? `Matches open ${formatSeasonStart(ladder)}`
     : postingClosed
       ? "Posting closed for playoffs"
       : nonParticipant
@@ -143,8 +144,8 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       navigation.navigate("Login");
       return;
     }
-    if (!registrationOpen) {
-      showBottomToast("Registration is not open yet", "error");
+    if (!seasonStarted) {
+      showBottomToast(LADDER_SEASON_NOT_STARTED_MESSAGE, "error");
       return;
     }
     if (postingClosed) {
