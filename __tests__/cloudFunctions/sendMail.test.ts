@@ -70,7 +70,8 @@ jest.mock("nodemailer", () => ({
 import {
   deliverMail,
   sendMail,
-  MAIL_FROM,
+  MAIL_FROM_ADDRESS,
+  MAIL_SENDER_NAMES,
   MAIL_DELIVERY_STATE,
 } from "../../functions/src/sendMail";
 
@@ -117,13 +118,13 @@ describe("sendMail trigger", () => {
     });
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
-      from: MAIL_FROM,
+      from: { name: "Court Champs", address: "info@courtchamps.com" },
       to: "player@example.com",
       subject: "Your ladder is open",
       text: "Join now",
       html: "<p>Join now</p>",
     }));
-    expect(MAIL_FROM).toBe("Court Champs <info@courtchamps.com>");
+    expect(MAIL_FROM_ADDRESS).toBe("info@courtchamps.com");
     expect(delivery()).toEqual({
       state: MAIL_DELIVERY_STATE.SUCCESS,
       attempts: 1,
@@ -221,6 +222,26 @@ describe("sendMail trigger", () => {
       cc: "c@example.com",
       bcc: ["d@example.com"],
       replyTo: "support@courtchamps.com",
+    }));
+  });
+
+  it("uses the sender name the doc asks for, from the same address", async () => {
+    store.set(PATH, queued({ fromName: MAIL_SENDER_NAMES.LADDERS }));
+
+    await fire();
+
+    expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+      from: { name: "Court Champs Ladders", address: "info@courtchamps.com" },
+    }));
+  });
+
+  it("falls back to Court Champs for a sender name that isn't on the list", async () => {
+    store.set(PATH, queued({ fromName: "Your Bank" }));
+
+    await fire();
+
+    expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+      from: { name: "Court Champs", address: "info@courtchamps.com" },
     }));
   });
 });

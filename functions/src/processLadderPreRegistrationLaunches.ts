@@ -15,7 +15,7 @@ import {
   notificationTypes,
 } from "courtchamps-shared";
 import { sendNotification } from "./helpers/sendNotification";
-import { MAIL_COLLECTION } from "./sendMail";
+import { MAIL_COLLECTION, MAIL_SENDER_NAMES } from "./sendMail";
 
 const LADDERS_COLLECTION = "ladders";
 const BATCH_SIZE = 50;
@@ -89,6 +89,7 @@ const notifyRegistrant = async (
 
   await db.collection(MAIL_COLLECTION).add({
     to: email,
+    fromName: MAIL_SENDER_NAMES.LADDERS,
     message: buildEmail(ladderName, userDoc.data()?.firstName),
   });
 };
