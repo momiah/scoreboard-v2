@@ -1,0 +1,28 @@
+# Seeds a season start variant and opens the ladder from a notification.
+#   BUTTON: the harness seed button
+#   NOTIFICATION: a regex for the notification to tap
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../playoffs/harness.yaml
+    env:
+      BUTTON: ${BUTTON}
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ${NOTIFICATION}
+    timeout: 20000
+- tapOn: ${NOTIFICATION}
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 40000

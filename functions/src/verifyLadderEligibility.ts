@@ -6,7 +6,9 @@ import {
   LADDER_ELIGIBILITY_COLLECTION,
   checkLadderEligibilityReading,
   getLadderEligibilityId,
+  LADDER_INACTIVITY_REMOVED_LABEL,
   getLadderEligibilityRadiusMiles,
+  isLadderInactivityRemovedUser,
   requiresLadderLocationCheck,
 } from "courtchamps-shared/helpers";
 import type {
@@ -34,6 +36,9 @@ export const verifyEligibility = async ({
   const ladder = ladderSnap.data() as Ladder;
   if (!requiresLadderLocationCheck(ladder)) {
     throw new HttpsError("failed-precondition", "This ladder has no location check");
+  }
+  if (isLadderInactivityRemovedUser(ladder, userId)) {
+    throw new HttpsError("permission-denied", LADDER_INACTIVITY_REMOVED_LABEL);
   }
 
   const courtIds = (ladder.courtIds ?? []).filter(Boolean);

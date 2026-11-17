@@ -13,6 +13,7 @@ import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
 import {
   LADDER_STATUS_LABELS,
   calculateLadderPrizePool,
+  isLadderSeasonStarted,
   sortLadderTeamsByPlacement,
 } from "@shared/helpers";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
@@ -25,17 +26,21 @@ import PhaseTimeline from "./PhaseTimeline";
 import LadderHomeCourtSection from "./LadderHomeCourtSection";
 import LadderSummarySkeleton from "./LadderSummarySkeleton";
 import HeldPrizeNotice from "./HeldPrizeNotice";
+import LadderPreSeasonNotice from "./LadderPreSeasonNotice";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
-import { useLadderJoin } from "../../hooks/useLadderJoin";
+import { LADDER_JOIN_MODE_LABELS, useLadderJoin } from "../../hooks/useLadderJoin";
 import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { useLadderHeldPrize } from "../../hooks/useLadderHeldPrize";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { getLadderTopFourPrizes } from "../../helpers/ladderPlayoffPrizes";
-import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
+import {
+  timeLeftToPlayoffs,
+  timeLeftToSeasonStart,
+} from "../../helpers/ladderPhases";
 
 const TOP_CONTENDER_COUNT = 4;
 const CAROUSEL_PARTICIPANT_LIMIT = 20;
@@ -56,6 +61,10 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
+  const seasonCountdown = useMemo(() => timeLeftToSeasonStart(ladder), [ladder]);
+  const preSeason =
+    ladder.status === LADDER_STATUS.REGISTRATION_OPEN &&
+    !isLadderSeasonStarted(ladder);
   const beforePlayoffs =
     ladder.status === LADDER_STATUS.REGISTRATION_OPEN ||
     ladder.status === LADDER_STATUS.REGISTRATION_CLOSED;
@@ -86,7 +95,17 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
 
       <StatDivider />
 
-      {beforePlayoffs ? (
+      {preSeason ? (
+        <StatBlock>
+          <StatLabel>Season Starts</StatLabel>
+
+          <StatHeadingContainer>
+            <StatValue testID="ladder-season-countdown">
+              {seasonCountdown}
+            </StatValue>
+          </StatHeadingContainer>
+        </StatBlock>
+      ) : beforePlayoffs ? (
         <StatBlock>
           <StatLabel>To Playoffs</StatLabel>
 
@@ -330,6 +349,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
       <LadderStatsRow ladder={ladder} />
 
+      {ladder.status === LADDER_STATUS.REGISTRATION_OPEN &&
+      !isLadderSeasonStarted(ladder) ? (
+        <LadderPreSeasonNotice ladder={ladder} />
+      ) : null}
+
       <PrizeDistribution
         prizePool={prizePool.xp}
         cashPool={isPaid ? prizePool.cash : undefined}
@@ -459,7 +483,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             />
           )}
           <ParticipantText>
-            {mode === "participant" ? "Participant" : "Registration Closed"}
+            {LADDER_JOIN_MODE_LABELS[mode]}
           </ParticipantText>
         </ParticipantButton>
       )}

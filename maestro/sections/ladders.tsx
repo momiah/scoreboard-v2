@@ -37,6 +37,10 @@ import {
   seedTeamFlow,
 } from "../seeds/seedTeamFlow";
 import { CHAT_VARIANT, seedChatsTab } from "../seeds/seedChatsTab";
+import {
+  DOUBLE_BOOKING_VARIANT,
+  seedDoubleBookingFlow,
+} from "../seeds/seedDoubleBookingFlow";
 import { mockOpponentCheckIn } from "../seeds/mockOpponentCheckIn";
 import { assertReportFiled } from "../seeds/assertReportFiled";
 import { assertChatMessageDelivered } from "../seeds/assertChatMessageDelivered";
@@ -57,6 +61,10 @@ import {
   seedLadderJoinFlowSingles,
 } from "../seeds/seedLadderJoinFlow";
 import { seedHomeCourtFlowDoubles } from "../seeds/seedHomeCourtFlowDoubles";
+import {
+  SEASON_VARIANT,
+  seedLadderSeasonStart,
+} from "../seeds/seedLadderSeasonStart";
 import {
   findOwnPendingCourtId,
   mockApproveCourtSubmission,
@@ -908,6 +916,16 @@ const LadderButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
           }),
       },
       ...[
+        ["pre-season", SEASON_VARIANT.PRE_SEASON],
+        ["extended", SEASON_VARIANT.EXTENDED],
+        ["started", SEASON_VARIANT.STARTED],
+        ["cancelled", SEASON_VARIANT.CANCELLED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-season-start-${key}`,
+        label: `Seed Season Start (${key})`,
+        run: () => seedLadderSeasonStart({ testUser: currentUser, variant }),
+      })),
+      ...[
         ["open", JOIN_VARIANT.OPEN],
         ["full", JOIN_VARIANT.FULL],
         ["window-closed", JOIN_VARIANT.WINDOW_CLOSED],
@@ -997,6 +1015,14 @@ const LadderButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
         label: `Seed Cancel (${key})`,
         run: () =>
           seedMatchCancellationFlow({ testUser: currentUser, variant }),
+      })),
+      ...[
+        ["clash", DOUBLE_BOOKING_VARIANT.CLASH],
+        ["clear", DOUBLE_BOOKING_VARIANT.CLEAR],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-double-booking-${key}`,
+        label: `Seed Double Booking (${key})`,
+        run: () => seedDoubleBookingFlow({ testUser: currentUser, variant }),
       })),
       ...[
         ["accept", true],

@@ -133,9 +133,14 @@ Ladder seeds also check that:
 - posted matches are recent (an unanswered playoff match is accepted for the
   away side after `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS`);
 - every number that is a rule (the tie window `LADDER_PLAYOFF_TIE_DAYS`, the
-  auto-accept hours) comes from `courtchamps-shared`, never a literal. Flows read
-  them from `MAESTRO_PLAYOFF_TIE_DAYS` and `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`,
-  which `run-suite.sh` exports.
+  auto-accept hours, the season start minimum `LADDER_MIN_ENTRANTS_TO_START` and
+  extension `LADDER_SEASON_EXTENSION_DAYS`) comes from `courtchamps-shared`,
+  never a literal. Flows read them from `MAESTRO_PLAYOFF_TIE_DAYS`,
+  `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`, `MAESTRO_LADDER_MIN_ENTRANTS` and
+  `MAESTRO_LADDER_SEASON_EXTENSION_DAYS`, which `run-suite.sh` exports;
+- a ladder in registration has `seasonStartedAt` once its `seasonStartsAt` has
+  passed with enough entrants, as `processLadderPhases` writes it. Without it,
+  matches stay closed (`isLadderSeasonStarted`).
 
 `seeds/realWorldChecks.helper.js` asserts the first three and runs against every
 playoff stage in the seed tests. Add a stage to those tests when you add one.

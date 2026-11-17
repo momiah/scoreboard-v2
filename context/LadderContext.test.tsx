@@ -19,6 +19,7 @@ jest.mock("firebase/firestore", () => ({
   arrayRemove: jest.fn((value: unknown) => ({ __remove: value })),
   arrayUnion: jest.fn(),
   collection: jest.fn((_db, ...path: string[]) => ({ __col: path.join("/") })),
+  collectionGroup: jest.fn((_db, id: string) => ({ __group: id })),
   deleteDoc: jest.fn(),
   doc: jest.fn((_db, ...path: string[]) => ({ path: path.join("/") })),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
@@ -192,6 +193,7 @@ const approve = (
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetDocs.mockResolvedValue({ docs: [] });
+  mockGetDoc.mockResolvedValue({ exists: () => false, id: "x", data: () => undefined });
   jest.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
@@ -831,6 +833,122 @@ describe("playoff freeze", () => {
   });
 });
 
+describe("double booking across ladders", () => {
+  // Posting checks the season has started before looking for clashes.
+  const startedLadderSnap = {
+    exists: () => true,
+    id: LADDER,
+    data: () => ({ status: "registrationOpen", seasonStartedAt: new Date() }),
+  };
+  const slot = { matchDate: "01-01-2027", matchTime: { start: "18:00" } };
+  const otherLadderMatch = {
+    id: "doubles-1",
+    data: () => ({
+      ...slot,
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: ["me", "partner"],
+    }),
+  };
+
+  it("refuses to accept a match at the same time as one already posted on another ladder", async () => {
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1)], {
+        ...slot,
+        matchStatus: LADDER_MATCH_STATUS.POSTED,
+        participants: ["opp"],
+      }),
+      ...withLadder("active"),
+    });
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      id: MATCH,
+      data: () => ({ ...slot, participants: ["opp"] }),
+    });
+    mockGetDocs.mockResolvedValue({ docs: [otherLadderMatch] });
+    const result = await renderLadder();
+
+    const outcome = await result.current.acceptLadderMatch(LADDER, MATCH, "me");
+
+    expect(outcome).toMatchObject({
+      success: false,
+      reason: "clash",
+      clash: { ladderMatchId: "doubles-1" },
+    });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to post a match at the same time as one already booked", async () => {
+    const { setDoc } = jest.requireMock("firebase/firestore");
+    setDoc.mockClear();
+    mockGetDoc.mockResolvedValue(startedLadderSnap);
+    mockGetDocs.mockResolvedValue({ docs: [otherLadderMatch] });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      {
+        ...slot,
+        court: { courtId: "c1", courtName: "Court" },
+        bestOf: 5,
+        courtFee: 0,
+        currencyType: "GBP",
+        shuttleType: "Feather",
+      } as Parameters<typeof result.current.createLadderMatch>[1],
+      "me",
+    );
+
+    expect(outcome).toMatchObject({ success: false, reason: "clash" });
+    expect(setDoc).not.toHaveBeenCalled();
+  });
+
+  it("posts when the player's other match is at a different time", async () => {
+    const { setDoc } = jest.requireMock("firebase/firestore");
+    setDoc.mockClear();
+    mockGetDoc.mockResolvedValue(startedLadderSnap);
+    mockGetDocs.mockResolvedValue({
+      docs: [
+        {
+          ...otherLadderMatch,
+          data: () => ({
+            ...otherLadderMatch.data(),
+            matchTime: { start: "20:00" },
+          }),
+        },
+      ],
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      {
+        ...slot,
+        court: { courtId: "c1", courtName: "Court" },
+        bestOf: 5,
+        courtFee: 0,
+        currencyType: "GBP",
+        shuttleType: "Feather",
+      } as Parameters<typeof result.current.createLadderMatch>[1],
+      "me",
+    );
+
+    expect(outcome.success).toBe(true);
+    expect(setDoc).toHaveBeenCalledTimes(1);
+  });
+});
+
+const upheldStrikes = (userId: string, count: number) => ({
+  docs: Array.from({ length: count }, (_, index) => ({
+    id: `report-${index}`,
+    data: () => ({
+      ladderId: `ladder-${index}`,
+      reason: "no_show",
+      status: "approved",
+      target: { userIds: [userId] },
+      resolvedAt: new Date(Date.now() - (index + 1) * 7 * 86400000),
+    }),
+  })),
+});
+
 describe("joinLadder", () => {
   const user1 = {
     userId: "me",
@@ -848,6 +966,43 @@ describe("joinLadder", () => {
     participantCount: 3,
     maxPlayers: 2048,
   };
+
+  it("refuses a player with five strikes upheld across ladders in the last twelve months", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 5));
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: false,
+      alreadyJoined: false,
+      reason: "account_blocked",
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("lets a player with four strikes join", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 4));
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: true,
+      alreadyJoined: false,
+    });
+  });
+
+  it("lets a player join again once an admin lifted their block", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 5));
+    mockGetDoc.mockImplementation(async (ref: { path: string }) =>
+      ref.path === "users/me"
+        ? { exists: () => true, id: "me", data: () => ({ ladderBlockLiftedAt: new Date() }) }
+        : { exists: () => false, id: "x", data: () => undefined },
+    );
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect((await result.current.joinLadder(LADDER, user1)).success).toBe(true);
+  });
 
   it("writes the participant with a server joinedAt and bumps the count", async () => {
     const { tx } = makeStore(withLadder("registrationOpen", openWindow));
@@ -1047,11 +1202,31 @@ describe("joinLadderAsTeam", () => {
     expect(tx.set).not.toHaveBeenCalled();
   });
 
-  it("refuses a team when one of its players is already a ladder participant", async () => {
+  it("refuses a team when either player has five strikes upheld", async () => {
     mockGetDoc
       .mockResolvedValueOnce(serverTeam({}))
-      .mockResolvedValueOnce({ exists: () => true, id: "me", data: () => ({}) })
       .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockImplementation(async (q: { __query: unknown[] }) =>
+      JSON.stringify(q).includes("reports") ? upheldStrikes("pt", 5) : { docs: [] },
+    );
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      reason: "account_blocked",
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("refuses a team when one of its players is already a ladder participant", async () => {
+    mockGetDoc.mockImplementation(async (ref: { path: string }) => {
+      if (ref.path.endsWith("/T1")) return serverTeam({});
+      if (ref.path.startsWith("users/")) return noParticipantDoc;
+      return ref.path.endsWith("/me")
+        ? { exists: () => true, id: "me", data: () => ({}) }
+        : noParticipantDoc;
+    });
     mockGetDocs.mockResolvedValue({ docs: [] });
     makeStore(withLadder("registrationOpen", openWindow));
     const result = await renderLadder();
@@ -1482,5 +1657,74 @@ describe("before the playoffs", () => {
     expect(extension.expiresAt).toEqual(
       new Date(playoffStartsAt.getTime() - 5 * DAY),
     );
+  });
+});
+
+describe("before the season starts", () => {
+  const { setDoc } = jest.requireMock("firebase/firestore") as {
+    setDoc: jest.Mock;
+  };
+  const preSeasonLadder = {
+    status: "registrationOpen",
+    seasonStartsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
+  const matchInput = {
+    court: { courtId: "c1", courtName: "Court" },
+    matchDate: "01-12-2026",
+    matchTime: { start: "18:00", end: "19:00" },
+  } as never;
+
+  it("refuses to post a match", async () => {
+    mockGetDoc.mockResolvedValue({ data: () => preSeasonLadder });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      matchInput,
+      "user",
+    );
+
+    expect(outcome).toEqual({
+      success: false,
+      ladderMatch: null,
+      reason: "not_started",
+    });
+    expect(setDoc).not.toHaveBeenCalled();
+  });
+
+  it("posts once the season has started", async () => {
+    mockGetDoc.mockResolvedValue({
+      data: () => ({ ...preSeasonLadder, seasonStartedAt: new Date() }),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createLadderMatch(
+      LADDER,
+      matchInput,
+      "user",
+    );
+
+    expect(outcome.success).toBe(true);
+    expect(setDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to accept a match", async () => {
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1)], {
+        matchStatus: LADDER_MATCH_STATUS.POSTED,
+        participants: ["opponent"],
+      }),
+      [`ladders/${LADDER}`]: preSeasonLadder,
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.acceptLadderMatch(
+      LADDER,
+      MATCH,
+      "user",
+    );
+
+    expect(outcome).toEqual({ success: false, reason: "not_started" });
+    expect(tx.update).not.toHaveBeenCalled();
   });
 });

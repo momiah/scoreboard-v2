@@ -294,6 +294,7 @@ export const seedHomeCourtLadder = ({
     registrationOpensAt: daysFromNow(-1),
     registrationClosesAt: daysFromNow(7),
     seasonStartsAt: daysFromNow(-1),
+    seasonStartedAt: daysFromNow(-1),
     playoffStartsAt: daysFromNow(30),
     entryFee: 0,
     currencyType: "GBP",

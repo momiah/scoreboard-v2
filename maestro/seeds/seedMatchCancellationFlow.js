@@ -42,6 +42,7 @@ export const CANCEL_VARIANT = {
   REQUESTED_BY_USER: "requestedByUser",
   GAME_REPORTED: "gameReported",
   USER_DISQUALIFIED: "userDisqualified",
+  OPPONENT_POSTED_OPEN: "opponentPostedOpen",
   ACCEPTED_OPPONENT_POSTED: "acceptedOpponentPosted",
   OVERDUE_OPPONENT_POSTED: "overdueOpponentPosted",
   OVERDUE_USER_POSTED: "overdueUserPosted",
@@ -141,6 +142,7 @@ export const seedMatchCancellationFlow = async ({
     registrationOpensAt: daysFromNow(-5),
     registrationClosesAt: daysFromNow(7),
     seasonStartsAt: daysFromNow(-5),
+    seasonStartedAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: 0,
     currencyType: "GBP",
@@ -222,6 +224,11 @@ export const seedMatchCancellationFlow = async ({
     },
     [CANCEL_VARIANT.OVERDUE_USER_POSTED]: { ...accepted, matchDate: yesterday },
     [CANCEL_VARIANT.USER_DISQUALIFIED]: {
+      ...posted,
+      createdBy: opponent.userId,
+      participants: [opponent.userId],
+    },
+    [CANCEL_VARIANT.OPPONENT_POSTED_OPEN]: {
       ...posted,
       createdBy: opponent.userId,
       participants: [opponent.userId],
