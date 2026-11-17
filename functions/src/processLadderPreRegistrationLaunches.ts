@@ -15,8 +15,8 @@ import {
   notificationTypes,
 } from "courtchamps-shared";
 import { sendNotification } from "./helpers/sendNotification";
+import { MAIL_COLLECTION } from "./sendMail";
 
-const MAIL_COLLECTION = "mail";
 const LADDERS_COLLECTION = "ladders";
 const BATCH_SIZE = 50;
 

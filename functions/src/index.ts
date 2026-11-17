@@ -14,6 +14,7 @@ import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
 import { stripConfirmPassword } from "./stripConfirmPassword";
 import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
+import { sendMail } from "./sendMail";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
@@ -42,6 +43,7 @@ export {
   deleteVideo,
   onVideoReported,
   processLadderPreRegistrationLaunches,
+  sendMail,
   checkEmailAvailable,
   checkUsernameAvailable,
   stripConfirmPassword,
