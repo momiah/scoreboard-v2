@@ -12,6 +12,7 @@ import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
+import { stripConfirmPassword } from "./stripConfirmPassword";
 import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
 import {
   generateR2UploadUrl,
@@ -43,4 +44,5 @@ export {
   processLadderPreRegistrationLaunches,
   checkEmailAvailable,
   checkUsernameAvailable,
+  stripConfirmPassword,
 };
