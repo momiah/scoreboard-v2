@@ -13,7 +13,11 @@ import {
   TEAM_STATUS,
 } from "@shared";
 import type { Ladder, LadderMatch, MatchTeam, TeamStats } from "@shared/types";
-import { LADDER_FROZEN_MESSAGE, isLadderMatchPlayFrozen } from "@shared/helpers";
+import {
+  LADDER_FROZEN_MESSAGE,
+  LADDER_SEASON_NOT_STARTED_MESSAGE,
+  isLadderMatchPlayFrozen,
+} from "@shared/helpers";
 
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
@@ -220,6 +224,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         );
       } else if (reason === "frozen") {
         setErrorMessage(LADDER_FROZEN_MESSAGE);
+      } else if (reason === "not_started") {
+        setErrorMessage(LADDER_SEASON_NOT_STARTED_MESSAGE);
       } else if (clash) {
         setErrorMessage(
           formatLadderMatchClashMessage(clash, { team: isDoubles }),

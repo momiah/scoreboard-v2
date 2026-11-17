@@ -1,6 +1,7 @@
 import moment, { Moment } from "moment";
 import type { Ladder, LadderStatus } from "@shared/types";
 import {
+  LADDER_MIN_ENTRANTS_TO_START,
   LADDER_STATUS,
   LADDER_STATUS_SEQUENCE,
   LADDER_STATUS_LABELS,
@@ -37,8 +38,7 @@ export interface LadderPhase {
 }
 
 const PHASE_DESCRIPTIONS: Record<LadderStatus, string> = {
-  [LADDER_STATUS.REGISTRATION_OPEN]:
-    "Players sign up & start posting or accepting games",
+  [LADDER_STATUS.REGISTRATION_OPEN]: `Players sign up. Matches open when the season starts, once ${LADDER_MIN_ENTRANTS_TO_START} have joined.`,
   [LADDER_STATUS.REGISTRATION_CLOSED]:
     "Ladder continues with no more new players.",
   [LADDER_STATUS.PLAYOFFS]: "Single-elim bracket to crown the champion.",
@@ -93,20 +93,39 @@ export const formatPhaseRange = (phase: LadderPhase): string => {
   return "TBC";
 };
 
+const timeLeftUntil = (target: Moment | null, now: Moment): string => {
+  if (!target || !target.isValid()) return "TBC";
+  if (now.isSameOrAfter(target)) return "Started";
+
+  const days = target.diff(now, "days");
+  if (days >= 1) return `${days} day${days === 1 ? "" : "s"}`;
+
+  const hours = target.diff(now, "hours");
+  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"}`;
+
+  const minutes = Math.max(target.diff(now, "minutes"), 1);
+  return `${minutes} min${minutes === 1 ? "" : "s"}`;
+};
+
 export const timeLeftToPlayoffs = (
   ladder: Ladder,
   now: Moment = moment(),
+): string => timeLeftUntil(toMoment(ladder.playoffStartsAt), now);
+
+/** "3 days" until the season start; "Starting" once due but not yet started. */
+export const timeLeftToSeasonStart = (
+  ladder: Ladder,
+  now: Moment = moment(),
 ): string => {
-  const playoffStart = toMoment(ladder.playoffStartsAt);
-  if (!playoffStart || !playoffStart.isValid()) return "TBC";
-  if (now.isSameOrAfter(playoffStart)) return "Started";
+  const left = timeLeftUntil(toMoment(ladder.seasonStartsAt), now);
+  return left === "Started" ? "Starting" : left;
+};
 
-  const days = playoffStart.diff(now, "days");
-  if (days >= 1) return `${days} day${days === 1 ? "" : "s"}`;
-
-  const hours = playoffStart.diff(now, "hours");
-  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"}`;
-
-  const minutes = Math.max(playoffStart.diff(now, "minutes"), 1);
-  return `${minutes} min${minutes === 1 ? "" : "s"}`;
+/** "Sat 28 Nov", or "soon" when the season start is due or unknown. */
+export const formatSeasonStart = (
+  ladder: Ladder,
+  now: Moment = moment(),
+): string => {
+  const start = toMoment(ladder.seasonStartsAt);
+  return start && start.isAfter(now) ? start.format("ddd D MMM") : "soon";
 };

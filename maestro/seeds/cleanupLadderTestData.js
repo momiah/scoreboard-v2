@@ -48,6 +48,7 @@ import {
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
 import { cleanupChatsTabTestData } from "./seedChatsTab";
+import { cleanupLadderSeasonStartTestData } from "./seedLadderSeasonStart";
 import { deleteFixtureUserSubcollections } from "./fixtureUserCleanup";
 import { cleanupLadderEligibilityFixtures } from "./ladderEligibilityFixtures";
 import { cleanupLadderInactivityTestData } from "./seedLadderInactivity";
@@ -149,6 +150,7 @@ export const cleanupLadderTestData = async ({
   const deletedCourts = await deleteUserSubmittedCourts(testUser);
   const playoffs = await cleanupLadderPlayoffsTestData();
   const join = await cleanupLadderJoinTestData();
+  const seasonStart = await cleanupLadderSeasonStartTestData(testUser);
   await cleanupLadderEligibilityFixtures({ testUser });
   const inactivity = await cleanupLadderInactivityTestData({ testUser });
   const disband = await cleanupTeamDisbandTestData();
@@ -197,6 +199,7 @@ export const cleanupLadderTestData = async ({
     deletedCourts: [...courtIds, ...deletedCourts],
     playoffs,
     join,
+    seasonStart,
     inactivity,
     disband,
     cancellation,

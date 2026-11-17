@@ -92,12 +92,13 @@ interface LadderMatchClashOutcome {
 export interface CreateLadderMatchOutcome extends LadderMatchClashOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
-  reason?: "clash";
+  reason?: "not_started" | "clash";
 }
 
 export type AcceptLadderMatchFailureReason =
   | "unavailable"
   | "frozen"
+  | "not_started"
   | "clash"
   | "error";
 

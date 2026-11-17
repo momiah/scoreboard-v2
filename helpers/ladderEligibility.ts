@@ -2,6 +2,7 @@ import * as Location from "expo-location";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
 import {
+  LADDER_INACTIVITY_REMOVED_LABEL,
   getLadderEligibilityMessage,
   requiresLadderLocationCheck,
 } from "@shared/helpers";
@@ -43,6 +44,10 @@ export const checkLadderEligibility = async (
     });
     return data.ok ? null : getLadderEligibilityMessage(data);
   } catch (error) {
+    // The server refuses players removed from this ladder for inactivity.
+    if ((error as { code?: string })?.code === "functions/permission-denied") {
+      return `${LADDER_INACTIVITY_REMOVED_LABEL}: you can join again next season.`;
+    }
     console.error("Error checking ladder eligibility:", error);
     return ATTEMPT_MESSAGES.error;
   }

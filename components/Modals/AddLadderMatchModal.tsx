@@ -22,6 +22,7 @@ import {
 } from "@shared";
 import {
   LADDER_POSTING_CLOSE_DAYS,
+  LADDER_SEASON_NOT_STARTED_MESSAGE,
   getLadderPostingDeadline,
 } from "@shared/helpers";
 import type {
@@ -301,7 +302,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     setErrorMessage(null);
     setSubmitting(true);
     try {
-      const { success, clash } = await createLadderMatch(
+      const { success, reason, clash } = await createLadderMatch(
         ladder.ladderId,
         input,
         currentUser.userId,
@@ -310,6 +311,8 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       if (success) {
         showBottomToast("Match posted", "success");
         resetAndClose();
+      } else if (reason === "not_started") {
+        setErrorMessage(LADDER_SEASON_NOT_STARTED_MESSAGE);
       } else if (clash) {
         setErrorMessage(
           formatLadderMatchClashMessage(clash, { team: isDoubles }),

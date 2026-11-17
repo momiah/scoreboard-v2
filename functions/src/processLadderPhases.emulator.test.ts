@@ -92,6 +92,8 @@ const seedLadder = async (
     name: `Ladder ${ladderId}`,
     ladderType: LADDER_TYPE.SINGLES,
     status: LADDER_STATUS.REGISTRATION_CLOSED,
+    seasonStartsAt: daysFromNow(-60),
+    seasonStartedAt: daysFromNow(-60),
     registrationClosesAt: daysFromNow(-30),
     playoffStartsAt: daysFromNow(-1),
     maxPlayers: 2048,
@@ -197,6 +199,8 @@ describe("playoffs generated for a 2048-player ladder", () => {
     const summary = await runProcessLadderPhases(now);
 
     expect(summary).toEqual({
+      seasonsStarted: [],
+      seasonsExtended: [],
       registrationClosed: [],
       inactiveRemoved: [],
       cancelled: [],

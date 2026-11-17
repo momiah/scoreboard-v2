@@ -20,6 +20,7 @@ import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
 import TeamListSkeleton from "../../../components/Skeletons/TeamListSkeleton";
 import { checkLadderEligibility } from "../../../helpers/ladderEligibility";
+import { isLadderInactivityRemovedUser } from "@shared/helpers";
 
 interface SelectDoublesTeamParams {
   ladder: Ladder;
@@ -82,6 +83,16 @@ const SelectDoublesTeam: React.FC = () => {
     if (!selectedTeam || joining) return;
     if (ladder.entryFee > 0) {
       Alert.alert("Payment", "Paid entry isn't wired up yet.");
+      return;
+    }
+    const removedMember = (selectedTeam.playerIds ?? []).some((userId) =>
+      isLadderInactivityRemovedUser(ladder, userId),
+    );
+    if (removedMember) {
+      showBottomToast(
+        "A member of this team was removed from this ladder for inactivity, so the team can't join until next season.",
+        "error",
+      );
       return;
     }
     setJoining(true);

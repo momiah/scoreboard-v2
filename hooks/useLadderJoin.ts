@@ -3,11 +3,22 @@ import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 
 import { LADDER_STATUS, LADDER_TYPE } from "@shared";
+import {
+  LADDER_INACTIVITY_REMOVED_LABEL,
+  isLadderInactivityRemovedUser,
+} from "@shared/helpers";
 import type { Ladder } from "@shared/types";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
 
-export type LadderJoinMode = "join" | "participant" | "closed";
+export type LadderJoinMode = "join" | "participant" | "removed" | "closed";
+
+/** What the join button says when the user can't join. */
+export const LADDER_JOIN_MODE_LABELS: Record<Exclude<LadderJoinMode, "join">, string> = {
+  participant: "Participant",
+  removed: LADDER_INACTIVITY_REMOVED_LABEL,
+  closed: "Registration Closed",
+};
 
 interface UseLadderJoinResult {
   isSignedIn: boolean;
@@ -62,9 +73,11 @@ export const useLadderJoin = (
 
   const mode: LadderJoinMode = isParticipant
     ? "participant"
-    : registrationClosed
-      ? "closed"
-      : "join";
+    : isLadderInactivityRemovedUser(ladder, userId)
+      ? "removed"
+      : registrationClosed
+        ? "closed"
+        : "join";
 
   const openJoin = () => {
     if (mode !== "join") return;

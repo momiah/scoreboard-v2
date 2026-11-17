@@ -1,12 +1,16 @@
-import { deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { deleteDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import {
+  LADDER_INACTIVITY_REMOVAL_DAYS_BEFORE_CLOSE,
+  LADDER_INACTIVITY_REMOVED_LABEL,
   LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_SEASON_START_DAYS,
   LADDER_STATUS,
   LADDER_TYPE,
   buildLadderParticipant,
-  deriveLadderDates,
+  deriveLadderSeasonDates,
   getLadderInactivityRemoval,
+  getLadderInactivityRules,
   getLadderInactivityWarning,
   markLadderInactivityWarningSent,
   notificationSchema,
@@ -35,9 +39,16 @@ const participantRef = (userId) =>
 const notificationRef = (userId, kind) =>
   doc(db, "users", userId, "notifications", notificationId(kind, userId));
 
-const ladderDocument = ({ testUser, registrationClosesAt, removed }) => {
-  const registrationOpensAt = new Date(
+/** A started season whose inactivity removal date is `removalAt`. */
+const ladderDocument = ({ testUser, removalAt, removed }) => {
+  const registrationClosesAt = new Date(
+    removalAt.getTime() + LADDER_INACTIVITY_REMOVAL_DAYS_BEFORE_CLOSE * DAY_MS,
+  );
+  const seasonStartsAt = new Date(
     registrationClosesAt.getTime() - LADDER_REGISTRATION_CLOSE_DAYS * DAY_MS,
+  );
+  const registrationOpensAt = new Date(
+    seasonStartsAt.getTime() - LADDER_SEASON_START_DAYS * DAY_MS,
   );
   return {
     ladderId: MAESTRO_INACTIVITY_LADDER_ID,
@@ -52,8 +63,10 @@ const ladderDocument = ({ testUser, registrationClosesAt, removed }) => {
     genderType: "Mixed",
     courtIds: [],
     registrationOpensAt,
-    ...deriveLadderDates(registrationOpensAt),
-    status: removed ? LADDER_STATUS.REGISTRATION_CLOSED : LADDER_STATUS.REGISTRATION_OPEN,
+    ...deriveLadderSeasonDates(seasonStartsAt),
+    seasonStartedAt: seasonStartsAt,
+    // Removal happens while registration is still open.
+    status: LADDER_STATUS.REGISTRATION_OPEN,
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,
@@ -61,7 +74,12 @@ const ladderDocument = ({ testUser, registrationClosesAt, removed }) => {
     participantCount: removed ? 0 : 1,
     prizesDistributed: false,
     inactivityWarningDaysSent: markLadderInactivityWarningSent([], removed ? 1 : WARNING_DAYS_LEFT),
-    ...(removed ? { inactivityRemovedAt: new Date(registrationClosesAt.getTime() + 5 * 60 * 1000) } : {}),
+    ...(removed
+      ? {
+          inactivityRemovedAt: new Date(removalAt.getTime() + 5 * 60 * 1000),
+          inactivityRemovedUserIds: [testUser.userId],
+        }
+      : {}),
     createdBy: testUser.userId,
     createdAt: registrationOpensAt,
     updatedBy: testUser.userId,
@@ -82,8 +100,9 @@ const notification = ({ testUser, title, message, tab, createdAt }) => ({
 
 /**
  * The state processLadderPhases leaves for an inactive test user on a free
- * ladder: the 3-day warning while registration is open, or the removal once it
- * has closed, with the notification the job writes under the same id.
+ * ladder: the 3-day warning before the removal date, or the removal itself
+ * (14 days before registration closes, so registration is still open), with
+ * the notification the job writes under the same id.
  */
 export const seedLadderInactivity = async ({ testUser, variant = INACTIVITY_VARIANT.WARNING }) => {
   if (!testUser?.userId) {
@@ -92,10 +111,10 @@ export const seedLadderInactivity = async ({ testUser, variant = INACTIVITY_VARI
   await cleanupLadderInactivityTestData({ testUser });
   const removed = variant === INACTIVITY_VARIANT.REMOVED;
   const now = Date.now();
-  const registrationClosesAt = removed
+  const removalAt = removed
     ? new Date(now - HOUR_MS)
     : new Date(now + WARNING_DAYS_LEFT * DAY_MS - HOUR_MS);
-  const ladder = ladderDocument({ testUser, registrationClosesAt, removed });
+  const ladder = ladderDocument({ testUser, removalAt, removed });
   await setDoc(ladderRef(), ladder);
 
   if (removed) {
@@ -104,19 +123,27 @@ export const seedLadderInactivity = async ({ testUser, variant = INACTIVITY_VARI
       notificationRef(testUser.userId, removedKind),
       notification({ testUser, title, message, tab: "Summary", createdAt: ladder.inactivityRemovedAt }),
     );
-    return { variant, expected: { inactivityMessage: message } };
+    return {
+      variant,
+      expected: { inactivityMessage: message, joinLabel: LADDER_INACTIVITY_REMOVED_LABEL },
+    };
   }
 
   await setDoc(participantRef(testUser.userId), {
     ...buildLadderParticipant(testUser),
-    joinedAt: serverTimestamp(),
+    // Joined when registration opened, so outside the late-joiner grace.
+    joinedAt: ladder.registrationOpensAt,
   });
   const { title, message } = getLadderInactivityWarning(ladder, WARNING_DAYS_LEFT);
   await setDoc(
     notificationRef(testUser.userId, warningKind),
     notification({ testUser, title, message, tab: "Matchmaking", createdAt: new Date() }),
   );
-  return { variant, expected: { inactivityMessage: message } };
+  const [inactivityRuleFirst, , , , inactivityRuleLast] = getLadderInactivityRules("player");
+  return {
+    variant,
+    expected: { inactivityMessage: message, inactivityRuleFirst, inactivityRuleLast },
+  };
 };
 
 export const cleanupLadderInactivityTestData = async ({ testUser }) => {
