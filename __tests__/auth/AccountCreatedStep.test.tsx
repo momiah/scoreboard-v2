@@ -47,6 +47,7 @@ it("hides the verify line and resend button for social sign-ups", () => {
   const utils = setup(false);
   expect(utils.queryByText(VERIFY_LINE)).toBeNull();
   expect(utils.queryByTestId("signup-welcome-resend")).toBeNull();
+  expect(utils.getByTestId("signup-welcome-explore")).toBeTruthy();
   expect(utils.getByText("WELCOME")).toBeTruthy();
   expect(utils.getByText("Beginner · Level 1")).toBeTruthy();
 });
@@ -54,6 +55,8 @@ it("hides the verify line and resend button for social sign-ups", () => {
 it("shows the verify line and a faded countdown for email sign-ups", () => {
   const utils = setup(true);
   expect(utils.getByText(VERIFY_LINE)).toBeTruthy();
+  // Resend is the only button, so verifying stays the focus.
+  expect(utils.queryByTestId("signup-welcome-explore")).toBeNull();
   expect(utils.getByText("Resend verification email (3:00)")).toBeTruthy();
   expect(utils.isDisabled()).toBe(true);
   utils.tick(1);
