@@ -15,11 +15,24 @@ import * as nodemailer from "nodemailer";
  * Reads the same document shape the extension read (`to`, `cc`, `bcc`,
  * `replyTo`, `message.subject`, `message.text`, `message.html`) and writes the
  * same `delivery` field back, so callers that queue mail need no change.
+ * An optional `fromName` picks the sender name from MAIL_SENDER_NAMES.
  */
 
 export const MAIL_COLLECTION = "mail";
 
-export const MAIL_FROM = "Court Champs <info@courtchamps.com>";
+export const MAIL_FROM_ADDRESS = "info@courtchamps.com";
+
+// Every email comes from the one mailbox; the name inboxes show changes with
+// the kind of email. Queue a doc with `fromName` set to one of these.
+export const MAIL_SENDER_NAMES = {
+  DEFAULT: "Court Champs",
+  LADDERS: "Court Champs Ladders",
+} as const;
+
+const SENDER_NAMES: readonly string[] = Object.values(MAIL_SENDER_NAMES);
+
+const senderName = (fromName?: string) =>
+  fromName && SENDER_NAMES.includes(fromName) ? fromName : MAIL_SENDER_NAMES.DEFAULT;
 
 export const MAIL_DELIVERY_STATE = {
   PROCESSING: "PROCESSING",
@@ -31,14 +44,12 @@ export const MAIL_DELIVERY_STATE = {
 // account-deletion email. Lives only in Secret Manager.
 const smtpPassword = defineSecret("SMTP_PASSWORD_COURTCHAMPS");
 
-const SMTP_USER = "info@courtchamps.com";
-
 const createTransporter = () =>
   nodemailer.createTransport({
     host: "mail.privateemail.com",
     port: 465,
     secure: true,
-    auth: { user: SMTP_USER, pass: smtpPassword.value() },
+    auth: { user: MAIL_FROM_ADDRESS, pass: smtpPassword.value() },
   });
 
 type Recipients = string | string[];
@@ -48,6 +59,7 @@ type MailDoc = {
   cc?: Recipients;
   bcc?: Recipients;
   replyTo?: string;
+  fromName?: string;
   message?: { subject?: string; text?: string; html?: string };
   delivery?: { state?: string };
 };
@@ -83,7 +95,7 @@ export const deliverMail = async (
   if (!mail) return;
 
   try {
-    const { to, cc, bcc, replyTo, message } = mail;
+    const { to, cc, bcc, replyTo, fromName, message } = mail;
     if (!hasRecipients(to) && !hasRecipients(cc) && !hasRecipients(bcc)) {
       throw new Error("Mail doc has no recipients (to, cc or bcc)");
     }
@@ -92,7 +104,7 @@ export const deliverMail = async (
     }
 
     const info = await transporter.sendMail({
-      from: MAIL_FROM,
+      from: { name: senderName(fromName), address: MAIL_FROM_ADDRESS },
       to,
       cc,
       bcc,
