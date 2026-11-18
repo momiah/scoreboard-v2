@@ -34,7 +34,21 @@ const ref = (path: string) => ({
   update: async (data: Doc) => apply(path, data),
 });
 
+const field = (data: Doc | undefined, path: string) =>
+  path.split(".").reduce<unknown>((value, key) => (value as Doc | undefined)?.[key], data);
+
 const mockDb = {
+  collection: (name: string) => ({
+    where: (path: string, _op: string, value: unknown) => ({
+      limit: () => ({
+        get: async () => ({
+          docs: [...store.keys()]
+            .filter((key) => key.startsWith(`${name}/`) && field(store.get(key), path) === value)
+            .map((key) => ({ ref: ref(key), get: (p: string) => field(snap(key).data(), p) })),
+        }),
+      }),
+    }),
+  }),
   runTransaction: async (fn: (tx: unknown) => Promise<unknown>) => {
     const writes: [string, Doc][] = [];
     const tx = {
@@ -53,12 +67,18 @@ jest.mock("firebase-admin/firestore", () => ({
     increment: (n: number) => ({ __increment: n }),
     serverTimestamp: () => ({ __serverTimestamp: true }),
   },
+  Timestamp: { fromMillis: (ms: number) => ({ seconds: ms / 1000 }) },
 }), { virtual: true });
 jest.mock("firebase-functions/params", () => ({
   defineSecret: () => ({ value: () => "test-password" }),
 }), { virtual: true });
+// Hands back the handler, with the trigger options attached for checking.
 jest.mock("firebase-functions/v2/firestore", () => ({
-  onDocumentCreated: (_: unknown, handler: unknown) => handler,
+  onDocumentCreated: (options: unknown, handler: object) =>
+    Object.assign(handler, { options }),
+}), { virtual: true });
+jest.mock("firebase-functions/v2/scheduler", () => ({
+  onSchedule: (_: unknown, handler: unknown) => handler,
 }), { virtual: true });
 
 const mockSendMail = jest.fn();
@@ -70,9 +90,14 @@ jest.mock("nodemailer", () => ({
 import {
   deliverMail,
   sendMail,
+  retryDueMail,
+  isTransientMailError,
+  retryDelayMinutes,
   MAIL_FROM_ADDRESS,
   MAIL_SENDER_NAMES,
   MAIL_DELIVERY_STATE,
+  MAIL_MAX_ATTEMPTS,
+  MAIL_MAX_INSTANCES,
 } from "../../functions/src/sendMail";
 
 const PATH = "mail/test-mail";
@@ -105,16 +130,16 @@ beforeEach(() => {
 });
 
 describe("sendMail trigger", () => {
-  it("sends through Private Email as Court Champs and marks the doc SUCCESS", async () => {
+  it("sends through Resend as Court Champs and marks the doc SUCCESS", async () => {
     store.set(PATH, queued());
 
     await fire();
 
     expect(mockCreateTransport).toHaveBeenCalledWith({
-      host: "mail.privateemail.com",
+      host: "smtp.resend.com",
       port: 465,
       secure: true,
-      auth: { user: "info@courtchamps.com", pass: "test-password" },
+      auth: { user: "resend", pass: "test-password" },
     });
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
@@ -131,6 +156,7 @@ describe("sendMail trigger", () => {
       startTime: SERVER_TIME,
       endTime: SERVER_TIME,
       error: null,
+      nextAttemptAt: null,
       info: {
         messageId: "<abc@courtchamps.com>",
         accepted: ["player@example.com"],
@@ -166,9 +192,11 @@ describe("sendMail trigger", () => {
     expect(store.has(PATH)).toBe(false);
   });
 
-  it("records the SMTP error and does not retry the send", async () => {
+  it("records a permanent SMTP error and does not retry the send", async () => {
     store.set(PATH, queued());
-    mockSendMail.mockRejectedValueOnce(new Error("535 Authentication failed"));
+    mockSendMail.mockRejectedValueOnce(
+      Object.assign(new Error("535 Authentication failed"), { responseCode: 535 }),
+    );
     const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
 
     await fire();
@@ -207,6 +235,23 @@ describe("sendMail trigger", () => {
     consoleError.mockRestore();
   });
 
+  it("sets replies to go to the info@ mailbox when the doc names none", async () => {
+    store.set(PATH, queued());
+
+    await fire();
+
+    expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+      replyTo: "info@courtchamps.com",
+    }));
+  });
+
+  it("runs on at most a few instances so a launch burst stays under the rate limit", () => {
+    expect((sendMail as unknown as { options: Doc }).options).toEqual(expect.objectContaining({
+      document: "mail/{mailId}",
+      maxInstances: MAIL_MAX_INSTANCES,
+    }));
+  });
+
   it("passes cc, bcc and replyTo through like the extension did", async () => {
     store.set(PATH, queued({
       to: ["a@example.com", "b@example.com"],
@@ -243,5 +288,107 @@ describe("sendMail trigger", () => {
     expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
       from: { name: "Court Champs", address: "info@courtchamps.com" },
     }));
+  });
+});
+
+describe("retries", () => {
+  const NOW = Date.parse("2026-11-18T01:00:00Z");
+  let now = NOW;
+  let consoleError: jest.SpyInstance;
+
+  beforeEach(() => {
+    now = NOW;
+    jest.spyOn(Date, "now").mockImplementation(() => now);
+    consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const rateLimited = () =>
+    Object.assign(
+      new Error("Data command failed: 554 5.7.1 Reject: too many messages from sender in last 60 minutes"),
+      { responseCode: 554 },
+    );
+
+  it("parks a rate-limited send as RETRY with a wait instead of failing it", async () => {
+    store.set(PATH, queued());
+    mockSendMail.mockRejectedValueOnce(rateLimited());
+
+    await fire();
+
+    expect(delivery()).toEqual(expect.objectContaining({
+      state: MAIL_DELIVERY_STATE.RETRY,
+      attempts: 1,
+      error: expect.stringMatching(/too many messages/),
+      nextAttemptAt: { seconds: (NOW + 2 * 60_000) / 1000 },
+    }));
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it("does not resend a RETRY doc before its wait is over", async () => {
+    store.set(PATH, queued());
+    mockSendMail.mockRejectedValueOnce(rateLimited());
+    await fire();
+
+    now = NOW + 60_000;
+    await fire();
+    await retryDueMail({ sendMail: mockSendMail } as never);
+
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(delivery().state).toBe(MAIL_DELIVERY_STATE.RETRY);
+  });
+
+  it("sends due RETRY docs on the next run and marks them SUCCESS", async () => {
+    store.set(PATH, queued());
+    store.set("mail/later", queued({
+      delivery: { state: MAIL_DELIVERY_STATE.RETRY, attempts: 1, nextAttemptAt: { seconds: (NOW + 3_600_000) / 1000 } },
+    }));
+    mockSendMail.mockRejectedValueOnce(Object.assign(new Error("Too many requests"), { responseCode: 429 }));
+    await fire();
+
+    now = NOW + 2 * 60_000;
+    const sent = await retryDueMail({ sendMail: mockSendMail } as never);
+
+    expect(sent).toBe(1);
+    expect(mockSendMail).toHaveBeenCalledTimes(2);
+    expect(delivery()).toEqual(expect.objectContaining({
+      state: MAIL_DELIVERY_STATE.SUCCESS,
+      attempts: 2,
+      error: null,
+      nextAttemptAt: null,
+    }));
+    expect((store.get("mail/later")?.delivery as Doc).state).toBe(MAIL_DELIVERY_STATE.RETRY);
+  });
+
+  it("waits longer after each failed attempt", () => {
+    expect([1, 2, 3, 4, 5, 9].map(retryDelayMinutes)).toEqual([2, 10, 30, 60, 120, 120]);
+  });
+
+  it("gives up with ERROR after the last attempt", async () => {
+    store.set(PATH, queued({
+      delivery: { state: MAIL_DELIVERY_STATE.RETRY, attempts: MAIL_MAX_ATTEMPTS - 1, nextAttemptAt: { seconds: 0 } },
+    }));
+    mockSendMail.mockRejectedValueOnce(rateLimited());
+
+    await retryDueMail({ sendMail: mockSendMail } as never);
+
+    expect(delivery()).toEqual(expect.objectContaining({
+      state: MAIL_DELIVERY_STATE.ERROR,
+      attempts: MAIL_MAX_ATTEMPTS,
+      nextAttemptAt: null,
+    }));
+  });
+
+  it("tells temporary failures from permanent ones", () => {
+    expect(isTransientMailError({ responseCode: 421, message: "Try again" })).toBe(true);
+    expect(isTransientMailError({ responseCode: 450, message: "Mailbox busy" })).toBe(true);
+    expect(isTransientMailError({ code: "ETIMEDOUT", message: "Timeout" })).toBe(true);
+    expect(isTransientMailError(rateLimited())).toBe(true);
+    expect(isTransientMailError(new Error("Rate limit exceeded"))).toBe(true);
+    expect(isTransientMailError({ responseCode: 535, message: "Authentication failed" })).toBe(false);
+    expect(isTransientMailError({ responseCode: 550, message: "Mailbox unavailable" })).toBe(false);
+    expect(isTransientMailError(new Error("Mail doc has no recipients (to, cc or bcc)"))).toBe(false);
   });
 });
