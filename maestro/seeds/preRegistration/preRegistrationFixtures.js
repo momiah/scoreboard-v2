@@ -12,6 +12,7 @@ import {
   getFullLadderPrizeTable,
   getLadderEntrantNoun,
   getLadderLocation,
+  getLadderName,
   getLadderPreRegistrationShareUrl,
   getLadderTitle,
   isCashLadder,
@@ -39,7 +40,6 @@ const shared = {
 export const PREREG_FIXTURES = {
   cashDoubles: {
     preRegistrationId: "maestro-prereg-cash-doubles",
-    name: "Maestro Manchester Men's Doubles",
     city: "Manchester",
     ladderType: LADDER_TYPE.DOUBLES,
     genderType: GENDER_TYPE.MENS,
@@ -50,7 +50,6 @@ export const PREREG_FIXTURES = {
   },
   cashSingles: {
     preRegistrationId: "maestro-prereg-cash-singles",
-    name: "Maestro Birmingham Men's Singles",
     city: "Birmingham",
     ladderType: LADDER_TYPE.SINGLES,
     genderType: GENDER_TYPE.MENS,
@@ -61,7 +60,6 @@ export const PREREG_FIXTURES = {
   },
   communityDoubles: {
     preRegistrationId: "maestro-prereg-community-doubles",
-    name: "Maestro Leeds Doubles",
     city: "Leeds",
     ladderType: LADDER_TYPE.DOUBLES,
     genderType: GENDER_TYPE.MIXED,
@@ -72,7 +70,6 @@ export const PREREG_FIXTURES = {
   },
   communitySingles: {
     preRegistrationId: "maestro-prereg-community-singles",
-    name: "Maestro Bristol Women's Singles",
     city: "Bristol",
     ladderType: LADDER_TYPE.SINGLES,
     genderType: GENDER_TYPE.WOMENS,
@@ -83,7 +80,6 @@ export const PREREG_FIXTURES = {
   },
   closed: {
     preRegistrationId: "maestro-prereg-closed",
-    name: "Maestro Cardiff Doubles",
     city: "Cardiff",
     ladderType: LADDER_TYPE.DOUBLES,
     genderType: GENDER_TYPE.MIXED,
@@ -94,7 +90,6 @@ export const PREREG_FIXTURES = {
   },
   overseas: {
     preRegistrationId: "maestro-prereg-overseas",
-    name: "Maestro Dublin Singles",
     region: "Ireland",
     city: "Dublin",
     countryCode: "IE",
@@ -108,7 +103,6 @@ export const PREREG_FIXTURES = {
   },
   launched: {
     preRegistrationId: "maestro-prereg-launched",
-    name: "Maestro Glasgow Men's Singles",
     city: "Glasgow",
     ladderType: LADDER_TYPE.SINGLES,
     genderType: GENDER_TYPE.MENS,
@@ -168,6 +162,7 @@ export const buildPreRegistrationDoc = (key, { actorUserId, now }) => {
   return {
     ...shared,
     ...details,
+    name: getLadderName({ ...shared, ...details }),
     status,
     expectedOpensAt: new Date(now.getTime() + 30 * DAY_MS),
     ladderId: launched ? MAESTRO_PREREG_LAUNCHED_LADDER_ID : null,

@@ -154,7 +154,7 @@ const writeLaunchedLadder = (ladderId, key, { actorUserId, registrationOpensAt, 
     PREREG_FIXTURES[key];
   const fixture = buildPreRegistrationDoc(key, { actorUserId, now });
   return setDoc(doc(db, "ladders", ladderId), {
-    name: details.name,
+    name: fixture.name,
     description: fixture.description,
     image: fixture.image,
     region: fixture.region,
