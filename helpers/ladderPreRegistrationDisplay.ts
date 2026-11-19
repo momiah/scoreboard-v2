@@ -1,4 +1,3 @@
-import { Share } from "react-native";
 import {
   PLATFORM_FEE,
   formatCurrency,
@@ -14,6 +13,7 @@ import {
   isCashLadder,
 } from "@shared/helpers";
 import type { LadderPreRegistrationDetails } from "@shared/types";
+import { shareLink } from "./shareLink";
 
 export const LADDER_PRE_REGISTRATION_COLORS = {
   screen: "rgb(3, 16, 31)",
@@ -93,12 +93,8 @@ export const sharePreRegistration = async (
 ) => {
   const url = getLadderPreRegistrationShareUrl(details.preRegistrationId);
   const prize = `Prize pool up to ${formatPrizePool(details)}`;
-  try {
-    await Share.share({
-      message: `Pre-register with me for ${details.name} on Court Champs 🏸\n${prize}, and it's free to pre-register.\n\n${url}`,
-      url,
-    });
-  } catch (error) {
-    console.error("Error sharing pre-registration:", error);
-  }
+  await shareLink(
+    `Pre-register with me for ${details.name} on Court Champs 🏸\n${prize}, and it's free to pre-register.`,
+    url,
+  );
 };
