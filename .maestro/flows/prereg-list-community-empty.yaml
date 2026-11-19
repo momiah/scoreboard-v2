@@ -1,0 +1,29 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 8b. With no community ladders open, the Community tab says so and shows the follow-us links.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-cash-only"
+- runFlow:
+    file: ../utilities/prereg/open-list.yaml
+    env:
+      TAB: "Community"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-community-empty"
+    timeout: 15000
+- assertVisible: "There are no free Community Ladders yet\\. Follow us to be updated on launches.*"
+- assertVisible:
+    id: "ladder-pre-registration-follow-instagram"
+- assertVisible:
+    id: "ladder-pre-registration-follow-tiktok"
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-community-doubles"
+- tapOn: "Cash"
+- assertVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"

@@ -203,6 +203,14 @@ describe("seedPreRegistration", () => {
     await restoreLivePreRegistrations();
   });
 
+  it("closes every community fixture for cash-only", async () => {
+    await seedPreRegistration({ testUser, scenario: PREREG_SCENARIO.CASH_ONLY });
+    expect(status(PREREG_FIXTURES.cashDoubles.preRegistrationId)).toBe("open");
+    expect(status(PREREG_FIXTURES.communitySingles.preRegistrationId)).toBe("closed");
+    expect(status(PREREG_FIXTURES.communityDoubles.preRegistrationId)).toBe("closed");
+    await restoreLivePreRegistrations();
+  });
+
   it("leaves nothing open for none-open", async () => {
     const { open, expected } = await seedPreRegistration({ testUser, scenario: PREREG_SCENARIO.NONE_OPEN });
     expect(open).toBe(0);

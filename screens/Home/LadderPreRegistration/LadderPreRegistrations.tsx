@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, TouchableOpacity } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import SafeAreaView from "../../../components/SafeAreaView";
 import {
   useNavigation,
@@ -14,6 +16,7 @@ import LadderTicket, {
 } from "../../../components/ladder/LadderTicket";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
+import { handleSocialPress } from "../../../helpers/handleSocialPress";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   getPlatformFeeFootnote,
@@ -69,6 +72,31 @@ const LadderPreRegistrations: React.FC = () => {
               <LadderTicketSkeleton />
               <LadderTicketSkeleton />
             </>
+          ) : visible.length === 0 && activeTab === "community" ? (
+            <CommunityEmpty testID="ladder-pre-registration-community-empty">
+              <EmptyText style={{ marginTop: 0 }}>
+                There are no free Community Ladders yet. Follow us to be updated
+                on launches 🚀
+              </EmptyText>
+              <FollowIcons>
+                {socialMediaPlatforms.map((platform) => (
+                  <TouchableOpacity
+                    key={platform}
+                    onPress={() => handleSocialPress(platform)}
+                    hitSlop={8}
+                    testID={`ladder-pre-registration-follow-${platform.toLowerCase()}`}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Follow Court Champs on ${platform}`}
+                  >
+                    <Ionicons
+                      name={ICON_MAP[platform as keyof typeof ICON_MAP]}
+                      size={28}
+                      color="#00A2FF"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </FollowIcons>
+            </CommunityEmpty>
           ) : visible.length === 0 ? (
             <EmptyText>
               No {activeTab === "cash" ? "Cash" : "Community"} Ladders are open
@@ -98,6 +126,18 @@ const EmptyText = styled.Text({
   fontSize: 13,
   textAlign: "center",
   marginTop: 24,
+});
+
+const CommunityEmpty = styled.View({
+  alignItems: "center",
+  marginTop: 24,
+  gap: 16,
+});
+
+const FollowIcons = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  gap: 24,
 });
 
 const Footnote = styled.Text({
