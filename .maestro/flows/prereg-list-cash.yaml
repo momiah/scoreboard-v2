@@ -18,7 +18,7 @@ onFlowStart:
 - runFlow:
     file: ../utilities/prereg/remember.yaml
     env:
-      KEY: "cash-doubles-footnote"
+      KEY: "list-footnote"
       NAME: "footnote"
 - runFlow:
     file: ../utilities/prereg/open-list.yaml

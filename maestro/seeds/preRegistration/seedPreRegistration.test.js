@@ -25,6 +25,8 @@ jest.mock("../../../helpers/ladderPreRegistrationDisplay", () => {
       const { entryFee, platformFee } = shared.getLadderEntryPrice(details.entryFee);
       return `*A ${shared.formatCurrency(platformFee, details.currencyType)} platform fee is added on top of the ${shared.formatCurrency(entryFee, details.currencyType)} entry.`;
     },
+    getPlatformFeeRateFootnote: () =>
+      `*A ${Math.round(shared.PLATFORM_FEE * 100)}% platform fee is added on top of each entry fee.`,
     getHeadlinePreRegistration: (list) => {
       const cash = list.filter(actual.isCashLadder);
       const pool = actual.getLadderPrizePoolAtSize;
