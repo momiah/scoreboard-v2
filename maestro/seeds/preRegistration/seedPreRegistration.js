@@ -51,6 +51,7 @@ export const PREREG_SCENARIO = {
   ALL: "all",
   ONLY_FIXTURES: "only-fixtures",
   COMMUNITY_ONLY: "community-only",
+  CASH_ONLY: "cash-only",
   NONE_OPEN: "none-open",
   OVERSEAS: "overseas",
 };
@@ -194,6 +195,9 @@ const openStatusFor = (key, scenario) => {
   if (!OPEN_FIXTURE_KEYS.includes(key)) return fixture.status;
   if (scenario === PREREG_SCENARIO.NONE_OPEN) return CLOSED;
   if (scenario === PREREG_SCENARIO.COMMUNITY_ONLY && CASH_FIXTURE_KEYS.includes(key)) {
+    return CLOSED;
+  }
+  if (scenario === PREREG_SCENARIO.CASH_ONLY && !CASH_FIXTURE_KEYS.includes(key)) {
     return CLOSED;
   }
   return OPEN;
