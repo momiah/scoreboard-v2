@@ -887,9 +887,11 @@ const PageIcon: React.FC<{
   gold?: boolean;
   /** For pages with a table, where the icon sits beside the title. */
   small?: boolean;
-}> = ({ icon, gold, small }) => {
+  /** Overrides the size, for pages that need every pixel on small phones. */
+  size?: number;
+}> = ({ icon, gold, small, size: sizeOverride }) => {
   const compact = useCompactScreen();
-  const size = small ? 56 : compact ? 72 : 96;
+  const size = sizeOverride ?? (small ? 56 : compact ? 72 : 96);
   const color = gold ? "#FFC800" : "#00A2FF";
   return (
     <Reveal from="pop">
@@ -1001,7 +1003,7 @@ const PHASE_ICONS: Record<LadderSeasonPhaseKey, PhaseIcon> = {
   },
   [LADDER_SEASON_PHASE.SEASON_STARTS]: {
     set: "material-community",
-    name: "racquetball",
+    name: "badminton",
   },
   [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: {
     set: "ionicons",
@@ -1050,42 +1052,50 @@ const SeasonPage: React.FC<{
       }}
     >
       <SideHeader>
-        <PageIcon icon="calendar-outline" small />
+        <PageIcon
+          icon="calendar-outline"
+          small
+          size={compact ? 44 : undefined}
+        />
         <Reveal order={1}>
-          <PageTitle compact>The Season</PageTitle>
+          <PageTitle compact style={compact ? { fontSize: 20 } : undefined}>
+            The Season
+          </PageTitle>
         </Reveal>
       </SideHeader>
       <PhaseList>
         {phases.map((phase, index) => (
           <Reveal key={phase.label} order={2 + index} from="right">
-            <PhaseRow>
+            <PhaseRow compact={compact}>
               <PhaseRail>
-                <PhaseDot gold={phase.gold}>
+                <PhaseDot gold={phase.gold} compact={compact}>
                   {phase.image ? (
                     <TrophyImage
                       source={phase.image}
                       resizeMode="contain"
-                      size={24}
+                      size={compact ? 20 : 24}
                     />
                   ) : phase.icon.set === "material-community" ? (
                     <MaterialCommunityIcons
                       name={phase.icon.name}
-                      size={18}
+                      size={compact ? 16 : 18}
                       color={phase.gold ? "#FFC800" : "#00A2FF"}
                     />
                   ) : (
                     <Ionicons
                       name={phase.icon.name}
-                      size={18}
+                      size={compact ? 16 : 18}
                       color={phase.gold ? "#FFC800" : "#00A2FF"}
                     />
                   )}
                 </PhaseDot>
                 {index < phases.length - 1 ? <PhaseLine /> : null}
               </PhaseRail>
-              <PhaseBody>
+              <PhaseBody compact={compact}>
                 <PhaseHeader>
-                  <PhaseLabel gold={phase.gold}>{phase.label}</PhaseLabel>
+                  <PhaseLabel gold={phase.gold} compact={compact}>
+                    {phase.label}
+                  </PhaseLabel>
                   {phase.length ? (
                     <PhaseLength>
                       <PhaseLengthText>{phase.length}</PhaseLengthText>
@@ -1568,20 +1578,22 @@ const PhaseList = styled.View({
   alignSelf: "stretch",
 });
 
-const PhaseRow = styled.View({
-  flexDirection: "row",
-  gap: 14,
-});
+const PhaseRow = styled.View<{ compact?: boolean }>(
+  ({ compact }: { compact?: boolean }) => ({
+    flexDirection: "row",
+    gap: compact ? 10 : 14,
+  }),
+);
 
 const PhaseRail = styled.View({
   alignItems: "center",
 });
 
-const PhaseDot = styled.View<{ gold?: boolean }>(
-  ({ gold }: { gold?: boolean }) => ({
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+const PhaseDot = styled.View<{ gold?: boolean; compact?: boolean }>(
+  ({ gold, compact }: { gold?: boolean; compact?: boolean }) => ({
+    width: compact ? 32 : 38,
+    height: compact ? 32 : 38,
+    borderRadius: compact ? 16 : 19,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: gold
@@ -1601,12 +1613,14 @@ const PhaseLine = styled.View({
   backgroundColor: "rgba(0, 162, 255, 0.35)",
 });
 
-const PhaseBody = styled.View({
-  flex: 1,
-  paddingTop: 7,
-  paddingBottom: 16,
-  gap: 4,
-});
+const PhaseBody = styled.View<{ compact?: boolean }>(
+  ({ compact }: { compact?: boolean }) => ({
+    flex: 1,
+    paddingTop: compact ? 5 : 7,
+    paddingBottom: compact ? 10 : 16,
+    gap: compact ? 2 : 4,
+  }),
+);
 
 const PhaseHeader = styled.View({
   flexDirection: "row",
@@ -1614,10 +1628,10 @@ const PhaseHeader = styled.View({
   gap: 8,
 });
 
-const PhaseLabel = styled.Text<{ gold?: boolean }>(
-  ({ gold }: { gold?: boolean }) => ({
+const PhaseLabel = styled.Text<{ gold?: boolean; compact?: boolean }>(
+  ({ gold, compact }: { gold?: boolean; compact?: boolean }) => ({
     color: gold ? "#FFC800" : "#ffffff",
-    fontSize: 16,
+    fontSize: compact ? 14 : 16,
     fontWeight: "bold",
   }),
 );
