@@ -1,0 +1,53 @@
+# Share on Invite Players opens the system share sheet with the tournament's,
+# then the club's, preview link; the share text itself is checked by Jest
+# (helpers/shareLink.test.ts: one link, no separate url, on both platforms).
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/deep-link/cleanup.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "koGatesSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Brackets"
+- tapOn: ".*Invite Players.*"
+- tapOn:
+    id: "invite-share"
+    text: "Share Tournament"
+- extendedWaitUntil:
+    visible: ".*courtchamps\\.com.*"
+    timeout: 15000
+- runFlow: ../utilities/prereg/close-share-sheet.yaml
+- assertVisible:
+    id: "invite-share"
+- tapOn:
+    id: "tab-home"
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-owned-empty"
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- tapOn:
+    id: "club-invite-members"
+- tapOn:
+    id: "invite-share"
+    text: "Share Club"
+- extendedWaitUntil:
+    visible: ".*courtchamps\\.com.*"
+    timeout: 15000
+- runFlow: ../utilities/prereg/close-share-sheet.yaml
+- assertVisible:
+    id: "invite-share"

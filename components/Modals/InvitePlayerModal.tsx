@@ -6,7 +6,6 @@ import {
   Keyboard,
   ActivityIndicator,
   TouchableWithoutFeedback,
-  Share,
   ScrollView,
 } from "react-native";
 import styled from "styled-components/native";
@@ -30,6 +29,7 @@ import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../popup/Popup";
+import { getCompetitionShareUrl, shareLink } from "../../helpers/shareLink";
 import {
   League,
   Tournament,
@@ -273,16 +273,10 @@ const InvitePlayerModal = ({
   const handleShare = async () => {
     const type =
       competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-    const url = `https://courtchamps.com/join/${type}/${competition.id}`;
-
-    try {
-      await Share.share({
-        message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
-        url,
-      });
-    } catch (error) {
-      console.error("Error sharing:", error);
-    }
+    await shareLink(
+      `You've been invited to join my ${competitionVariant} on Court Champs! 🏸`,
+      getCompetitionShareUrl(type, competition.id),
+    );
   };
 
   const handleAddFromRecent = (players: UserProfile[]) => {
