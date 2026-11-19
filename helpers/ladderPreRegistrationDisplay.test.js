@@ -4,6 +4,7 @@ import {
   getFullLadderPrizeTable,
   getLadderSummary,
   getPlatformFeeFootnote,
+  getPlatformFeeRateFootnote,
   isCashLadder,
 } from "./ladderPreRegistrationDisplay";
 const details = (overrides) => ({
@@ -35,6 +36,17 @@ describe("ladder pre-registration display", () => {
     expect(formatPrizePool(cashSingles)).toBe("£40,960");
     expect(getPlatformFeeFootnote(cashSingles)).toBe(
       "*A £2 platform fee is added on top of the £20 entry. The full entry fee goes into the prize pool.",
+    );
+    expect(
+      getPlatformFeeFootnote(details({ ladderType: "Doubles", entryFee: 40 })),
+    ).toBe(
+      "*A £4 platform fee is added on top of the £40 entry. The full entry fee goes into the prize pool.",
+    );
+  });
+
+  it("states the fee as a rate when a list mixes entry fees", () => {
+    expect(getPlatformFeeRateFootnote()).toBe(
+      "*A 10% platform fee is added on top of each entry fee. The full entry fee goes into the prize pool.",
     );
   });
 
