@@ -9,6 +9,7 @@ import {
 import type { ImageSourcePropType } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { AntDesign } from "@expo/vector-icons";
 
 import {
@@ -975,8 +976,16 @@ interface PlayoffsPageProps {
   showLadderSize: boolean;
 }
 
+/** Ionicons has no racket, so a phase can use a MaterialCommunityIcons glyph. */
+type PhaseIcon =
+  | { set: "ionicons"; name: keyof typeof Ionicons.glyphMap }
+  | {
+      set: "material-community";
+      name: keyof typeof MaterialCommunityIcons.glyphMap;
+    };
+
 interface SeasonPhase {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: PhaseIcon;
   /** Shown in place of the icon. */
   image?: ImageSourcePropType;
   label: string;
@@ -985,15 +994,24 @@ interface SeasonPhase {
   gold?: boolean;
 }
 
-const PHASE_ICONS: Record<
-  LadderSeasonPhaseKey,
-  keyof typeof Ionicons.glyphMap
-> = {
-  [LADDER_SEASON_PHASE.REGISTRATION_OPEN]: "person-add-outline",
-  [LADDER_SEASON_PHASE.SEASON_STARTS]: "tennisball-outline",
-  [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: "lock-closed-outline",
-  [LADDER_SEASON_PHASE.PLAYOFFS]: "git-network-outline",
-  [LADDER_SEASON_PHASE.COMPLETED]: "trophy-outline",
+const PHASE_ICONS: Record<LadderSeasonPhaseKey, PhaseIcon> = {
+  [LADDER_SEASON_PHASE.REGISTRATION_OPEN]: {
+    set: "ionicons",
+    name: "person-add-outline",
+  },
+  [LADDER_SEASON_PHASE.SEASON_STARTS]: {
+    set: "material-community",
+    name: "racquetball",
+  },
+  [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: {
+    set: "ionicons",
+    name: "lock-closed-outline",
+  },
+  [LADDER_SEASON_PHASE.PLAYOFFS]: {
+    set: "ionicons",
+    name: "git-network-outline",
+  },
+  [LADDER_SEASON_PHASE.COMPLETED]: { set: "ionicons", name: "trophy-outline" },
 };
 
 /** A ladder season's phases. The copy and timings come from courtchamps-shared. */
@@ -1049,9 +1067,15 @@ const SeasonPage: React.FC<{
                       resizeMode="contain"
                       size={24}
                     />
+                  ) : phase.icon.set === "material-community" ? (
+                    <MaterialCommunityIcons
+                      name={phase.icon.name}
+                      size={18}
+                      color={phase.gold ? "#FFC800" : "#00A2FF"}
+                    />
                   ) : (
                     <Ionicons
-                      name={phase.icon}
+                      name={phase.icon.name}
                       size={18}
                       color={phase.gold ? "#FFC800" : "#00A2FF"}
                     />
