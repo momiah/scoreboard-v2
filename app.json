@@ -17,7 +17,7 @@
     "ios": {
       "backgroundColor": "#00152B",
       "supportsTablet": true,
-      "buildNumber": "27",
+      "buildNumber": "28",
       "bundleIdentifier": "com.courtchamp",
       "associatedDomains": [
         "applinks:courtchamps.com"
