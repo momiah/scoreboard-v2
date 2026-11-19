@@ -19,7 +19,7 @@ import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrati
 import { handleSocialPress } from "../../../helpers/handleSocialPress";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  getPlatformFeeFootnote,
+  getPlatformFeeRateFootnote,
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
@@ -108,9 +108,7 @@ const LadderPreRegistrations: React.FC = () => {
         </TabContent>
 
         {activeTab === "cash" && visible[0] ? (
-          <Footnote>
-            {`18+ only. ${getPlatformFeeFootnote(visible[0])}`}
-          </Footnote>
+          <Footnote>{`18+ only. ${getPlatformFeeRateFootnote()}`}</Footnote>
         ) : null}
       </ScrollView>
     </SafeAreaView>

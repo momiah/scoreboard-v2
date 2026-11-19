@@ -20,7 +20,10 @@ import {
 } from "@shared";
 import { deriveLadderDates, formatLadderPrizePool } from "@shared/helpers";
 import { db } from "../../../services/firebase.config";
-import { getHeadlinePreRegistration } from "../../../helpers/ladderPreRegistrationDisplay";
+import {
+  getHeadlinePreRegistration,
+  getPlatformFeeRateFootnote,
+} from "../../../helpers/ladderPreRegistrationDisplay";
 import {
   deleteFixtureUsers,
   writeFixtureUser,
@@ -289,6 +292,7 @@ export const seedPreRegistration = async ({
     expected: {
       ...flattenExpected(expected),
       "banner-pool": headline ? formatLadderPrizePool(headline) : "",
+      "list-footnote": `18+ only. ${getPlatformFeeRateFootnote()}`,
       "banner-headline": headline?.preRegistrationId ?? "",
       "cash-doubles-registrants-after-join": `${(registrants.cashDoubles.length + 1).toLocaleString("en-GB")} pre-registered`,
       "community-singles-registrants-after-join": "1 pre-registered",
