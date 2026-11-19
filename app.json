@@ -69,7 +69,7 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 28,
+      "versionCode": 29,
       "intentFilters": [
         {
           "action": "VIEW",
