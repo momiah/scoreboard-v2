@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import {
   Modal,
-  Share,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -21,6 +20,7 @@ import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import ReportVideoModal from "./ReportVideoModal";
 import CourtPositionsModal from "./CourtPositionModal";
+import { getVideoShareUrl, shareLink } from "../../helpers/shareLink";
 import { PopupContext } from "@/context/PopupContext";
 
 interface VideoMenuModalProps {
@@ -192,15 +192,10 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 
   const handleShareVideo = async () => {
     onClose();
-    try {
-      const docId = `${video.gameId}_${video.postedBy.userId}`;
-      const shareUrl = `https://courtchamps.com/og/videos?v=${docId}`;
-      await Share.share({
-        message: `Check out this game on Court Champs! ${shareUrl}`,
-      });
-    } catch (error) {
-      console.error("Share failed:", error);
-    }
+    await shareLink(
+      "Check out this game on Court Champs!",
+      getVideoShareUrl(`${video.gameId}_${video.postedBy.userId}`),
+    );
   };
 
   const handleSaveVideo = async () => {

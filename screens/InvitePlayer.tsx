@@ -5,7 +5,6 @@ import {
   Keyboard,
   ActivityIndicator,
   TouchableWithoutFeedback,
-  Share,
   ScrollView,
   FlatList,
   Platform,
@@ -18,6 +17,11 @@ import Tag from "../components/Tag";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../services/firebase.config";
 import { sendClubInvite } from "../helpers/clubs/sendClubInvite";
+import {
+  getClubShareUrl,
+  getCompetitionShareUrl,
+  shareLink,
+} from "../helpers/shareLink";
 import { collection, query, getDocs } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
 import {
@@ -521,24 +525,19 @@ const InvitePlayer = () => {
   };
 
   const handleShare = async () => {
-    try {
-      if (isClubContext) {
-        const url = `https://courtchamps.com/preview/club/${encodeURIComponent(club.clubId)}`;
-        await Share.share({
-          message: `Join my club on Court Champs! 🏸\n\n${url}`,
-          url,
-        });
-        return;
-      }
-      const type =
-        competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-      const url = `https://courtchamps.com/preview/${type}/${competition!.id}`;
-      await Share.share({
-        message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
-      });
-    } catch (error) {
-      console.error("Error sharing:", error);
+    if (isClubContext) {
+      await shareLink(
+        "Join my club on Court Champs! 🏸",
+        getClubShareUrl(club.clubId),
+      );
+      return;
     }
+    const type =
+      competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
+    await shareLink(
+      `You've been invited to join my ${competitionVariant} on Court Champs! 🏸`,
+      getCompetitionShareUrl(type, competition!.id),
+    );
   };
   const numberOfPlayers = isClubContext
     ? ""
@@ -670,7 +669,7 @@ const InvitePlayer = () => {
                 <Tag name={competition!.prizeType} />
               </>
             )}
-            <ShareButton onPress={handleShare}>
+            <ShareButton testID="invite-share" onPress={handleShare}>
               <AntDesign name="share-alt" size={13} color="#00A2FF" />
               <ShareButtonText>
                 Share {isClubContext ? "Club" : competitionVariant}
