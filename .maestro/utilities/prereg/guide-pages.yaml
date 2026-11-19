@@ -18,7 +18,7 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "Matchmaking, Made Simple"
     timeout: 10000
-- assertVisible: ".*What's a ladder\\?.*"
+- assertVisible: ".*What's a Ladder\\?.*"
 - assertVisible: ".*What's Matchmaking\\?.*"
 - assertVisible: ".*a large group of ${output[KEY + '-entrants']} compete.*"
 - assertVisible: ".*with other ${output[KEY + '-entrants']} in the ladder.*"
