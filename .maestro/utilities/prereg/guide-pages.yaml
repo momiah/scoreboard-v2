@@ -49,10 +49,17 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible: "The Season"
     timeout: 10000
+- assertVisible: "${MAESTRO_LADDER_SEASON_START_DAYS} - ${Number(MAESTRO_LADDER_SEASON_START_DAYS) + Number(MAESTRO_LADDER_SEASON_EXTENSION_DAYS)} days"
+- assertVisible: "Play Starts"
 - assertVisible: "Day 1 - ${MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS}"
 - assertVisible: "Day ${Number(MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS) + 1} - ${MAESTRO_LADDER_PLAYOFF_START_DAYS}"
 - assertVisible: ${output[KEY + "-season-rounds"]}
 - assertVisible: ".*${output[KEY + '-season-playoffs']} Each round is two matches, home and away, played within ${MAESTRO_PLAYOFF_TIE_DAYS} days\\..*"
+- scrollUntilVisible:
+    element:
+      id: "how-to-play-season-full-ladder"
+    direction: DOWN
+- assertVisible: ".*Based on a full ladder of .*"
 - tapOn:
     id: "how-to-play-next"
 - extendedWaitUntil:
