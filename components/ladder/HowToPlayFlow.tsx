@@ -12,11 +12,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
 import {
-  LADDER_POSTING_CLOSE_DAYS,
-  LADDER_PLAYOFF_START_DAYS,
-  LADDER_REGISTRATION_CLOSE_DAYS,
-  LADDER_STATUS,
-  LADDER_STATUS_LABELS,
+  LADDER_SEASON_PHASE,
+  LadderSeasonPhaseKey,
+  getLadderSeasonPhases,
   DECISIVE_WIN_MARGIN,
   DECISIVE_WIN_XP_MULTIPLIER,
   getWinStreakXpMultiplier,
@@ -388,6 +386,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             <SeasonPage
               noun={noun}
               playoffSpots={playoffSpots}
+              maxPlayers={maxPlayers}
               isPaid={(ladder?.entryFee ?? 0) > 0}
             />
           ),
@@ -986,56 +985,40 @@ interface SeasonPhase {
   gold?: boolean;
 }
 
-const daysLabel = (days: number) => `${days} day${days === 1 ? "" : "s"}`;
+const PHASE_ICONS: Record<
+  LadderSeasonPhaseKey,
+  keyof typeof Ionicons.glyphMap
+> = {
+  [LADDER_SEASON_PHASE.REGISTRATION_OPEN]: "person-add-outline",
+  [LADDER_SEASON_PHASE.SEASON_STARTS]: "tennisball-outline",
+  [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: "lock-closed-outline",
+  [LADDER_SEASON_PHASE.PLAYOFFS]: "git-network-outline",
+  [LADDER_SEASON_PHASE.COMPLETED]: "trophy-outline",
+};
 
-const dayRange = (first: number, last: number) => `Day ${first} - ${last}`;
-
-/** A ladder season's phases, timed from the day registration opens. */
+/** A ladder season's phases. The copy and timings come from courtchamps-shared. */
 const seasonPhases = (
   noun: "player" | "team",
   playoffSpots: number,
   isPaid: boolean,
-): SeasonPhase[] => {
-  const playoffRounds = Math.log2(playoffSpots);
-  return [
-    {
-      icon: "person-add-outline",
-      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
-      length: dayRange(1, LADDER_REGISTRATION_CLOSE_DAYS),
-      text: "Sign up and start posting or accepting matches straight away.",
-    },
-    {
-      icon: "lock-closed-outline",
-      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
-      length: dayRange(
-        LADDER_REGISTRATION_CLOSE_DAYS + 1,
-        LADDER_PLAYOFF_START_DAYS,
-      ),
-      text: `No new ${noun}s join. Keep climbing; new matches close ${daysLabel(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
-    },
-    {
-      icon: "git-network-outline",
-      label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
-      length: `${playoffRounds} rounds`,
-      text: `The top ${playoffSpots} ${noun}s play a knockout. Each round is two matches, home and away, played within ${daysLabel(LADDER_PLAYOFF_TIE_DAYS)}.`,
-    },
-    {
-      icon: "trophy-outline",
-      image: ladders[0],
-      label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
-      text: isPaid
-        ? "The champion crowned. Cash paid. CP awarded."
-        : "The champion crowned. CP awarded.",
-      gold: true,
-    },
-  ];
-};
+): SeasonPhase[] =>
+  getLadderSeasonPhases({ noun, playoffSpots, isPaid }).map((phase) => {
+    const completed = phase.key === LADDER_SEASON_PHASE.COMPLETED;
+    return {
+      icon: PHASE_ICONS[phase.key],
+      label: phase.label,
+      length: phase.length,
+      text: phase.text,
+      ...(completed ? { image: ladders[0], gold: true } : {}),
+    };
+  });
 
 const SeasonPage: React.FC<{
   noun: "player" | "team";
   playoffSpots: number;
+  maxPlayers: number;
   isPaid: boolean;
-}> = ({ noun, playoffSpots, isPaid }) => {
+}> = ({ noun, playoffSpots, maxPlayers, isPaid }) => {
   const compact = useCompactScreen();
   const phases = seasonPhases(noun, playoffSpots, isPaid);
   return (
@@ -1091,6 +1074,11 @@ const SeasonPage: React.FC<{
           </Reveal>
         ))}
       </PhaseList>
+      <Reveal order={2 + phases.length}>
+        <FootNote testID="how-to-play-season-full-ladder">
+          {`Based on a full ladder of ${maxPlayers.toLocaleString("en-GB")} ${noun}s.`}
+        </FootNote>
+      </Reveal>
     </ScrollView>
   );
 };
