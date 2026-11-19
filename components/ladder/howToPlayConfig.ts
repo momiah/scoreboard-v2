@@ -52,7 +52,7 @@ const HIDDEN_OPPONENT_ACCEPT: HowToPlayCardText = {
 
 const WHAT_IS_A_LADDER: HowToPlayCardText = {
   icon: "podium-outline",
-  title: "What's a ladder?",
+  title: "What's a Ladder?",
   text: [
     "A ranked competition where a large group of {noun}s compete across a wide region. When the season ends, the top {noun}s go head to head in a knockout tournament.",
   ],
