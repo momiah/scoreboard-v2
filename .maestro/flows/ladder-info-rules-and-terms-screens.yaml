@@ -35,6 +35,12 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*Terms.*Conditions.*"
     timeout: 10000
+- scrollUntilVisible:
+    element: "10. Chargebacks & payment disputes"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "11. Court fees"
+    direction: DOWN
 - tapOn:
     id: "ladder-terms-back"
 - assertVisible:

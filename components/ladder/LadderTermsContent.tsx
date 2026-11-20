@@ -115,7 +115,29 @@ export const LADDER_TERMS: TermsSection[] = [
     ],
   },
   {
-    title: "10. Court fees",
+    title: "10. Chargebacks & payment disputes",
+    body: [
+      "If you have a problem with a payment, contact Court Champs first. We will look into it and refund anything you are owed under these terms.",
+      "Asking your bank or card provider to reverse a payment these terms say is non-refundable is a breach of these terms. That includes an entry fee for a ladder you have played in, a court-fee share or the platform fee.",
+      "While a chargeback or payment dispute is open:",
+      [
+        "Your place on the ladder is suspended and you cannot post or accept matches.",
+        "Any prize you would receive is held until the dispute is resolved.",
+        "You cannot join another paid ladder or competition.",
+      ],
+      "To respond to a dispute, Court Champs may share with the payment provider your entry details, your acceptance of these terms and the matches you played.",
+      "If the payment is reversed:",
+      [
+        "You are removed from the ladder, as your entry fee has been taken back out of the prize pool.",
+        "Any prize you would have received is forfeited and will be retained by Court Champs to make up the prize pool.",
+        "Your account may be barred from paid ladders and competitions.",
+      ],
+      "If the dispute is withdrawn or decided in Court Champs' favour, the suspension is lifted. Matches that expired while you were suspended stay expired.",
+      "Nothing in this section affects your statutory rights, including where a payment was taken without your authorisation.",
+    ],
+  },
+  {
+    title: "11. Court fees",
     body: [
       "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match. This secures the match so the poster is never left with an unpaid opponent.",
       [
@@ -126,7 +148,7 @@ export const LADDER_TERMS: TermsSection[] = [
     ],
   },
   {
-    title: "11. Changes",
+    title: "12. Changes",
     body: [
       "Court Champs may update these terms or a ladder's details where reasonably necessary.",
       "Material changes affecting an active ladder will be communicated to participants.",
