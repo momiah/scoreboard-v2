@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { SeedButton } from "../harness/HarnessButton";
@@ -7,12 +8,19 @@ import {
   CLUB_TOURNAMENT_SCENARIO,
   cleanupClubTestData,
   clubWinnerMessage,
+  countCompetitionNotices,
+  countLeftNotices,
   countRemovalNotices,
+  countRequestReplies,
   findTestUserClubId,
   fixtureOwnerAcceptsRequest,
+  fixtureOwnerCreatesClubLeague,
+  fixtureOwnerInvitesTestUser,
   fixtureRequestToJoin,
   fixtureRespondToInvite,
+  newestNotificationData,
   seedClubFixtureUsers,
+  seedCompetitionClub,
   seedFixtureOwnedClub,
   seedClubTournament,
   seedOwnedClub,
@@ -20,6 +28,7 @@ import {
   type ClubServices,
 } from "../seeds/clubs/seedClubs";
 import { useFixtureCompetitionActions } from "../seeds/competitions/fixtureActions";
+import { openPushNotification } from "../../helpers/notificationDestination";
 import {
   RR_SCENARIOS,
   playToCompletion,
@@ -51,6 +60,9 @@ export const useClubServices = (): ClubServices => {
     declineClubInvite: league.declineClubInvite,
     requestToJoinClub: league.requestToJoinClub,
     acceptClubJoinRequest: league.acceptClubJoinRequest,
+    declineClubJoinRequest: league.declineClubJoinRequest,
+    addCompetition: league.addCompetition,
+    getCourts: league.getCourts,
     sendNotification,
   };
 };
@@ -59,6 +71,7 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
   const services = useClubServices();
   const tournamentActions = useRoundRobinSeedActions();
   const fixtureActions = useFixtureCompetitionActions();
+  const navigation = useNavigation();
   return (
     <>
       <SeedButton
@@ -202,6 +215,54 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
               }),
             },
           };
+        }}
+      />
+      <SeedButton
+        id="maestro-clubs-count-request-replies"
+        label="Count Rae/Nia request replies"
+        success="Checked"
+        failure="Check failed"
+        run={countRequestReplies}
+      />
+      <SeedButton
+        id="maestro-clubs-count-left-notices"
+        label="Count Olive's left notices"
+        success="Checked"
+        failure="Check failed"
+        run={() => countLeftNotices(currentUser)}
+      />
+      <SeedButton
+        id="maestro-clubs-seed-competition-club"
+        label="Seed Own Club for a competition"
+        run={() => seedCompetitionClub({ services, testUser: currentUser })}
+      />
+      <SeedButton
+        id="maestro-clubs-count-competition-notices"
+        label="Count club competition notices"
+        success="Checked"
+        failure="Check failed"
+        run={() => countCompetitionNotices(currentUser)}
+      />
+      <SeedButton
+        id="maestro-clubs-olive-creates-league"
+        label="Olive creates a club league"
+        run={() => fixtureOwnerCreatesClubLeague(services)}
+      />
+      <SeedButton
+        id="maestro-clubs-olive-invites-test-user"
+        label="Olive invites test user"
+        run={() =>
+          fixtureOwnerInvitesTestUser({ services, testUser: currentUser })
+        }
+      />
+      <SeedButton
+        id="maestro-clubs-open-newest-push"
+        label="Tap newest notification's push"
+        success="Resolved"
+        run={async () => {
+          const data = await newestNotificationData(currentUser);
+          openPushNotification(navigation, data);
+          return { data };
         }}
       />
       <SeedButton

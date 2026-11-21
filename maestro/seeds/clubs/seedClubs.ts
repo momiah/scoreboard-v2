@@ -5,6 +5,8 @@ import {
   getCountFromServer,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
   where,
   writeBatch,
@@ -16,6 +18,13 @@ import { db } from "../../../services/firebase.config";
 import { deleteClubAndDetach } from "../../../helpers/clubs/deleteClubAndDetach";
 import { sendClubInvite } from "../../../helpers/clubs/sendClubInvite";
 import {
+  clubCompetitionCreatedMessage,
+  clubJoinResponseMessage,
+  clubLeftMessage,
+} from "../../../helpers/clubs/clubNotifications";
+import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import { createScenarioLeague } from "../leagues/bulkPublish";
+import {
   buildFixtureUser,
   deleteFixtureUsers,
   writeFixtureUser,
@@ -23,6 +32,9 @@ import {
 import type { LeagueContextType } from "../../../context/types/LeagueContextType";
 
 export const CLUB_NAME_PREFIX = "Maestro";
+
+const SEEDED_CLUB_NAME = `${CLUB_NAME_PREFIX} Seeded Club`;
+const OLIVES_CLUB_NAME = `${CLUB_NAME_PREFIX} Olive's Club`;
 
 export const CLUB_FIXTURE_IDS = {
   ownedClub: "maestro-club-owned",
@@ -80,6 +92,9 @@ export type ClubServices = Pick<
   | "declineClubInvite"
   | "requestToJoinClub"
   | "acceptClubJoinRequest"
+  | "declineClubJoinRequest"
+  | "addCompetition"
+  | "getCourts"
 > & {
   sendNotification: (notification: Notification) => Promise<void>;
 };
@@ -195,7 +210,7 @@ export const seedOwnedClub = async ({
   await seedClubFixtureUsers();
   const club = {
     clubId: CLUB_FIXTURE_IDS.ownedClub,
-    clubName: `${CLUB_NAME_PREFIX} Seeded Club`,
+    clubName: SEEDED_CLUB_NAME,
   };
   const { clubId } = club;
   await recreateClub(services, clubId, testUser, club.clubName);
@@ -215,7 +230,7 @@ export const seedFixtureOwnedClub = async ({
   await seedClubFixtureUsers();
   const club = {
     clubId: CLUB_FIXTURE_IDS.fixtureClub,
-    clubName: `${CLUB_NAME_PREFIX} Olive's Club`,
+    clubName: OLIVES_CLUB_NAME,
   };
   const { clubId } = club;
   const owner = fixtureUser("maestroClubOwner");
@@ -367,6 +382,161 @@ export const countRemovalNotices = async (userId: ClubFixtureUserId) => {
   return { userId, expected: { clubRemovalNotices: removalNotices } };
 };
 
+const noticesWithMessage = async (userId: string, message: string) => {
+  const snap = await getDocs(
+    query(
+      collection(db, "users", userId, "notifications"),
+      where("message", "==", message),
+    ),
+  );
+  return snap.size;
+};
+
+export const countRequestReplies = async () => {
+  const [raeAccepted, niaDeclined] = await Promise.all([
+    noticesWithMessage(
+      "maestroClubMember3",
+      clubJoinResponseMessage(SEEDED_CLUB_NAME, true),
+    ),
+    noticesWithMessage(
+      "maestroClubMember4",
+      clubJoinResponseMessage(SEEDED_CLUB_NAME, false),
+    ),
+  ]);
+  return {
+    expected: { clubRaeAccepted: raeAccepted, clubNiaDeclined: niaDeclined },
+  };
+};
+
+export const countLeftNotices = async (testUser: UserProfile) => ({
+  expected: {
+    clubLeftNotices: await noticesWithMessage(
+      "maestroClubOwner",
+      clubLeftMessage(formatDisplayName(testUser), OLIVES_CLUB_NAME),
+    ),
+  },
+});
+
+export const CLUB_COMPETITION_NAME = `${CLUB_NAME_PREFIX} Club Cup`;
+
+export const seedCompetitionClub = async ({
+  services,
+  testUser,
+}: {
+  services: ClubServices;
+  testUser: UserProfile;
+}) => {
+  const seeded = await seedOwnedClub({
+    services,
+    testUser,
+    withMembers: [
+      "maestroClubMember1",
+      "maestroClubMember4",
+      "maestroClubMember5",
+    ],
+  });
+  const courts = await services.getCourts();
+  const court = [...courts].sort((a, b) =>
+    a.courtName.trim().localeCompare(b.courtName.trim()),
+  )[0];
+  if (!court) throw new Error("No courts to play at");
+  return {
+    ...seeded,
+    expected: {
+      ...seeded.expected,
+      courtName: court.courtName.trim(),
+      tournamentName: CLUB_COMPETITION_NAME,
+    },
+  };
+};
+
+export const countCompetitionNotices = async (testUser: UserProfile) => {
+  const clubId = await findTestUserClubId(testUser);
+  const participants = await getDocs(
+    collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
+  );
+  const message = clubCompetitionCreatedMessage({
+    creatorName: formatDisplayName(testUser),
+    competitionType: "tournament",
+    name: CLUB_COMPETITION_NAME,
+    clubName: SEEDED_CLUB_NAME,
+  });
+  const counts = await Promise.all(
+    participants.docs.map((participant) =>
+      noticesWithMessage(participant.id, message),
+    ),
+  );
+  const [ownNotices, adaAdded] = await Promise.all([
+    noticesWithMessage(testUser.userId, message),
+    noticesWithMessage(
+      "maestroClubMember1",
+      `You've been added to ${CLUB_COMPETITION_NAME}`,
+    ),
+  ]);
+  return {
+    expected: {
+      clubCompetitionNotices: counts.reduce((sum, count) => sum + count, 0),
+      clubCompetitionOwnNotices: ownNotices,
+      clubCompetitionAdaAdded: adaAdded,
+    },
+  };
+};
+
+export const FIXTURE_CLUB_LEAGUE = {
+  key: "oliveClub",
+  scenario: { name: `${CLUB_NAME_PREFIX} Olive League`, type: "Singles" },
+};
+
+export const fixtureOwnerCreatesClubLeague = async (services: ClubServices) => {
+  const leagueId = await createScenarioLeague({
+    ...FIXTURE_CLUB_LEAGUE,
+    owner: fixtureUser("maestroClubOwner"),
+    actions: services,
+    clubId: CLUB_FIXTURE_IDS.fixtureClub,
+  });
+  return {
+    leagueId,
+    expected: { clubLeagueName: FIXTURE_CLUB_LEAGUE.scenario.name },
+  };
+};
+
+export const fixtureOwnerInvitesTestUser = async ({
+  services,
+  testUser,
+}: {
+  services: ClubServices;
+  testUser: UserProfile;
+}) => {
+  const invited = await sendClubInvite({
+    club: { clubId: CLUB_FIXTURE_IDS.fixtureClub, clubName: OLIVES_CLUB_NAME },
+    senderId: "maestroClubOwner",
+    recipientId: testUser.userId,
+    sendNotification: services.sendNotification,
+  });
+  if (!invited) throw new Error("Olive could not invite the test user");
+  return {
+    expected: {
+      clubInviteMessage: `You've been invited to join ${OLIVES_CLUB_NAME}`,
+    },
+  };
+};
+
+export const newestNotificationData = async (testUser: UserProfile) => {
+  const snap = await getDocs(
+    query(
+      collection(db, "users", testUser.userId, "notifications"),
+      orderBy("createdAt", "desc"),
+      limit(1),
+    ),
+  );
+  const newest = snap.docs[0]?.data();
+  if (!newest) throw new Error("The test user has no notifications");
+  return { ...(newest.data ?? {}), type: newest.type } as Record<
+    string,
+    unknown
+  >;
+};
+
 export const CLUB_TOURNAMENT_SCENARIO = "bulkSingles";
 
 export const seedClubTournament = async ({
@@ -385,7 +555,7 @@ export const seedClubTournament = async ({
   });
   const club = {
     clubId,
-    clubName: `${CLUB_NAME_PREFIX} Seeded Club`,
+    clubName: SEEDED_CLUB_NAME,
   };
   const outcome = await seedTournament(clubId);
   const tournamentSnap = await getDocs(
@@ -426,7 +596,8 @@ const deleteTestUserClubNotifications = async (
   clubIds: string[],
 ) => {
   if (clubIds.length === 0) return 0;
-  if (clubIds.length > 30) throw new Error("More than 30 test clubs to clean up");
+  if (clubIds.length > 30)
+    throw new Error("More than 30 test clubs to clean up");
   const snap = await getDocs(
     query(
       collection(db, "users", testUser.userId, "notifications"),
@@ -462,10 +633,16 @@ export const cleanupClubTestData = async ({
         getDocs(query(collection(db, name), where("clubId", "==", clubId))),
       ),
     );
+    const competitionDocs = competitions.flatMap((snap) => snap.docs);
+    for (const competition of competitionDocs) {
+      const chat = await getDocs(collection(competition.ref, "chat"));
+      await Promise.all(chat.docs.map((message) => deleteDoc(message.ref)));
+      await deleteDoc(
+        doc(db, "users", testUser.userId, "chats", competition.id),
+      );
+    }
     const batch = writeBatch(db);
-    competitions
-      .flatMap((snap) => snap.docs)
-      .forEach((competition) => batch.delete(competition.ref));
+    competitionDocs.forEach((competition) => batch.delete(competition.ref));
     await batch.commit();
     await deleteClubAndDetach(clubId);
   }
