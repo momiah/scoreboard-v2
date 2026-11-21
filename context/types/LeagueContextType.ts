@@ -182,6 +182,10 @@ export interface LeagueContextType {
     userId: string;
     reason: string;
   }) => Promise<void>;
+  leaveClub: (params: {
+    clubId: string;
+    member: UserProfile;
+  }) => Promise<boolean>;
   deleteClub: (clubId: string) => Promise<void>;
   acceptClubJoinRequest: (params: {
     senderId: string;

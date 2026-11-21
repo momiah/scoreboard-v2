@@ -165,7 +165,13 @@ const participantFor = (user) => ({
 
 // Mirrors AddLeagueModal's onSubmit (Private, so real users never see it),
 // with the scenario's fixed id, starting today for one month.
-const createScenarioLeague = async ({ key, scenario, owner, actions }) => {
+export const createScenarioLeague = async ({
+  key,
+  scenario,
+  owner,
+  actions,
+  clubId = /** @type {string | null} */ (null),
+}) => {
   const courts = await actions.getCourts();
   const court = [...courts].sort((a, b) =>
     a.courtName.trim().localeCompare(b.courtName.trim()),
@@ -200,7 +206,7 @@ const createScenarioLeague = async ({ key, scenario, owner, actions }) => {
       location,
       countryCode: location.countryCode || "",
       leagueId,
-      clubId: null,
+      clubId,
     },
     competitionType: COMPETITION_TYPES.LEAGUE,
     resetDelayMs: 0,

@@ -20,14 +20,18 @@ const ClubSettings = () => {
   const route = useRoute();
   const { clubId, club } = route.params;
   const { currentUser } = useContext(UserContext);
-  const { deleteClub } = useContext(LeagueContext);
+  const { deleteClub, leaveClub } = useContext(LeagueContext);
   const navigation = useNavigation();
   const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
   const isOwner = club?.clubOwner?.userId === currentUser?.userId;
+  const isAdmin = (club?.clubAdmins ?? []).some(
+    (admin) => admin.userId === currentUser?.userId,
+  );
 
   const menuOptions = [
     { label: "Edit Club", icon: "create-outline", action: "EditClub" },
@@ -57,15 +61,54 @@ const ClubSettings = () => {
       action: "DeleteClub",
       color: "red",
     },
+    {
+      label: "Leave Club",
+      icon: "exit-outline",
+      action: "LeaveClub",
+      color: "red",
+    },
   ];
 
-  const filteredMenuOptions = isOwner
-    ? menuOptions
-    : menuOptions.filter(
-        (option) =>
-          option.action !== "ClubRemoveMembers" &&
-          option.action !== "DeleteClub",
-      );
+  const OWNER_ONLY = ["ClubRemoveMembers", "DeleteClub"];
+  const ADMIN_ONLY = [
+    "EditClub",
+    "ClubPendingInvites",
+    "ClubPendingRequests",
+    "ClubAssignAdmin",
+  ];
+
+  const filteredMenuOptions = menuOptions.filter((option) => {
+    if (option.action === "LeaveClub") return !isOwner;
+    if (OWNER_ONLY.includes(option.action)) return isOwner;
+    if (ADMIN_ONLY.includes(option.action)) return isOwner || isAdmin;
+    return true;
+  });
+
+  const handleLeavePress = () => {
+    Alert.alert(
+      "Leave Club",
+      `Are you sure you want to leave "${club?.clubName}"? You keep your places in its leagues and tournaments.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLeaving(true);
+              await leaveClub({ clubId, member: currentUser });
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert("Error", "Failed to leave club. Please try again.");
+              console.error("Leave club error:", error);
+            } finally {
+              setLeaving(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleDeletePress = () => {
     Alert.alert(
@@ -139,6 +182,10 @@ const ClubSettings = () => {
       handleDeletePress();
       return;
     }
+    if (action === "LeaveClub") {
+      handleLeavePress();
+      return;
+    }
     navigation.navigate(action, {
       clubId,
       club,
@@ -209,6 +256,8 @@ const ClubSettings = () => {
         {filteredMenuOptions.map((option) => (
           <MenuItem
             key={option.label}
+            testID={`club-settings-${option.action}`}
+            disabled={leaving}
             onPress={() => handlePress(option.action)}
           >
             <LeftContainer>
