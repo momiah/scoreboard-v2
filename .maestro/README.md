@@ -46,7 +46,8 @@ MAESTRO_DEVICE=<udid> .maestro/run-suite.sh               # a specific device
 
 `run-suite.sh` sources `.env`, exports `MAESTRO_METRO_URL` and the rule numbers
 from `courtchamps-shared` (`MAESTRO_PLAYOFF_TIE_DAYS`,
-`MAESTRO_LADDER_HOST_ARRANGE_HOURS`, `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`), runs
+`MAESTRO_LADDER_HOST_ARRANGE_HOURS`, `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`,
+`MAESTRO_LADDER_CP_PER_ENTRANT`), runs
 the flows one at a time, retries a failed flow once, and prints `FLAKY` for one
 that passed on the retry and `FAIL` only for one that failed twice. Logs go to
 `/tmp/maestro-<flow>.log`. To run one flow with plain `maestro test`, export the

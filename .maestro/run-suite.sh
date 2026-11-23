@@ -20,6 +20,7 @@ export MAESTRO_LADDER_PLAYOFF_START_DAYS="$(node -p "require('courtchamps-shared
 export MAESTRO_LADDER_POSTING_CLOSE_DAYS="$(node -p "require('courtchamps-shared').LADDER_POSTING_CLOSE_DAYS")"
 export MAESTRO_USERNAME_MIN_LENGTH="$(node -p "require('courtchamps-shared/helpers').USERNAME_MIN_LENGTH")"
 export MAESTRO_USERNAME_MAX_LENGTH="$(node -p "require('courtchamps-shared/helpers').USERNAME_MAX_LENGTH")"
+export MAESTRO_LADDER_CP_PER_ENTRANT="$(node -p "require('courtchamps-shared').LADDER_XP_PER_PLAYER")"
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
