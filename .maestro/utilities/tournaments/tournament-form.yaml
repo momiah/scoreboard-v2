@@ -1,0 +1,65 @@
+# Fills the open Create Tournament form: output.tournamentName at
+# output.courtName, a Private output.tournamentMode of TYPE (Singles / Doubles)
+# for 8 players, then taps Create.
+appId: com.courtchamp
+---
+- tapOn: "Enter tournament name"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - inputText: ${output.tournamentName}
+# A debug Android build reloads on two R key presses in a row ("Maestro RR"),
+# so Android types the name in parts split between the Rs.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - evalScript: ${output.nameParts = output.tournamentName.replace(/R(?=R)/g, 'R|').split('|'); output.np = 0}
+      - repeat:
+          while:
+            true: ${output.np < output.nameParts.length}
+          commands:
+            - inputText: ${output.nameParts[output.np]}
+            - waitForAnimationToEnd
+            - evalScript: ${output.np = output.np + 1}
+# hideKeyboard presses Back on Android, which leaves the app once the keyboard
+# has already closed, so Android taps the heading instead.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard:
+          optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Create Tournament"
+# Hiding the keyboard can land on the court row and open the picker already
+- runFlow:
+    when:
+      notVisible: "Search courts..."
+    commands:
+      - tapOn: "Court Location"
+      - tapOn: ".*Select or Add Court.*"
+- tapOn: "Search courts..."
+- inputText: ${output.courtName}
+- tapOn:
+    text: "${output.courtName}( .*)?"
+    index: 1
+# The court search can leave the keyboard over Next; tapping a label closes it
+- runFlow:
+    when:
+      platform: iOS
+      visible: "space"
+    commands:
+      - tapOn: "Tournament Name.*"
+      - waitForAnimationToEnd
+- tapOn: "Next"
+- runFlow: ../pick-date.yaml
+- tapOn: "8"
+- tapOn: ${TYPE}
+- tapOn: ${output.tournamentMode}
+- tapOn: "Private"
+- tapOn: "Create"

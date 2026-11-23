@@ -1,0 +1,56 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Tapping a push runs openPushNotification, as App.js does for a real push;
+# the harness hands it the test user's newest notification.
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-fixture-club"
+
+# An invite's push opens Notifications, where the test user accepts it
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-olive-invites-test-user"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-open-newest-push"
+- extendedWaitUntil:
+    visible: ".*You've been invited to join Maestro Olive's Club.*"
+    timeout: 20000
+- tapOn: ".*You've been invited to join Maestro Olive's Club.*"
+- tapOn: "Accept"
+- extendedWaitUntil:
+    notVisible: "Accept"
+    timeout: 20000
+
+# A club competition's push opens the competition
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-olive-creates-league"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-clubLeagueName"
+- evalScript: ${output.leagueName = maestro.copiedText}
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-open-newest-push"
+- extendedWaitUntil:
+    visible: ".*${output.leagueName}.*"
+    timeout: 30000
+- assertNotVisible:
+    id: "maestro-harness-filter"
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

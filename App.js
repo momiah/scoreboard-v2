@@ -7,7 +7,7 @@ import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
 import { LeagueProvider } from "./context/LeagueContext";
-import { NavigationContainer, CommonActions } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -25,11 +25,36 @@ import { linking } from "./navigation/linking";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import { initAppCheck } from "./services/appCheck";
+import { openPushNotification } from "./helpers/notificationDestination";
 
 initAppCheck();
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
+
+let handledResponseId = null;
+let pendingResponse = null;
+
+const handleNotificationResponse = (response) => {
+  const responseId = response?.notification?.request?.identifier;
+  if (!responseId || responseId === handledResponseId) return;
+  if (!navigationRef.current?.isReady()) {
+    pendingResponse = response;
+    return;
+  }
+  handledResponseId = responseId;
+  pendingResponse = null;
+  openPushNotification(
+    navigationRef.current,
+    response.notification.request.content.data,
+  );
+};
+
+const handleNavigationReady = async () => {
+  const launchResponse =
+    pendingResponse ?? (await Notifications.getLastNotificationResponseAsync());
+  if (launchResponse) handleNotificationResponse(launchResponse);
+};
 
 // ── Inner component — has access to UserContext ───────────────────────────────
 
@@ -50,7 +75,11 @@ const AppContent = () => {
   }, [currentUser?.userId]);
 
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={linking}
+      onReady={handleNavigationReady}
+    >
       <BottomSheetModalProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
           <UploadToast pendingUploads={pendingUploads} />
@@ -133,24 +162,7 @@ export default function App() {
     checkForUpdates();
 
     const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        if (!navigationRef.current) return;
-
-        navigationRef.current.dispatch(
-          CommonActions.navigate({
-            name: "Competitions",
-            params: {
-              state: {
-                index: 1,
-                routes: [
-                  { name: "CompetitionsList" },
-                  { name: "Notifications" },
-                ],
-              },
-            },
-          }),
-        );
-      },
+      handleNotificationResponse,
     );
 
     const backgroundSubscription =

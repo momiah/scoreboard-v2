@@ -1,0 +1,74 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-competition-club"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-courtName"
+- evalScript: ${output.courtName = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-tournamentName"
+- evalScript: ${output.tournamentName = maestro.copiedText}
+- evalScript: ${output.tournamentMode = "Round Robin"}
+
+# The owner creates a tournament from the club's Tournaments tab
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "4 MEMBERS"
+- swipe:
+    from:
+      text: "Club Performance"
+    direction: LEFT
+- tapOn: "Tournaments"
+- tapOn: ".*Create Tournament.*"
+- runFlow:
+    file: ../utilities/tournaments/tournament-form.yaml
+    env:
+      TYPE: "Singles"
+- extendedWaitUntil:
+    visible: ".*${output.tournamentName}.*"
+    timeout: 60000
+
+# Adding a member puts them straight in
+- tapOn: ".*${output.tournamentName}.*"
+- tapOn: ".*Invite Players.*"
+- extendedWaitUntil:
+    visible: ".*maestroAda.*"
+    timeout: 20000
+- tapOn: ".*maestroAda.*"
+- tapOn: "Add Players \\(1\\)"
+- extendedWaitUntil:
+    visible: "Players added successfully!"
+    timeout: 20000
+- tapOn: "Close"
+
+# Every other member heard about the tournament, and Ada that she was added
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-count-competition-notices"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-clubCompetitionNotices"
+- assertTrue: ${maestro.copiedText == "3"}
+- copyTextFrom:
+    id: "maestro-expected-clubCompetitionOwnNotices"
+- assertTrue: ${maestro.copiedText == "0"}
+- copyTextFrom:
+    id: "maestro-expected-clubCompetitionAdaAdded"
+- assertTrue: ${maestro.copiedText == "1"}
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

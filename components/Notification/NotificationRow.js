@@ -6,6 +6,7 @@ import Tag from "../Tag";
 import { useContext } from "react";
 import { UserContext } from "../../context/UserContext";
 import { timeAgo } from "../../helpers/dateTimeUtils";
+import { getNotificationDestination } from "../../helpers/notificationDestination";
 
 const NotificationRow = ({
   item,
@@ -61,34 +62,10 @@ const NotificationRow = ({
       readNotification(item.id, currentUser?.userId);
     }
 
-    const infoEntry = Object.values(notificationTypes.INFORMATION).find(
-      (entry) => entry.TYPE === item.type,
-    );
+    const destination = getNotificationDestination(item.type, item.data);
+    if (!destination) return;
 
-    if (!infoEntry) return;
-
-    const routeParams = {
-      League: {
-        leagueId: item.data?.leagueId || item.data?.competitionId,
-        tab: "Scoreboard",
-      },
-      Tournament: {
-        tournamentId: item.data?.tournamentId || item.data?.competitionId,
-      },
-      UserProfile: { userId: item.data?.userId, tab: item.data?.tab },
-      GameScreen: {
-        gameId: item.data?.gameId,
-        competitionId: item.data?.competitionId,
-        competitionType: item.data?.competitionType,
-        competitionName: item.data?.competitionName,
-        gamescore: item.data?.gamescore,
-        date: item.data?.date,
-        team1: item.data?.team1,
-        team2: item.data?.team2,
-      },
-    };
-
-    navigation.navigate(infoEntry.ROUTE, routeParams[infoEntry.ROUTE] || {});
+    navigation.navigate(destination.route, destination.params);
   };
 
   return (

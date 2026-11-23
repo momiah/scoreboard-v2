@@ -45,19 +45,55 @@ onFlowStart:
 - copyTextFrom:
     id: "maestro-expected-clubJoinedMessage"
 
-# The test user is now a member: still no admin controls
-- runFlow:
-    file: ../utilities/clubs/open-club.yaml
-    env:
-      CLUB_NAME: "Maestro Olive's Club"
+# The test user is told; the notice opens the club, where they are a member
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications"
+- extendedWaitUntil:
+    visible: ".*Your request to join Maestro Olive's Club was accepted!.*"
+    timeout: 20000
+- tapOn: ".*Your request to join Maestro Olive's Club was accepted!.*"
+- extendedWaitUntil:
+    visible:
+      id: "club-member-count"
+    timeout: 30000
 - assertVisible: "3 MEMBERS"
 - assertVisible: ".*PARTICIPANT.*"
-- assertNotVisible:
-    id: "club-settings-button"
 - assertNotVisible:
     id: "club-invite-members"
 - tapOn: "Feed"
 - assertVisible: ".*${maestro.copiedText}.*"
+
+# A member's menu offers only Leave Club
+- tapOn:
+    id: "club-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "club-settings-LeaveClub"
+    timeout: 10000
+- assertNotVisible: ".*Edit Club.*"
+- assertNotVisible: ".*Pending Requests.*"
+- assertNotVisible: ".*Remove Members.*"
+- assertNotVisible: ".*Delete Club.*"
+
+# Leaving takes the test user out of the club and tells Olive
+- tapOn:
+    id: "club-settings-LeaveClub"
+- tapOn: "Leave|LEAVE"
+- extendedWaitUntil:
+    visible: "2 MEMBERS"
+    timeout: 20000
+- assertVisible: ".*REQUEST TO JOIN.*"
+- assertNotVisible:
+    id: "club-settings-button"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-count-left-notices"
+- copyTextFrom:
+    id: "maestro-expected-clubLeftNotices"
+- assertTrue: ${maestro.copiedText == "1"}
 
 - runFlow:
     file: ../utilities/harness.yaml

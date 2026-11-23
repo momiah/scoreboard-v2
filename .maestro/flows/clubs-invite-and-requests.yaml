@@ -94,6 +94,18 @@ onFlowStart:
 - assertVisible: ".*Rae joined the club.*"
 - assertNotVisible: ".*Nia joined the club.*"
 
+# Rae is told she was accepted, Nia that she was declined
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-count-request-replies"
+- copyTextFrom:
+    id: "maestro-expected-clubRaeAccepted"
+- assertTrue: ${maestro.copiedText == "1"}
+- copyTextFrom:
+    id: "maestro-expected-clubNiaDeclined"
+- assertTrue: ${maestro.copiedText == "1"}
+
 - runFlow:
     file: ../utilities/harness.yaml
     env:
