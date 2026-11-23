@@ -7,6 +7,7 @@ import {
   getPlatformFeeRateFootnote,
   isCashLadder,
 } from "./ladderPreRegistrationDisplay";
+import { LADDER_XP_PER_PLAYER } from "courtchamps-shared";
 const details = (overrides) => ({
   name: "Ladder",
   description: "",
@@ -51,7 +52,9 @@ describe("ladder pre-registration display", () => {
   });
 
   it("shows the community CP pool and CP per finish", () => {
-    expect(formatPrizePool(communitySingles)).toBe("102,400 CP");
+    expect(formatPrizePool(communitySingles)).toBe(
+      `${(2048 * LADDER_XP_PER_PLAYER).toLocaleString("en-GB")} CP`,
+    );
     expect(formatEntryFee(communitySingles)).toBe("Free entry");
     const [champion] = getFullLadderPrizeTable(communitySingles);
     expect(champion.cash).toBe(0);
