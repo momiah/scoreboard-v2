@@ -1,4 +1,5 @@
 import {
+  formatLadderPayoutPlace,
   getLadderPlacePrize,
   getLadderPrizeBands,
   getLadderPrizeSetup,
@@ -11,14 +12,6 @@ export const getLadderTopFourPrizes = (
   ladder: PrizeLadder,
 ): LadderPlacePrize[] =>
   [1, 2, 3, 4].map((place) => getLadderPlacePrize(ladder, place));
-
-const placeName = (place: number): string =>
-  ["Champion", "Runner-up", "3rd place", "4th place"][place - 1] ??
-  `${place}th`;
-
-/** Who finishes in a band of places: the place, or the round a band's sides were knocked out in. */
-const knockedOutIn = (fromPlace: number, toPlace: number): string =>
-  fromPlace === toPlace ? placeName(fromPlace) : roundLabel(toPlace);
 
 export interface LadderPrizeRow {
   fromPlace: number;
@@ -33,7 +26,7 @@ export const getLadderPrizeTable = (ladder: PrizeLadder): LadderPrizeRow[] => {
   const { pool, size } = getLadderPrizeSetup(ladder);
   return getLadderPrizeBands(pool, size).map((band) => ({
     ...band,
-    label: knockedOutIn(band.fromPlace, band.toPlace),
+    label: formatLadderPayoutPlace(band),
   }));
 };
 
