@@ -2,6 +2,7 @@ import {
   GENDER_TYPE,
   LADDER_PRE_REGISTRATION_STATUS,
   LADDER_TYPE,
+  PAYOUT_STRUCTURE,
   formatCurrency,
   getLadderPlayoffStructure,
   getLadderPrizePlaces,
@@ -36,6 +37,7 @@ const shared = {
   region: "United Kingdom",
   countryCode: "GB",
   currencyType: "GBP",
+  payoutStructure: PAYOUT_STRUCTURE.LINEAR,
 };
 
 export const PREREG_FIXTURES = {
@@ -56,6 +58,7 @@ export const PREREG_FIXTURES = {
     genderType: GENDER_TYPE.MENS,
     entryFee: 20,
     maxPlayers: 1024,
+    payoutStructure: PAYOUT_STRUCTURE.PROGRESSIVE,
     status: OPEN,
     registrants: 2,
   },
@@ -187,7 +190,7 @@ export const expectedFor = (key, { registrantCount }) => {
   const cash = isCashLadder(ladder);
   const noun = getLadderEntrantNoun(ladder.ladderType);
   const { playoffSpots } = getLadderPlayoffStructure(ladder.maxPlayers);
-  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash);
+  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash, ladder.payoutStructure);
   const size = `${ladder.maxPlayers.toLocaleString("en-GB")} ${noun}s`;
   const table = getFullLadderPrizeTable(ladder);
   const values = {

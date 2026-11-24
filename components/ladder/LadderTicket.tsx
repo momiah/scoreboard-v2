@@ -44,6 +44,7 @@ export type LadderTicketDetails = Pick<
   | "entryFee"
   | "currencyType"
   | "maxPlayers"
+  | "payoutStructure"
 > &
   Partial<Pick<Ladder, "city">>;
 
@@ -66,7 +67,7 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
 }) => {
   const cash = isCashLadder(ladder);
   const noun = getLadderEntrantNoun(ladder.ladderType);
-  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash);
+  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash, ladder.payoutStructure);
   const location = getLadderLocation(ladder);
   const size = `${ladder.maxPlayers.toLocaleString("en-GB")} ${noun}s`;
 

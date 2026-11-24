@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import {
+  Alert,
   Image,
   Text,
   TouchableOpacity,
@@ -45,6 +46,7 @@ import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { isInVideoLoadWindow } from "@/helpers/videoLoadWindow";
 import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
+import { backfillLadderPayoutStructure } from "@/devFunctions/backfillLadderPayoutStructure";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
@@ -266,6 +268,21 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
+        <TouchableOpacity
+          testID="dev-backfill-ladder-payout-structure"
+          onPress={async () => {
+            try {
+              const result = await backfillLadderPayoutStructure();
+              Alert.alert("Payout structure backfill", JSON.stringify(result));
+            } catch (error) {
+              Alert.alert("Payout structure backfill failed", String(error));
+            }
+          }}
+        >
+          <Text style={{ color: "white", marginVertical: 10 }}>
+            Backfill ladder payout structure
+          </Text>
+        </TouchableOpacity>
         <LadderPreRegistrationBanner />
 
         <HomeLeagueSection

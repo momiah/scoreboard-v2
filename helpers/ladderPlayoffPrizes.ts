@@ -23,8 +23,8 @@ export interface LadderPrizeRow {
 
 /** Every paid place of the ladder, with what each player or team takes. */
 export const getLadderPrizeTable = (ladder: PrizeLadder): LadderPrizeRow[] => {
-  const { pool, size } = getLadderPrizeSetup(ladder);
-  return getLadderPrizeBands(pool, size).map((band) => ({
+  const { pool, size, payoutStructure } = getLadderPrizeSetup(ladder);
+  return getLadderPrizeBands(pool, size, payoutStructure).map((band) => ({
     ...band,
     label: formatLadderPayoutPlace(band),
   }));

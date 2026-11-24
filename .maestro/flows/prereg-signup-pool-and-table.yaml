@@ -17,6 +17,15 @@ onFlowStart:
     env:
       KEY: "community-singles"
 - runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-singles"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-singles-last-cash"
+      NAME: "progressiveLastCash"
+- runFlow:
     file: ../utilities/prereg/remember.yaml
     env:
       KEY: "cash-doubles-footnote"
@@ -77,6 +86,40 @@ onFlowStart:
 - extendedWaitUntil:
     visible:
       id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
+    timeout: 10000
+# The cash-singles fixture uses the progressive payout structure: its table is the top-heavy one.
+- runFlow:
+    file: ../utilities/prereg/open-ticket.yaml
+    env:
+      ID: "maestro-prereg-cash-singles"
+- tapOn:
+    id: "ladder-pre-registration-option-maestro-prereg-cash-singles"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+      text: ${output["cash-singles-pool"]}
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-prize-table"
+    direction: DOWN
+- assertVisible:
+    text: ${output["cash-singles-first-prize"]}
+    childOf:
+      id: "ladder-pre-registration-prize-table"
+- scrollUntilVisible:
+    element:
+      text: ${output["cash-singles-last-place_re"]}
+    direction: DOWN
+- assertVisible:
+    text: ${output.progressiveLastCash}
+    childOf:
+      id: "ladder-pre-registration-prize-table"
+- tapOn:
+    id: "ladder-pre-registration-back"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-option-maestro-prereg-cash-singles"
     timeout: 10000
 - scrollUntilVisible:
     element:
