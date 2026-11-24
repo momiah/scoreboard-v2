@@ -80,11 +80,11 @@ describe("ladder pre-registration display", () => {
       ["2nd", 6553],
       ["3rd", 4096],
       ["4th", 2048],
-      ["Joint 5th", 819],
-      ["Joint 9th", 460],
-      ["Joint 17th", 256],
-      ["Joint 33rd", 204],
-      ["Joint 65th", 0],
+      ["Quarter-Final (Joint 5th)", 819],
+      ["Round of 16 (Joint 9th)", 460],
+      ["Round of 32 (Joint 17th)", 256],
+      ["Round of 64 (Joint 33rd)", 204],
+      ["Round of 128 (Joint 65th)", 0],
     ]);
   });
 });
