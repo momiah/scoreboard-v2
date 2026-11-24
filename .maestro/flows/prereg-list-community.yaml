@@ -2,7 +2,7 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-# 6. Community tab: "Free" / "to enter", the CP pool and "Top N win CP"; no cash footnote.
+# 6. Community tab: "Free" / "to enter", the CP pool (CP per entrant x ladder size) and "Top N win CP"; no cash footnote.
 - runFlow:
     file: ../utilities/prereg/seed.yaml
     env:
@@ -17,6 +17,7 @@ onFlowStart:
       KEY: "community-singles"
 - assertTrue: ${output["community-doubles-pool"].endsWith(" CP")}
 - assertTrue: ${output["community-doubles-meta"].includes(" win CP")}
+- assertTrue: ${Number(output["community-doubles-pool"].replace(/\D/g, "")) === Number(output["community-doubles-meta"].split(" ")[0].replace(/\D/g, "")) * Number(MAESTRO_LADDER_CP_PER_ENTRANT)}
 - runFlow:
     file: ../utilities/prereg/open-list.yaml
     env:
