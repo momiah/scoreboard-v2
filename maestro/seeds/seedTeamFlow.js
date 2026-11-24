@@ -18,6 +18,7 @@ import {
   TEAM_STATUS,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { seedFixtureUser } from "./homeCourtFixtures";
@@ -131,6 +132,7 @@ export const seedTeamFlow = async ({
     seasonStartedAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2048,

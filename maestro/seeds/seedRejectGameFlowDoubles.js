@@ -23,6 +23,7 @@ import {
   createLadderMatchGames,
   normalizeTeamKey,
   buildLadderParticipant,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
@@ -145,6 +146,7 @@ export const seedDoublesRejectGameFlow = async ({
     seasonStartedAt: new Date(),
     playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 4,

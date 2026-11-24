@@ -24,6 +24,8 @@ import {
   LADDER_MIN_PLAYOFF_SIZE,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
+  LADDER_PRIZE_PAYOUTS_COLLECTION,
 } from "@shared";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
@@ -40,6 +42,10 @@ export const MAESTRO_PO_LADDER_IDS = [
 export const MAESTRO_PO_SINGLES_SIZE = 2048;
 export const MAESTRO_PO_DOUBLES_TEAMS = 256;
 export const MAESTRO_PO_CANCELLED_SIZE = LADDER_MIN_PLAYOFF_SIZE - 1;
+
+/** The paid playoff ladder pays progressively, the free ones linearly, so the flows cover both prize tables. */
+export const maestroPlayoffPayoutStructure = (entryFee) =>
+  entryFee > 0 ? PAYOUT_STRUCTURE.PROGRESSIVE : PAYOUT_STRUCTURE.LINEAR;
 
 export const PLAYOFF_VARIANT = {
   STANDARD: "standard",
@@ -180,6 +186,7 @@ const deleteLadder = async (ladderId) => {
       "ladderTeams",
       "ladderMatches",
       LADDER_REPORT_COUNTS_COLLECTION,
+      LADDER_PRIZE_PAYOUTS_COLLECTION,
     ].map((sub) => deleteCollection(["ladders", ladderId, sub])),
   );
   await commitInBatches([
@@ -227,6 +234,7 @@ const buildLadderDoc = ({
       ? new Date(now.getTime() + 3 * DAY_MS)
       : new Date(now.getTime() - 60 * 1000),
     entryFee,
+    payoutStructure: maestroPlayoffPayoutStructure(entryFee),
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: size,

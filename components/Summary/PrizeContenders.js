@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
+import { formatLadderFinishPlace, ordinalPlace } from "@shared/helpers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 const PrizeContenders = ({
@@ -71,14 +72,9 @@ const PrizeContenders = ({
         <TextSkeleton show={showSkeleton} height={16} width={25}>
           {imageLoaded && !showSkeleton ? (
             <Rank>
-              {index + 1}
-              {index === 0
-                ? "st"
-                : index === 1
-                  ? "nd"
-                  : index === 2
-                    ? "rd"
-                    : "th"}
+              {competitionType === COMPETITION_TYPES.LADDER
+                ? formatLadderFinishPlace(index + 1)
+                : ordinalPlace(index + 1)}
             </Rank>
           ) : null}
         </TextSkeleton>

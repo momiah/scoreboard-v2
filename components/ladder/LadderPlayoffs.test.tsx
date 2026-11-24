@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { LADDER_STATUS, LADDER_TYPE } from "@shared";
+import { LADDER_STATUS, LADDER_TYPE, PAYOUT_STRUCTURE } from "@shared";
 import { buildLadderPlayoffTies } from "@shared/helpers";
 
 const mockNavigate = jest.fn();
@@ -37,6 +37,7 @@ const ladder = (overrides = {}) =>
     status: LADDER_STATUS.REGISTRATION_CLOSED,
     participantCount: 300,
     maxPlayers: 512,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     playoffStartsAt: new Date(2026, 11, 1, 18, 0),
     ...overrides,
   }) as never;

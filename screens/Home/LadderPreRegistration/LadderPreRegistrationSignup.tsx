@@ -221,7 +221,9 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
             {cash ? (
               <ValueCell>
                 <Value highlight>
-                  {formatCurrency(row.cash, option.currencyType)}
+                  {row.cash > 0
+                    ? formatCurrency(row.cash, option.currencyType)
+                    : "–"}
                 </Value>
               </ValueCell>
             ) : null}

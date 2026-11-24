@@ -80,6 +80,7 @@ import {
   MAESTRO_PO_DOUBLES_LADDER_ID,
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
+  MAESTRO_PO_DOUBLES_TEAMS,
   MAESTRO_PO_MANUAL_128_LADDER_ID,
   PLAYOFF_VARIANT,
   seedLadderPlayoffs,
@@ -97,7 +98,11 @@ import {
   assertPlayoffNotification,
   mockFinishCompanionTie,
   seedLadderPlayoffJourney,
+  MAESTRO_PO_JOURNEY_SIZE,
+  ladderNameOf,
 } from "../seeds/seedLadderPlayoffJourney";
+import { getPlayoffPrizeExpected } from "../seeds/playoffPrizeExpected";
+import { mockLadderHeldPrize } from "../seeds/mockLadderHeldPrize";
 import {
   assertTieChatDelivered,
   mockOpponentArrangesLeg,
@@ -150,6 +155,22 @@ const PlayoffVariantButtons = ({
   <>
     {variants
       .flatMap(({ suffix, ladderId, entryFee, doubles }) => [
+        {
+          id: `maestro-expected-po${suffix}-prizes`,
+          label: `Expected PO Prizes${suffix}`,
+          run: async () => ({
+            expected: getPlayoffPrizeExpected({
+              ladderName: ladderNameOf(
+                entryFee,
+                doubles,
+                MAESTRO_PO_JOURNEY_SIZE,
+              ),
+              entryFee,
+              size: doubles ? MAESTRO_PO_DOUBLES_TEAMS : MAESTRO_PO_JOURNEY_SIZE,
+              players: doubles ? 2 : 1,
+            }),
+          }),
+        },
         ...[
           ["r16-started", JOURNEY_ROUND.R16, JOURNEY_STAGE.STARTED],
           [
@@ -460,7 +481,7 @@ const PlayoffVariantButtons = ({
             ],
             [
               "partner-placed-1st",
-              { tie: "user", who: "partner", includes: "you have placed 1st" },
+              { tie: "user", who: "partner", includes: "you finished 1st" },
             ],
             [
               "partner-through-to-the-quarter-final",
@@ -488,19 +509,19 @@ const PlayoffVariantButtons = ({
             ],
             [
               "opponent-placed-1st",
-              { tie: "user", who: "opponent", includes: "you have placed 1st" },
+              { tie: "user", who: "opponent", includes: "you finished 1st" },
             ],
             [
               "opponent-placed-2nd",
-              { tie: "user", who: "opponent", includes: "you have placed 2nd" },
+              { tie: "user", who: "opponent", includes: "you finished 2nd" },
             ],
             [
               "opponent-placed-3rd",
-              { tie: "user", who: "opponent", includes: "you have placed 3rd" },
+              { tie: "user", who: "opponent", includes: "you finished 3rd" },
             ],
             [
               "opponent-placed-4th",
-              { tie: "user", who: "opponent", includes: "you have placed 4th" },
+              { tie: "user", who: "opponent", includes: "you finished 4th" },
             ],
             [
               "opponent-asked-reschedule",
@@ -515,7 +536,7 @@ const PlayoffVariantButtons = ({
               {
                 tie: "companion",
                 who: "winner",
-                includes: "you have placed 1st",
+                includes: "you finished 1st",
               },
             ],
             [
@@ -523,7 +544,7 @@ const PlayoffVariantButtons = ({
               {
                 tie: "companion",
                 who: "loser",
-                includes: "you have placed 2nd",
+                includes: "you finished 2nd",
               },
             ],
             [
@@ -531,7 +552,7 @@ const PlayoffVariantButtons = ({
               {
                 tie: "companion",
                 who: "winner",
-                includes: "you have placed 3rd",
+                includes: "you finished 3rd",
               },
             ],
             [
@@ -539,7 +560,7 @@ const PlayoffVariantButtons = ({
               {
                 tie: "companion",
                 who: "loser",
-                includes: "you have placed 4th",
+                includes: "you finished 4th",
               },
             ],
             [
@@ -602,6 +623,23 @@ const PlayoffVariantButtons = ({
           label: `Assert Ladder Completed${suffix}`,
           run: () => assertLadderCompleted({ ladderId }),
         },
+        ...(doubles
+          ? []
+          : [
+              {
+                id: `maestro-mock-po${suffix}-held-prize-qf`,
+                label: `Mock Held QF Prize${suffix}`,
+                run: () =>
+                  mockLadderHeldPrize({
+                    testUser: currentUser,
+                    ladderId,
+                    entryFee,
+                    size: MAESTRO_PO_JOURNEY_SIZE,
+                    tieId: "r2-s0",
+                    place: 8,
+                  }),
+              },
+            ]),
         {
           id: `maestro-mock-po${suffix}-finish-companion-tie`,
           label: `Mock Finish Companion Tie${suffix}`,

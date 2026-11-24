@@ -1,6 +1,7 @@
 import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { buildLadderPlayoffTies } from "@shared/helpers";
+import { PAYOUT_STRUCTURE } from "@shared";
 
 const mockNavigate = jest.fn();
 jest.mock("@react-navigation/native", () => ({
@@ -79,6 +80,7 @@ let ladder: Record<string, unknown> = {
   name: "Test Ladder",
   ladderType: "Singles",
   currencyType: "GBP",
+  payoutStructure: PAYOUT_STRUCTURE.LINEAR,
 };
 
 const baseTie = () =>

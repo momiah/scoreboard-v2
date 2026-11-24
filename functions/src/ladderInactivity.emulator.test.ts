@@ -3,6 +3,7 @@ import {
   LADDER_MATCH_STATUS,
   LADDER_STATUS,
   LADDER_TYPE,
+  PAYOUT_STRUCTURE,
 } from "courtchamps-shared/types";
 import {
   LADDER_ELIGIBILITY_COLLECTION,
@@ -62,6 +63,7 @@ const seedLadder = (ladderId: string, overrides: Record<string, unknown> = {}) =
     maxPlayers: 2048,
     entryFee: 0,
     currencyType: "GBP",
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     participantCount: 0,
     ...overrides,
   });

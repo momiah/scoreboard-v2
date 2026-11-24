@@ -15,6 +15,7 @@ import {
   buildLadderParticipant,
   getLadderEligibilityRadiusMiles,
   normalizeTeamKey,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { deleteAllMaestroFixtureTeams } from "./teamFixtures";
@@ -125,6 +126,7 @@ const ladderDocument = ({ testUser, ladderId, name, ladderType, variant }) => {
     seasonStartedAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: variant === JOIN_VARIANT.PAID ? 20 : 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers,

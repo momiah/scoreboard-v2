@@ -30,7 +30,7 @@ describe("HeldPrizeNotice", () => {
     expect(view.getByText("Your prize is under review")).toBeTruthy();
     expect(
       view.getByText(
-        "Your prize for 2nd place (1,280 CP) is under review because you were disqualified from the ladder. We'll let you know the outcome.",
+        "Your prize for finishing 2nd (1,280 CP) is under review because you were disqualified from the ladder. We'll let you know the outcome.",
       ),
     ).toBeTruthy();
   });
@@ -38,9 +38,15 @@ describe("HeldPrizeNotice", () => {
   it("names a joint place and a cash prize in the ladder's currency", () => {
     const view = render(
       <HeldPrizeNotice
-        payout={payout({ voided: true, place: 4, currencyType: "EUR", prize: { cash: 102, cp: 256 } })}
+        payout={payout({ voided: true, place: 2, currencyType: "EUR", prize: { cash: 102, cp: 256 } })}
       />,
     );
-    expect(view.getByText(/joint 4th place \(€102 and 256 CP\)/)).toBeTruthy();
+    expect(view.getByText(/finishing joint 2nd \(€102 and 256 CP\)/)).toBeTruthy();
+  });
+
+  it("names a place below 4th by its round's band, not its bottom place", () => {
+    const view = render(<HeldPrizeNotice payout={payout({ place: 8 })} />);
+    expect(view.getByText(/finishing joint 5th \(1,280 CP\)/)).toBeTruthy();
+    expect(view.queryByText(/8th/)).toBeNull();
   });
 });

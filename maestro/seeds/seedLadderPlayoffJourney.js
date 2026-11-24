@@ -37,7 +37,7 @@ import {
   wins,
 } from "./seedLadderPlayoffMatches";
 
-const SIZE = 256;
+export const MAESTRO_PO_JOURNEY_SIZE = 256;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const JOURNEY_ROUND = {
@@ -76,7 +76,7 @@ const startedSeventyMinutesAgo = () => {
   };
 };
 
-const ladderNameOf = (entryFee, doubles, size) =>
+export const ladderNameOf = (entryFee, doubles, size) =>
   doubles
     ? `Maestro Playoffs Doubles ${MAESTRO_PO_DOUBLES_TEAMS}`
     : `Maestro Playoffs ${size}${entryFee > 0 ? " (Paid)" : ""}`;
@@ -94,7 +94,7 @@ const ladderTypeOf = async (ladderId) =>
  */
 export const seedLadderPlayoffJourney = async ({
   testUser,
-  size = SIZE,
+  size = MAESTRO_PO_JOURNEY_SIZE,
   daysIntoRound = /** @type {number | undefined} */ (undefined),
   round: requestedRound = JOURNEY_ROUND.R16,
   stage = JOURNEY_STAGE.STARTED,

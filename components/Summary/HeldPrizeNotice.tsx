@@ -2,19 +2,19 @@ import React from "react";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { formatLadderPrizeWon, ordinalPlace } from "@shared/helpers";
+import { formatLadderFinishPlace, formatLadderPrizeWon } from "@shared/helpers";
 import type { LadderPrizePayout } from "@shared/types";
 
 const HeldPrizeNotice: React.FC<{ payout: LadderPrizePayout }> = ({ payout }) => {
   const prize = formatLadderPrizeWon(payout.prize, payout.currencyType);
-  const place = `${payout.voided ? "joint " : ""}${ordinalPlace(payout.place)}`;
+  const place = formatLadderFinishPlace(payout.place, payout.voided).toLowerCase();
   return (
     <Card testID="ladder-prize-under-review">
       <Ionicons name="time-outline" size={22} color="#FF9800" />
       <Body>
         <Title>Your prize is under review</Title>
         <Message>
-          {`Your prize for ${place} place${prize ? ` (${prize})` : ""} is under review because you were disqualified from the ladder. We'll let you know the outcome.`}
+          {`Your prize for finishing ${place}${prize ? ` (${prize})` : ""} is under review because you were disqualified from the ladder. We'll let you know the outcome.`}
         </Message>
       </Body>
     </Card>

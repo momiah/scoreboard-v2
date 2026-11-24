@@ -44,8 +44,8 @@ export const LADDER_TERMS: TermsSection[] = [
       [
         "Both sides are treated as losing that round and are paid the lowest prize that round guarantees.",
         "Nobody moves up a place.",
-        "Prize money nobody won goes into the Unclaimed Prize Pot and is split equally between every other player or team in the money.",
-        "If there is nobody else in the money to share it with, the funds will be retained by Court Champs, as no eligible player is left to receive them.",
+        "Prizes nobody won go into the Unclaimed Prize Pot. Its cash is split equally between every other player or team who won cash, and its CP between every other player or team who won CP.",
+        "If there is nobody else to share it with, it will be retained by Court Champs, as no eligible player is left to receive it.",
       ],
       "Prizes are paid in whole units of the ladder's currency and whole CP, except that a doubles share may include half a unit. Any amount left over from rounding goes to the highest finisher.",
       "If your account is deleted before prizes are paid, your prize is forfeited and will be retained by Court Champs, as there is no account left to pay it to.",

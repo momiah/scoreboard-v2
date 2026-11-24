@@ -22,6 +22,7 @@ import {
   buildLadderParticipant,
   notificationTypes,
   notificationSchema,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 import { deleteFixtureLadderRoster } from "./fixtureUserCleanup";
@@ -161,6 +162,7 @@ export const seedAddApproveGameFlow = async ({
         ? new Date()
         : new Date(Date.now() + playoffStartsInDays * 24 * 60 * 60 * 1000),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2,

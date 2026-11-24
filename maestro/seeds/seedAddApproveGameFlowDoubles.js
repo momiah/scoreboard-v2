@@ -23,6 +23,7 @@ import {
   buildLadderParticipant,
   notificationTypes,
   notificationSchema,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
@@ -220,6 +221,7 @@ export const seedAddApproveGameFlowDoubles = async ({
     seasonStartedAt: new Date(),
     playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 4,

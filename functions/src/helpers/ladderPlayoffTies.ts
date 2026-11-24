@@ -45,7 +45,7 @@ import {
   planLadderPlayoffPrizes,
   getLadderPlayoffTotalRounds,
   getLadderTiePlacings,
-  ordinalPlace,
+  formatLadderFinishPlace,
   roundLabel,
 } from "courtchamps-shared/helpers";
 import type { PrizeLadder } from "courtchamps-shared/helpers";
@@ -269,6 +269,10 @@ const sidePrizeWon = (ladder: PlayoffLadder, place: number, players: number): st
     ladder.currencyType ?? "GBP",
   );
 
+/** A finishing place mid-sentence: "1st", "joint 5th". */
+export const finishPlace = (place: number, voided = false): string =>
+  formatLadderFinishPlace(place, voided).toLowerCase();
+
 const KNOCKED_OUT_BECAUSE: Record<string, string> = {
   [LADDER_PLAYOFF_WALKOVER_REASON.INACTIVE_OPPONENT]:
     "you didn't arrange or play a match before the deadline",
@@ -308,8 +312,8 @@ const notifyTieFinish = async ({
         userIds: placing.playerIds,
         ladder,
         kind: `playoff-finish-${tie.tieId}`,
-        title: `You placed ${ordinalPlace(placing.place)}`,
-        message: `Congratulations, you have placed ${ordinalPlace(placing.place)} in ${ladder.name}${won ? ` and been awarded ${won}${paidWhen}` : ""}.`,
+        title: `You finished ${finishPlace(placing.place)}`,
+        message: `Congratulations, you finished ${finishPlace(placing.place)} in ${ladder.name}${won ? ` and been awarded ${won}${paidWhen}` : ""}.`,
         tab: SUMMARY_TAB,
         data: { tieId: tie.tieId },
       });
@@ -357,13 +361,13 @@ const notifyLadderPrizes = async ({
   const tiesById = new Map(ties.map((tie) => [tie.tieId, tie]));
   for (const payout of payouts) {
     const currency = payout.currencyType;
-    const place = `${payout.voided ? "joint " : ""}${ordinalPlace(payout.place)}`;
+    const place = finishPlace(payout.place, payout.voided);
     const base = { userIds: [payout.userId], ladder, kind: "playoff-prize", tab: SUMMARY_TAB, data: { payoutId: payout.payoutId } };
     if (payout.status === LADDER_PRIZE_PAYOUT_STATUS.HELD) {
       await notifyLadderPlayers({
         ...base,
         title: "Your prize is under review",
-        message: `Your prize for ${place} place in ${ladder.name} (${formatPrize(payout.prize, currency)}) is under review because you were disqualified from the ladder. We'll let you know the outcome.`,
+        message: `Your prize for finishing ${place} in ${ladder.name} (${formatPrize(payout.prize, currency)}) is under review because you were disqualified from the ladder. We'll let you know the outcome.`,
       });
       continue;
     }
@@ -516,7 +520,7 @@ export const completeAndPayLadder = async ({
     await notifyLadderPrizes({ ladder: { ...ladder, ladderId }, payouts: completion.payouts, ties });
     console.log(
       `🏆 [playoffs] ${ladderId} prizes: ${completion.payouts
-        .map((payout) => `${payout.userId} ${ordinalPlace(payout.place)} ${payout.prize.cp} CP ${payout.status}`)
+        .map((payout) => `${payout.userId} ${finishPlace(payout.place, payout.voided)} ${payout.prize.cp} CP ${payout.status}`)
         .join(", ")}`,
     );
   }

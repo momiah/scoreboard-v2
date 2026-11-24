@@ -5,6 +5,7 @@ import {
   LADDER_STATUS,
   LADDER_TYPE,
   normalizeTeamKey,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { postedMatchDocument, seedFixtureUser } from "./homeCourtFixtures";
 import {
@@ -101,6 +102,7 @@ export const seedDoubleBookingFlow = async ({
     seasonStartsAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2048,

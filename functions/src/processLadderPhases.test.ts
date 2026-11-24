@@ -7,6 +7,7 @@ import {
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
+  PAYOUT_STRUCTURE,
 } from "courtchamps-shared/types";
 
 type Data = Record<string, unknown>;
@@ -193,6 +194,7 @@ const seedLadder = (ladderId: string, overrides: Data = {}) => {
     maxPlayers: 2048,
     entryFee: 10,
     currencyType: "GBP",
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     ...overrides,
   });
 };
