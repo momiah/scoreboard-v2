@@ -13,7 +13,7 @@ import Svg, {
   Rect,
   Stop,
 } from "react-native-svg";
-import { formatCurrency, getLadderPlayoffStructure } from "@shared";
+import { formatCurrency, getLadderPrizePlaces } from "@shared";
 import {
   formatLadderPrizePool,
   getLadderEntrantNoun,
@@ -44,6 +44,7 @@ export type LadderTicketDetails = Pick<
   | "entryFee"
   | "currencyType"
   | "maxPlayers"
+  | "payoutStructure"
 > &
   Partial<Pick<Ladder, "city">>;
 
@@ -66,7 +67,7 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
 }) => {
   const cash = isCashLadder(ladder);
   const noun = getLadderEntrantNoun(ladder.ladderType);
-  const { inTheMoney } = getLadderPlayoffStructure(ladder.maxPlayers);
+  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash, ladder.payoutStructure);
   const location = getLadderLocation(ladder);
   const size = `${ladder.maxPlayers.toLocaleString("en-GB")} ${noun}s`;
 
@@ -89,8 +90,8 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
 
         <Meta>
           {cash
-            ? `${size} · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}paid`
-            : `${size} · Top ${inTheMoney} win CP`}
+            ? `${size} · Top ${prizePlaces} ${noun === "team" ? "teams " : ""}paid`
+            : `${size} · Top ${prizePlaces} win CP`}
         </Meta>
         <Meta numberOfLines={1}>{location ? `${location}` : ""}</Meta>
       </Stub>

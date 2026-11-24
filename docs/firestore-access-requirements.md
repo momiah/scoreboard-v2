@@ -152,6 +152,7 @@ pairing, so a player must not be able to set an arbitrary location.
 | `ladderEligibility/{ladderId}_{userId}` | Nobody (app) | create, update | Written only by the `verifyLadderEligibility` callable (Admin SDK) after a fresh, unmocked device reading puts the player within the ladder's `eligibilityRadiusMiles` (default `LADDER_ELIGIBILITY_RADIUS_MILES`) of one of its courts. Holds the distance, never coordinates. |
 | same | That player (app) | delete | Own doc only. Used by the Maestro cleanup; deleting it only takes away the player's own permission to join. |
 | `ladders/{ladderId}` | Admin (website ladder form) | create, update | `eligibilityRadiusMiles`: optional positive number, free ladders only. |
+| `ladders/{ladderId}` and `ladderPreRegistrations/{preRegistrationId}` | Admin (website ladder and pre-registration forms, and the app's dev-only "Backfill ladder payout structure" button) | create, update | `payoutStructure`: required, `"progressive"` or `"linear"` (`PAYOUT_STRUCTURE`). |
 | `ladders/{ladderId}` | A joining player or team member | update | `participantCount` +1, only in the same transaction as the participant/team create above. |
 | `teams/{teamId}` | A team member | update | `ladderIds` (arrayUnion) after joining a ladder. |
 
