@@ -27,6 +27,7 @@ import {
   LADDER_PLAYOFF_STRUCTURE,
   getEffectiveLadderSize,
   getLadderPlayoffStructure,
+  getLadderPrizePlaces,
   calculateLadderPrizePool,
   ccImageEndpoint,
   socialMediaPlatforms,
@@ -119,7 +120,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const { showLadderSize } = config;
   const showIntro = config.intro && !!ladder;
   const noun = ladderEntrantNoun(ladder?.ladderType);
-  const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(maxPlayers);
+  const { playoffSpots } = getLadderPlayoffStructure(maxPlayers);
 
   const finalsPage: PagerPage = {
     key: "finals",
@@ -127,7 +128,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       <FinalsPage
         onReadRules={onReadRules}
         onInvite={onInvite}
-        inTheMoney={inTheMoney}
+        prizePlaces={getLadderPrizePlaces(maxPlayers, (ladder?.entryFee ?? 0) > 0)}
         isPaid={(ladder?.entryFee ?? 0) > 0}
         showSocialFollow={config.showSocialFollow}
       />
@@ -959,7 +960,7 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
             </TableCell>
             {isPaid ? (
               <TableCell gold>
-                {formatCurrency(row.cash, currencyType)}
+                {row.cash > 0 ? formatCurrency(row.cash, currencyType) : "–"}
               </TableCell>
             ) : null}
             <TableCell>{row.cp.toLocaleString()}</TableCell>
@@ -1180,7 +1181,7 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
             Final ladder size
           </TableCell>
           <TableCell header>Playoff spots</TableCell>
-          <TableCell header>In the money</TableCell>
+          {isPaid ? <TableCell header>Win cash</TableCell> : null}
         </TableRow>
         {LADDER_PLAYOFF_SIZES.map((size, index) => {
           const row = LADDER_PLAYOFF_STRUCTURE[size];
@@ -1194,7 +1195,9 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
                 <TableCell highlighted={isCurrent}>
                   {row.playoffSpots}
                 </TableCell>
-                <TableCell highlighted={isCurrent}>{row.inTheMoney}</TableCell>
+                {isPaid ? (
+                  <TableCell highlighted={isCurrent}>{row.inTheMoney}</TableCell>
+                ) : null}
               </TableRow>
             </Reveal>
           );
@@ -1224,10 +1227,10 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
 const FinalsPage: React.FC<{
   onReadRules: () => void;
   onInvite?: () => void;
-  inTheMoney: number;
+  prizePlaces: number;
   isPaid: boolean;
   showSocialFollow: boolean;
-}> = ({ onReadRules, onInvite, inTheMoney, isPaid, showSocialFollow }) => {
+}> = ({ onReadRules, onInvite, prizePlaces, isPaid, showSocialFollow }) => {
   const compact = useCompactScreen();
   const [champion, ...placed] = ladders;
   const heroSize = compact ? 104 : 128;
@@ -1273,7 +1276,7 @@ const FinalsPage: React.FC<{
               <>
                 {"Win the Final to be crowned "}
                 <Accent gold>champion</Accent>
-                {`! Top\u00A0${inTheMoney} ${isPaid ? "paid" : "awarded CP"} in a full ladder.`}
+                {`! Top\u00A0${prizePlaces} ${isPaid ? "paid" : "awarded CP"} in a full ladder.`}
               </>
             ),
           },

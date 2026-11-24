@@ -76,12 +76,15 @@ describe("ladder pre-registration display", () => {
   it("shows the full-ladder prize table from the shared payout split", () => {
     const rows = getFullLadderPrizeTable(cashSingles);
     expect(rows.map((row) => [row.label, row.cash])).toEqual([
-      ["1st", 14352],
-      ["2nd", 8192],
+      ["1st", 10683],
+      ["2nd", 6553],
       ["3rd", 4096],
       ["4th", 2048],
-      ["5th–32nd", 292],
-      ["33rd–64th", 128],
+      ["Joint 5th", 819],
+      ["Joint 9th", 460],
+      ["Joint 17th", 256],
+      ["Joint 33rd", 204],
+      ["Joint 65th", 0],
     ]);
   });
 });

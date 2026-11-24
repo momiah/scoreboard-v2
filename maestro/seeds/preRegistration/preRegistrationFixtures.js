@@ -4,6 +4,7 @@ import {
   LADDER_TYPE,
   formatCurrency,
   getLadderPlayoffStructure,
+  getLadderPrizePlaces,
 } from "@shared";
 import { Country } from "country-state-city";
 import {
@@ -185,17 +186,16 @@ export const expectedFor = (key, { registrantCount }) => {
   const ladder = ladderOf(key);
   const cash = isCashLadder(ladder);
   const noun = getLadderEntrantNoun(ladder.ladderType);
-  const { inTheMoney, playoffSpots } = getLadderPlayoffStructure(
-    ladder.maxPlayers,
-  );
+  const { playoffSpots } = getLadderPlayoffStructure(ladder.maxPlayers);
+  const prizePlaces = getLadderPrizePlaces(ladder.maxPlayers, cash);
   const size = `${ladder.maxPlayers.toLocaleString("en-GB")} ${noun}s`;
   const table = getFullLadderPrizeTable(ladder);
   const values = {
     title: getLadderTitle(ladder),
     pool: formatLadderPrizePool(ladder),
     meta: cash
-      ? `${size} · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}paid`
-      : `${size} · Top ${inTheMoney} win CP`,
+      ? `${size} · Top ${prizePlaces} ${noun === "team" ? "teams " : ""}paid`
+      : `${size} · Top ${prizePlaces} win CP`,
     location: getLadderLocation(ladder),
     entry: cash ? `${formatCurrency(ladder.entryFee, ladder.currencyType)}*` : "Free",
     entryCaption: cash ? (noun === "team" ? "entry per team" : "entry") : "to enter",
@@ -208,13 +208,18 @@ export const expectedFor = (key, { registrantCount }) => {
     firstPrize: cash
       ? formatCurrency(table[0].cash, ladder.currencyType)
       : table[0].cp.toLocaleString("en-GB"),
+    jointPlace: table[4].label,
     lastPlace: table[table.length - 1].label,
     entrants: noun === "team" ? "teams" : "players",
     objective: `Top ${playoffSpots}`,
     seasonRounds: `${Math.log2(playoffSpots)} rounds`,
     seasonPlayoffs: `The top ${playoffSpots} ${noun}s play a knockout.`,
   };
-  if (cash) values.footnote = `18+ only. ${getPlatformFeeFootnote(ladder)}`;
+  if (cash) {
+    const last = table[table.length - 1];
+    values.footnote = `18+ only. ${getPlatformFeeFootnote(ladder)}`;
+    values.lastCash = last.cash > 0 ? formatCurrency(last.cash, ladder.currencyType) : "–";
+  }
   else values.eligibilityRule = getLadderEligibilityRule(ladder);
   return values;
 };

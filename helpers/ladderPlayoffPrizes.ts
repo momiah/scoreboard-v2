@@ -1,6 +1,6 @@
 import {
-  getLadderPayouts,
   getLadderPlacePrize,
+  getLadderPrizeBands,
   getLadderPrizeSetup,
   roundLabel,
 } from "@shared/helpers";
@@ -16,18 +16,9 @@ const placeName = (place: number): string =>
   ["Champion", "Runner-up", "3rd place", "4th place"][place - 1] ??
   `${place}th`;
 
-/** Who finishes in a band of places: the rounds they were knocked out in. */
-const knockedOutIn = (fromPlace: number, toPlace: number): string => {
-  if (fromPlace === toPlace && fromPlace <= 4) return placeName(fromPlace);
-  const rounds: number[] = [];
-  for (let players = 8; players <= toPlace; players *= 2) {
-    if (players / 2 + 1 >= fromPlace) rounds.push(players);
-  }
-  if (rounds.length === 0) return `${fromPlace}th–${toPlace}th`;
-  const first = roundLabel(rounds[0]);
-  const last = roundLabel(rounds[rounds.length - 1]);
-  return rounds.length === 1 ? first : `${first} to ${last}`;
-};
+/** Who finishes in a band of places: the place, or the round a band's sides were knocked out in. */
+const knockedOutIn = (fromPlace: number, toPlace: number): string =>
+  fromPlace === toPlace ? placeName(fromPlace) : roundLabel(toPlace);
 
 export interface LadderPrizeRow {
   fromPlace: number;
@@ -40,13 +31,9 @@ export interface LadderPrizeRow {
 /** Every paid place of the ladder, with what each player or team takes. */
 export const getLadderPrizeTable = (ladder: PrizeLadder): LadderPrizeRow[] => {
   const { pool, size } = getLadderPrizeSetup(ladder);
-  const cash = getLadderPayouts(pool.cash, size);
-  return getLadderPayouts(pool.xp, size).map((cpBand, index) => ({
-    fromPlace: cpBand.fromPlace,
-    toPlace: cpBand.toPlace,
-    label: knockedOutIn(cpBand.fromPlace, cpBand.toPlace),
-    cash: pool.cash > 0 ? (cash[index]?.each ?? 0) : 0,
-    cp: cpBand.each,
+  return getLadderPrizeBands(pool, size).map((band) => ({
+    ...band,
+    label: knockedOutIn(band.fromPlace, band.toPlace),
   }));
 };
 
