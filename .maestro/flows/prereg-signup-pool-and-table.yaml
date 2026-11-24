@@ -2,7 +2,8 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-# 9. The sign-up screen's pot and prize table match the shared prize helpers; registrants show, or "Be the first …" when nobody has.
+# 9. The sign-up screen's pot and prize table match the shared prize helpers: a "Joint 5th" band per playoff round,
+#    and a CP-only last row showing "–" for cash; registrants show, or "Be the first …" when nobody has.
 - runFlow:
     file: ../utilities/prereg/seed.yaml
     env:
@@ -20,6 +21,11 @@ onFlowStart:
     env:
       KEY: "cash-doubles-footnote"
       NAME: "footnote"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-last-cash"
+      NAME: "lastCash"
 - runFlow:
     file: ../utilities/prereg/open-signup.yaml
     env:
@@ -52,8 +58,16 @@ onFlowStart:
       id: "ladder-pre-registration-prize-table"
 - scrollUntilVisible:
     element:
+      text: ${output["cash-doubles-joint-place"]}
+    direction: DOWN
+- scrollUntilVisible:
+    element:
       text: ${output["cash-doubles-last-place"]}
     direction: DOWN
+- assertVisible:
+    text: ${output.lastCash}
+    childOf:
+      id: "ladder-pre-registration-prize-table"
 - scrollUntilVisible:
     element:
       text: ${output.footnote.replace("18+ only. ", "")}
