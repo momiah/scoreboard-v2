@@ -58,11 +58,11 @@ onFlowStart:
       id: "ladder-pre-registration-prize-table"
 - scrollUntilVisible:
     element:
-      text: ${output["cash-doubles-joint-place"]}
+      text: ${output["cash-doubles-joint-place_re"]}
     direction: DOWN
 - scrollUntilVisible:
     element:
-      text: ${output["cash-doubles-last-place"]}
+      text: ${output["cash-doubles-last-place_re"]}
     direction: DOWN
 - assertVisible:
     text: ${output.lastCash}
