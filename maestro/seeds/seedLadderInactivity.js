@@ -15,6 +15,7 @@ import {
   markLadderInactivityWarningSent,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 
 export const MAESTRO_INACTIVITY_LADDER_ID = "maestro-inactivity-ladder";
@@ -68,6 +69,7 @@ const ladderDocument = ({ testUser, removalAt, removed }) => {
     // Removal happens while registration is still open.
     status: LADDER_STATUS.REGISTRATION_OPEN,
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2048,

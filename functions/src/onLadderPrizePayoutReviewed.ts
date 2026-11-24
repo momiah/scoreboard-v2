@@ -12,11 +12,12 @@ import type {
   LadderPrizePayout,
   LadderPrizePayoutStatus,
 } from "courtchamps-shared/types";
-import { formatLadderPrizeWon, ordinalPlace } from "courtchamps-shared/helpers";
+import { formatLadderPrizeWon } from "courtchamps-shared/helpers";
 
 import { buildPrizeAwardUpdate } from "./helpers/prizeAwards";
 import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
 import { payHeldLadderPrize } from "./helpers/payHeldLadderPrize";
+import { finishPlace } from "./helpers/ladderPlayoffTies";
 
 type Db = admin.firestore.Firestore;
 
@@ -98,7 +99,7 @@ export const applyLadderPrizeReview = async ({
   const name = ladder?.name ?? "the ladder";
   const format = (amount: LadderPrizeAmount) =>
     formatLadderPrizeWon(amount, applied.currencyType) ?? "nothing";
-  const place = `${applied.voided ? "joint " : ""}${ordinalPlace(applied.place)} place`;
+  const place = `finishing ${finishPlace(applied.place, applied.voided)}`;
   const reason = applied.review?.reason ? ` Reason: ${applied.review.reason}` : "";
   const message =
     applied.status === LADDER_PRIZE_PAYOUT_STATUS.PAID

@@ -1,4 +1,4 @@
-import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
+import { LADDER_PLAYOFF_TIE_DAYS, PAYOUT_STRUCTURE } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 import {
   LADDER_MATCH_STATUS,
@@ -61,6 +61,7 @@ const ladder = {
   participantCount: 128,
   maxPlayers: 256,
   currencyType: "GBP",
+  payoutStructure: PAYOUT_STRUCTURE.PROGRESSIVE,
 };
 
 const entrant = (key: string): LadderPlayoffEntrant => ({
@@ -284,7 +285,7 @@ describe("resolveLadderPlayoffTie", () => {
     const out = await db.doc(`users/${b}/notifications/playoff-out-${quarter.tieId}-${LADDER}-${b}`).get();
     expect(out.data()).toMatchObject({
       title: "Knocked out in the Quarter-Final",
-      message: "You've been knocked out in the Quarter-Final of Test Ladder. You've been awarded £160 and 400 CP, paid when the playoffs finish.",
+      message: "You've been knocked out in the Quarter-Final of Test Ladder. You've been awarded £160 and 200 CP, paid when the playoffs finish.",
     });
 
   });
@@ -345,11 +346,11 @@ describe("resolveLadderPlayoffTie", () => {
 
     const champion = await db.doc(`users/${f1}/notifications/playoff-finish-r2-s0-${LADDER}-${f1}`).get();
     expect(champion.data()).toMatchObject({
-      title: "You placed 1st",
-      message: "Congratulations, you have placed 1st in Test Ladder and been awarded £897 and 2,240 CP, paid when the playoffs finish.",
+      title: "You finished 1st",
+      message: "Congratulations, you finished 1st in Test Ladder and been awarded £897 and 1,120 CP, paid when the playoffs finish.",
     });
     const runnerUp = await db.doc(`users/${f2}/notifications/playoff-finish-r2-s0-${LADDER}-${f2}`).get();
-    expect(runnerUp.data()?.message).toBe("Congratulations, you have placed 2nd in Test Ladder and been awarded £512 and 1,280 CP, paid when the playoffs finish.");
+    expect(runnerUp.data()?.message).toBe("Congratulations, you finished 2nd in Test Ladder and been awarded £512 and 640 CP, paid when the playoffs finish.");
 
     await seedLeg(thirdPlace, 1, [t2, t2, t1]);
     await seedLeg(thirdPlace, 2, [t2, t2, t2]);
@@ -357,7 +358,7 @@ describe("resolveLadderPlayoffTie", () => {
     if (!thirdResolution) throw new Error("expected a resolution");
     await notifyLadderPlayoffResolution({ ladder, resolution: thirdResolution });
     const fourth = await db.doc(`users/${t1}/notifications/playoff-finish-r2-s1-${LADDER}-${t1}`).get();
-    expect(fourth.data()?.message).toBe("Congratulations, you have placed 4th in Test Ladder and been awarded £204 and 512 CP.");
+    expect(fourth.data()?.message).toBe("Congratulations, you finished 4th in Test Ladder and been awarded £204 and 256 CP.");
 
     expect(await completeLadderPlayoffsIfFinished({ db, ladderId: LADDER, resolution: thirdResolution, now: start })).toBe(true);
     expect((await db.doc(`ladders/${LADDER}`).get()).data()).toMatchObject({
@@ -523,7 +524,7 @@ describe("an inactive side", () => {
     });
     const out = await db.doc(`users/${b}/notifications/playoff-out-${first.tieId}-${LADDER}-${b}`).get();
     expect(out.data()?.message).toBe(
-      `You've been knocked out in the Quarter-Final of ${ladder.name} because you didn't arrange or play a match before the deadline. You've been awarded £160 and 400 CP, paid when the playoffs finish.`,
+      `You've been knocked out in the Quarter-Final of ${ladder.name} because you didn't arrange or play a match before the deadline. You've been awarded £160 and 200 CP, paid when the playoffs finish.`,
     );
     const through = await db.doc(`users/${a}/notifications/playoff-through-r2-s0-${LADDER}-${a}`).get();
     expect(through.data()?.message).toContain("Your opponent didn't arrange or play a match, so you go through on a walkover.");
@@ -1148,15 +1149,15 @@ describe("prize payouts", () => {
         expect(stats[key] ?? 0).toBe(index === place - 1 ? 1 : 0),
       );
     }
-    expect(await xpGained(final.winner)).toBe(2240);
-    expect(await xpGained(quarterLosers[0])).toBe(400);
+    expect(await xpGained(final.winner)).toBe(1120);
+    expect(await xpGained(quarterLosers[0])).toBe(200);
     expect((await profileOf(final.winner)).tournamentStats).toEqual({ first: 0, second: 1, third: 0, fourth: 0 });
     expect((await profileOf(final.winner)).cashWon).toBeUndefined();
 
     const champion = await db.doc(`users/${final.winner}/notifications/playoff-finish-r3-s0-${LADDER}-${final.winner}`).get();
-    expect(champion.data()?.message).toBe("Congratulations, you have placed 1st in Test Ladder and been awarded 2,240 CP.");
+    expect(champion.data()?.message).toBe("Congratulations, you finished 1st in Test Ladder and been awarded 1,120 CP.");
     const fourth = await db.doc(`users/${third.loser}/notifications/playoff-finish-${await thirdPlaceId()}-${LADDER}-${third.loser}`).get();
-    expect(fourth.data()?.message).toBe("Congratulations, you have placed 4th in Test Ladder and been awarded 512 CP, paid when the playoffs finish.");
+    expect(fourth.data()?.message).toBe("Congratulations, you finished 4th in Test Ladder and been awarded 256 CP, paid when the playoffs finish.");
 
     expect(await ladderDoc()).toMatchObject({
       status: LADDER_STATUS.COMPLETED,
@@ -1247,30 +1248,30 @@ describe("prize payouts", () => {
     expect((await db.doc(payoutPath).get()).data()).toMatchObject({
       status: "held",
       place: 2,
-      prize: { cash: 0, cp: 1280 },
+      prize: { cash: 0, cp: 640 },
       paid: { cash: 0, cp: 0 },
       reason: "Disqualified: 3 cheating offences",
     });
     const held = await db.doc(`users/${opponent}/notifications/playoff-prize-${LADDER}-${opponent}`).get();
     expect(held.data()).toMatchObject({
       title: "Your prize is under review",
-      message: "Your prize for 2nd place in Test Ladder (1,280 CP) is under review because you were disqualified from the ladder. We'll let you know the outcome.",
+      message: "Your prize for finishing 2nd in Test Ladder (640 CP) is under review because you were disqualified from the ladder. We'll let you know the outcome.",
     });
     expect(await ladderDoc()).toMatchObject({ status: LADDER_STATUS.COMPLETED, prizesDistributed: true });
 
     await db.doc(payoutPath).update({
-      review: { decision: "payPart", amount: { cash: 0, cp: 640 }, reason: "Disqualified after the Final was arranged", decidedBy: "admin", decidedAt: start },
+      review: { decision: "payPart", amount: { cash: 0, cp: 320 }, reason: "Disqualified after the Final was arranged", decidedBy: "admin", decidedAt: start },
     });
     const applied = await applyLadderPrizeReview({ db, ladderId: LADDER, payoutId: `r3-s0-${opponent}`, now: start });
-    expect(applied).toMatchObject({ status: "partPaid", paid: { cash: 0, cp: 640 } });
-    expect(await xpGained(opponent)).toBe(640);
+    expect(applied).toMatchObject({ status: "partPaid", paid: { cash: 0, cp: 320 } });
+    expect(await xpGained(opponent)).toBe(320);
     expect((await profileOf(opponent)).ladderStats.second).toBe(1);
     const outcome = await db.doc(`users/${opponent}/notifications/playoff-prize-review-${LADDER}-${opponent}`).get();
     expect(outcome.data()?.message).toBe(
-      "After review, you've been paid 640 CP of your 1,280 CP prize for 2nd place in Test Ladder. Reason: Disqualified after the Final was arranged",
+      "After review, you've been paid 320 CP of your 640 CP prize for finishing 2nd in Test Ladder. Reason: Disqualified after the Final was arranged",
     );
     expect(await applyLadderPrizeReview({ db, ladderId: LADDER, payoutId: `r3-s0-${opponent}`, now: start })).toBeNull();
-    expect(await xpGained(opponent)).toBe(640);
+    expect(await xpGained(opponent)).toBe(320);
   });
 
   it("withholds a held prize when the admin decides not to pay", async () => {
@@ -1287,7 +1288,7 @@ describe("prize payouts", () => {
     expect(await applyLadderPrizeReview({ db, ladderId: LADDER, payoutId, now: start })).toMatchObject({ status: "withheld", paid: { cash: 0, cp: 0 } });
     expect(await xpGained(quarterLosers[1])).toBe(0);
     const outcome = await db.doc(`users/${quarterLosers[1]}/notifications/playoff-prize-review-${LADDER}-${quarterLosers[1]}`).get();
-    expect(outcome.data()?.message).toBe("After review, your 400 CP prize for 8th place in Test Ladder won't be paid. Reason: Abuse towards an opponent");
+    expect(outcome.data()?.message).toBe("After review, your 200 CP prize for finishing joint 5th in Test Ladder won't be paid. Reason: Abuse towards an opponent");
   });
 
   it("pays an earlier-round loser disqualified later in the playoffs nothing", async () => {
@@ -1313,7 +1314,7 @@ describe("prize payouts", () => {
     expect((await readTie("r3-s0")).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.VOID);
     const second = getLadderPlacePrize(freeLadder, 2).cp;
     const share = (getLadderPlacePrize(freeLadder, 1).cp - second) / 6;
-    expect(share).toBe(160);
+    expect(share).toBe(80);
     expect(await xpGained(user)).toBe(second);
     expect(await xpGained(opponent)).toBe(second);
     expect((await profileOf(user)).ladderStats.second).toBe(1);
@@ -1322,15 +1323,15 @@ describe("prize payouts", () => {
     expect(await ladderDoc()).toMatchObject({
       status: LADDER_STATUS.COMPLETED,
       prizesDistributed: true,
-      unclaimedPrizePot: { cash: 0, cp: 960 },
+      unclaimedPrizePot: { cash: 0, cp: 480 },
       retainedPrizeMoney: { cash: 0, cp: 0 },
     });
     const voided = await db.doc(`users/${user}/notifications/playoff-prize-${LADDER}-${user}`).get();
-    expect(voided.data()?.message).toBe("Your Final in Test Ladder wasn't played, so you finish joint 2nd and have been awarded 1,280 CP.");
+    expect(voided.data()?.message).toBe("Your Final in Test Ladder wasn't played, so you finish joint 2nd and have been awarded 640 CP.");
     const extra = await db.doc(`users/${third.winner}/notifications/playoff-prize-${LADDER}-${third.winner}`).get();
     expect(extra.data()).toMatchObject({
       title: "Extra prize money",
-      message: "You've been awarded 160 CP from Test Ladder's Unclaimed Prize Pot: prize money from playoff ties that weren't played.",
+      message: "You've been awarded 80 CP from Test Ladder's Unclaimed Prize Pot: prize money from playoff ties that weren't played.",
     });
   });
 
@@ -1348,8 +1349,8 @@ describe("prize payouts", () => {
     expect((await readTie(await thirdPlaceId())).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER);
     const final = await play("r3-s0", deadline);
 
-    const share = 18;
-    expect(await xpGained(final.winner)).toBe(getLadderPlacePrize(freeLadder, 1).cp + share + 4);
+    const share = 9;
+    expect(await xpGained(final.winner)).toBe(getLadderPlacePrize(freeLadder, 1).cp + share + 2);
     expect(await xpGained(final.loser)).toBe(getLadderPlacePrize(freeLadder, 2).cp + share);
     expect(await xpGained(semi.loser)).toBe(getLadderPlacePrize(freeLadder, 3).cp + share);
     expect(await xpGained(voidUser)).toBe(getLadderPlacePrize(freeLadder, 8).cp);
@@ -1364,7 +1365,7 @@ describe("prize payouts", () => {
     expect(await ladderDoc()).toMatchObject({
       status: LADDER_STATUS.COMPLETED,
       prizesDistributed: true,
-      unclaimedPrizePot: { cash: 0, cp: 112 },
+      unclaimedPrizePot: { cash: 0, cp: 56 },
     });
   });
 });

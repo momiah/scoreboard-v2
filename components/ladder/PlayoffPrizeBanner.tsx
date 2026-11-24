@@ -13,7 +13,7 @@ interface PlayoffPrizeBannerProps {
   isPaid: boolean;
 }
 
-const payoutText = (
+export const payoutText = (
   prize: LadderPlacePrize,
   currencyType: string,
   isPaid: boolean,

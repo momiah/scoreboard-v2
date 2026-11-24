@@ -17,6 +17,7 @@ import {
   buildLadderParticipant,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { deleteReportsForLadder, seedStrikes } from "./reportFixtures";
 import {
@@ -145,6 +146,7 @@ export const seedMatchCancellationFlow = async ({
     seasonStartedAt: daysFromNow(-5),
     playoffStartsAt: daysFromNow(50),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2048,

@@ -17,6 +17,7 @@ import {
   createLadderMatchGames,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { buildLadderCourtSubmission } from "@shared/helpers";
 import { toLadderHomeCourt } from "../../helpers/ladderHomeCourt";
@@ -297,6 +298,7 @@ export const seedHomeCourtLadder = ({
     seasonStartedAt: daysFromNow(-1),
     playoffStartsAt: daysFromNow(30),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers,

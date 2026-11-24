@@ -37,7 +37,7 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 | The waiting side's opponent is decided (done) | the side that was waiting | "Your {round} opponent is decided": "Your {round} against {opponent} is ready! You have 10 days to complete both matches" | Playoffs |
 | A tie is lost before the Semi-Finals (done) | the losers | "You've been knocked out in the {round} of {ladder}." + "You've been awarded {prize}, paid when the playoffs finish." when they won something | Playoffs |
 | A Semi-Final is lost (done) | the losers | "You'll play for 3rd place" (opponent not known yet), then "Your Semi-Final in {ladder} is over, and you'll play for 3rd place against {opponent}. You have 10 days to complete both matches" (the side that just arrived) and "Your Semi-Final in {ladder} is over, and your 3rd-place tie against {opponent} is ready! You have 10 days to complete both matches" (the side that was waiting) | Playoffs |
-| The Final / 3rd-place tie finishes (done) | its four players | "Congratulations, you have placed {place} in {ladder} and been awarded {prize}." (prize part only when won); the ladder is marked Completed once both finish | Summary |
+| The Final / 3rd-place tie finishes (done) | its four players | "Congratulations, you finished {place} in {ladder} and been awarded {prize}." ({place} from `formatLadderFinishPlace`) (prize part only when won); the ladder is marked Completed once both finish | Summary |
 | Ladder complete | every finisher | "Congratulations! You finished {1st / 2nd / 3rd / 4th / 5th–8th …} in {ladder} and won {prize money} and {prize CP}." (omit prizes they didn't win) | Summary |
 
 ### Who wins a prize

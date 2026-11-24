@@ -34,12 +34,14 @@ appId: com.courtchamp
     id: "how-to-play-prize-table"
 - assertVisible: "Finish"
 - assertVisible: "CP each"
-- assertVisible: "Champion"
-- assertVisible: "Runner-up"
-- assertVisible: "3rd place"
-- assertVisible: "4th place"
-- assertVisible: "Quarter-Final"
-- assertVisible: ${CHAMPION_ROW}
+- assertVisible: "1st"
+- assertVisible: "2nd"
+- assertVisible: "3rd"
+- assertVisible: "4th"
+- assertVisible: "Joint 5th"
+- assertVisible: ${output.lastBand}
+- assertNotVisible: ".*Quarter-Final.*"
+- assertVisible: ${output.championRow}
 - tapOn:
     id: "how-to-play-next"
 - extendedWaitUntil:

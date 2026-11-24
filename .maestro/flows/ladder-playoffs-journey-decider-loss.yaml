@@ -3,6 +3,10 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - runFlow:
+    file: ../utilities/playoffs/expected-prizes.yaml
+    env:
+      SUFFIX: ""
+- runFlow:
     file: ../utilities/playoffs/journey-advance.yaml
     env:
       SUFFIX: ""
@@ -12,8 +16,11 @@ onFlowStart:
       CARD: "playoff-match-decider"
       MATCH: "r1-s1-leg3"
       GAME: "g1"
-      NOTIFICATION: ".*knocked out in the Round of 16 of Maestro Playoffs 256\\..*"
-- assertNotVisible: ".*awarded.*"
+      NOTIFICATION: ".*${output.roundOf16Out}.*"
+- runFlow:
+    file: ../utilities/playoffs/expected-prizes.yaml
+    env:
+      SUFFIX: "-paid"
 - runFlow:
     file: ../utilities/playoffs/journey-advance.yaml
     env:
@@ -24,5 +31,5 @@ onFlowStart:
       CARD: "playoff-match-decider"
       MATCH: "r1-s1-leg3"
       GAME: "g1"
-      NOTIFICATION: ".*knocked out in the Round of 16 of Maestro Playoffs 256 \\(Paid\\)\\..*"
+      NOTIFICATION: ".*${output.roundOf16Out}.*"
 - assertNotVisible: ".*awarded.*"

@@ -1,0 +1,44 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/expected-prizes.yaml
+    env:
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "qf-leg2-loss"
+      TIE: "r2-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r2-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*${output.quarterFinalOut}.*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-held-prize-qf"
+- runFlow:
+    file: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*open Maestro Playoffs 256 on Summary.*"
+    timeout: 30000
+- tapOn: ".*open Maestro Playoffs 256 on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 40000
+- scrollUntilVisible:
+    element:
+      id: "ladder-prize-under-review"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Your prize is under review"
+- assertVisible:
+    text: ".*${output.quarterFinalHeld}.*"
+- assertVisible:
+    text: ".*finishing joint 5th.*"
+- assertNotVisible: ".*8th.*"

@@ -3,6 +3,10 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - runFlow:
+    file: ../utilities/playoffs/expected-prizes.yaml
+    env:
+      SUFFIX: ""
+- runFlow:
     file: ../utilities/playoffs/journey-finish-ladder.yaml
     env:
       SUFFIX: ""
@@ -10,10 +14,14 @@ onFlowStart:
       SEED: "final-leg2-win"
       TIE: "r4-s0"
       MATCH: "r4-s0-leg2"
-      PLACED: ".*you have placed 1st in Maestro Playoffs 256 and been awarded 4,480 CP\\..*"
+      PLACED: ".*${output.finished1}.*"
       OPPONENT: "opponent-placed-2nd"
       COMPANION_WINNER: "companion-winner-placed-3rd"
       COMPANION_LOSER: "companion-loser-placed-4th"
+- runFlow:
+    file: ../utilities/playoffs/expected-prizes.yaml
+    env:
+      SUFFIX: "-paid"
 - runFlow:
     file: ../utilities/playoffs/journey-finish-ladder.yaml
     env:
@@ -22,7 +30,7 @@ onFlowStart:
       SEED: "final-leg2-win"
       TIE: "r4-s0"
       MATCH: "r4-s0-leg2"
-      PLACED: ".*you have placed 1st in Maestro Playoffs 256 \\(Paid\\) and been awarded £1793 and 4,480 CP\\..*"
+      PLACED: ".*${output.finished1}.*"
       OPPONENT: "opponent-placed-2nd"
       COMPANION_WINNER: "companion-winner-placed-3rd"
       COMPANION_LOSER: "companion-loser-placed-4th"

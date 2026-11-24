@@ -7,6 +7,7 @@ import {
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
+  PAYOUT_STRUCTURE,
 } from "courtchamps-shared/types";
 
 const PROJECT_ID = "demo-courtchamps";
@@ -99,6 +100,7 @@ const seedLadder = async (
     maxPlayers: 2048,
     entryFee: 0,
     currencyType: "GBP",
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     ...overrides,
   });
 };

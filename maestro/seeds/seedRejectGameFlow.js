@@ -22,6 +22,7 @@ import {
   notificationSchema,
   createLadderMatchGames,
   buildLadderParticipant,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 
@@ -132,6 +133,7 @@ export const seedRejectGameFlow = async ({
     seasonStartedAt: new Date(),
     playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2,

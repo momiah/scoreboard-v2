@@ -25,6 +25,7 @@ import {
   getLadderSeasonStartedNotification,
   notificationSchema,
   notificationTypes,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { resetHomeCourtNotifications } from "./homeCourtFixtures";
 
@@ -183,6 +184,7 @@ export const seedLadderSeasonStart = async ({
     genderType: "Mixed",
     courtIds: [],
     entryFee: 0,
+    payoutStructure: PAYOUT_STRUCTURE.LINEAR,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers: 2048,

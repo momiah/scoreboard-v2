@@ -105,6 +105,7 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
               ladderType: preRegistration.ladderType,
               entryFee: preRegistration.entryFee,
               currencyType: preRegistration.currencyType,
+              payoutStructure: preRegistration.payoutStructure,
               maxPlayers,
               participantCount: maxPlayers,
             }

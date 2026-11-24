@@ -1,0 +1,48 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-expected-po${SUFFIX}-prizes"
+- copyTextFrom:
+    id: "maestro-expected-cashPool"
+- evalScript: ${output.cashPool = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-cpPool"
+- evalScript: ${output.cpPool = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-championRow"
+- evalScript: ${output.championRow = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-lastBand"
+- evalScript: ${output.lastBand = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-finished1"
+- evalScript: ${output.finished1 = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-finished2"
+- evalScript: ${output.finished2 = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-finished3"
+- evalScript: ${output.finished3 = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-finished4"
+- evalScript: ${output.finished4 = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-quarterFinalOut"
+- evalScript: ${output.quarterFinalOut = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-roundOf16Out"
+- evalScript: ${output.roundOf16Out = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-roundOf16Secured"
+- evalScript: ${output.roundOf16Secured = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-roundOf16Next"
+- evalScript: ${output.roundOf16Next = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-cpPot"
+- evalScript: ${output.cpPot = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-quarterFinalHeld"
+- evalScript: ${output.quarterFinalHeld = maestro.copiedText}
