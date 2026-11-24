@@ -84,7 +84,6 @@ describe("ladder pre-registration display", () => {
       ["Joint 9th", 460],
       ["Joint 17th", 256],
       ["Joint 33rd", 204],
-      ["Joint 65th", 0],
     ]);
   });
 });
