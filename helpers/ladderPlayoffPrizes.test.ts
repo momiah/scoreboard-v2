@@ -6,6 +6,7 @@ describe("getLadderPrizeTable", () => {
       entryFee: 20,
       participantCount: 2048,
       maxPlayers: 2048,
+      payoutStructure: "linear",
     });
     expect(rows.map((row) => row.label)).toEqual([
       "1st",

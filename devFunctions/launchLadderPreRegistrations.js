@@ -12,6 +12,7 @@ import {
   LADDER_PRE_REGISTRATIONS_COLLECTION,
   LADDER_PRE_REGISTRATION_STATUS,
   LADDER_TYPE,
+  PAYOUT_STRUCTURE,
 } from "@shared";
 import { db } from "../services/firebase.config";
 
@@ -21,6 +22,7 @@ const LAUNCH_DETAILS = {
   image: "",
   currencyType: "GBP",
   maxPlayers: 2048,
+  payoutStructure: PAYOUT_STRUCTURE.LINEAR,
 };
 
 export const LAUNCH_LADDER_PRE_REGISTRATIONS = [

@@ -28,6 +28,7 @@ import {
   getEffectiveLadderSize,
   getLadderPlayoffStructure,
   getLadderPrizePlaces,
+  PAYOUT_STRUCTURE,
   calculateLadderPrizePool,
   ccImageEndpoint,
   socialMediaPlatforms,
@@ -79,6 +80,7 @@ export type HowToPlayLadder = Pick<
   | "entryFee"
   | "currencyType"
   | "maxPlayers"
+  | "payoutStructure"
   | "participantCount"
   | "playoffBracketSize"
   | "playoffEntrantCount"
@@ -128,7 +130,11 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       <FinalsPage
         onReadRules={onReadRules}
         onInvite={onInvite}
-        prizePlaces={getLadderPrizePlaces(maxPlayers, (ladder?.entryFee ?? 0) > 0)}
+        prizePlaces={getLadderPrizePlaces(
+          maxPlayers,
+          (ladder?.entryFee ?? 0) > 0,
+          ladder?.payoutStructure ?? PAYOUT_STRUCTURE.LINEAR,
+        )}
         isPaid={(ladder?.entryFee ?? 0) > 0}
         showSocialFollow={config.showSocialFollow}
       />

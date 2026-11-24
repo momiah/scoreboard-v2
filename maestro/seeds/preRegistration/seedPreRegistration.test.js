@@ -106,6 +106,7 @@ const liveDoc = (entryFee) => ({
   genderType: "Mens",
   entryFee,
   currencyType: "GBP",
+  payoutStructure: "linear",
   maxPlayers: 2048,
   status: "open",
   expectedOpensAt: null,
