@@ -88,6 +88,13 @@ import {
   findGameInCompetition,
 } from "@/helpers/approveCompetitionGame";
 import { deleteClubAndDetach } from "../helpers/clubs/deleteClubAndDetach";
+import {
+  clubJoinResponseMessage,
+  clubLeftMessage,
+  clubNotification,
+  getClubName,
+  notifyClubMembersOfCompetition,
+} from "../helpers/clubs/clubNotifications";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -444,6 +451,17 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
               }
             : null,
         });
+        if (owner?.userId) {
+          await notifyClubMembersOfCompetition({
+            clubId: data.clubId,
+            competitionType: competitionType as "league" | "tournament",
+            competitionId: documentId,
+            name: title ?? "",
+            creatorId: owner.userId,
+            creatorName: formatDisplayName(owner),
+            sendNotification,
+          });
+        }
       }
     } catch (error) {
       console.error("Error finishing competition setup:", error);
@@ -1018,6 +1036,29 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const notifyJoinRequestResponse = async ({
+    clubId,
+    requesterId,
+    responderId,
+    accepted,
+  }: {
+    clubId: string;
+    requesterId: string;
+    responderId: string;
+    accepted: boolean;
+  }) => {
+    const clubName = await getClubName(clubId);
+    if (!clubName) return;
+    await sendNotification(
+      clubNotification({
+        clubId,
+        recipientId: requesterId,
+        senderId: responderId,
+        message: clubJoinResponseMessage(clubName, accepted),
+      }),
+    );
+  };
+
   const acceptClubJoinRequest = async ({
     senderId,
     clubId,
@@ -1061,6 +1102,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         lastName: participantData.lastName,
         profileImage: newParticipant.profileImage,
       });
+      await notifyJoinRequestResponse({
+        clubId,
+        requesterId: senderId,
+        responderId: userId,
+        accepted: true,
+      });
     } catch (error) {
       console.error("Error accepting club join request:", error);
     }
@@ -1078,13 +1125,21 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     userId: string;
   }) => {
     try {
-      await resolveClubPendingEntry({
+      const outcome = await resolveClubPendingEntry({
         clubId,
         pendingKey: "pendingRequests",
         memberId: senderId,
         notificationOwnerId: userId,
         notificationId,
         accept: false,
+      });
+      if (outcome !== "declined") return;
+
+      await notifyJoinRequestResponse({
+        clubId,
+        requesterId: senderId,
+        responderId: userId,
+        accepted: false,
       });
     } catch (error) {
       console.error("Error declining club join request:", error);
@@ -1901,6 +1956,33 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const leaveClub = async ({
+    clubId,
+    member,
+  }: {
+    clubId: string;
+    member: UserProfile;
+  }): Promise<boolean> => {
+    const club = await removeClubMembership({ clubId, userId: member.userId });
+    if (!club) return false;
+
+    const ownerId = club.clubOwner?.userId;
+    if (ownerId) {
+      await sendNotification(
+        clubNotification({
+          clubId,
+          recipientId: ownerId,
+          senderId: member.userId,
+          message: clubLeftMessage(
+            formatDisplayName(member),
+            club.clubName ?? "",
+          ),
+        }),
+      );
+    }
+    return true;
+  };
+
   // Fully delete a club: its heavy subcollections (participants / feed / chat)
   // and then the root doc. Firestore's client SDK has no recursive delete, so
   // each subcollection is read and batch-deleted (500-op batch limit).
@@ -2398,6 +2480,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         assignClubAdmin,
         revokeClubAdmin,
         removeClubMember,
+        leaveClub,
         deleteClub,
         requestToJoinLeague,
         acceptCompetitionJoinRequest,

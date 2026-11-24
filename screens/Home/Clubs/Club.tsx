@@ -270,9 +270,9 @@ const ClubScreen: React.FC = () => {
               />
 
               <ClubDetailsContainer>
-                {/* Top row: back button + hamburger (owner/admin only) */}
+                {/* Top row: back button + hamburger (members) */}
                 <BackRow>
-                  {canInvite ? (
+                  {isMember ? (
                     <BackButton
                       testID="club-settings-button"
                       onPress={() =>

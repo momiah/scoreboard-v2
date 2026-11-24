@@ -1,12 +1,10 @@
 import * as admin from "firebase-admin";
+import { buildCompetitionWonEvent } from "courtchamps-shared/helpers";
 
 /**
- * Admin-SDK counterpart of the client `clubFeed` helper. Cloud functions run
- * with firebase-admin (a different Firestore handle to the client SDK), so the
- * feed-writing logic is duplicated here rather than imported from the app.
- *
- * Best-effort: a feed write must never fail prize distribution, so errors are
- * swallowed.
+ * Admin-SDK writer for the club feed; the event itself comes from the shared
+ * builder the app uses. Best-effort: a feed write must never fail prize
+ * distribution, so errors are swallowed.
  */
 export const writeClubCompetitionWon = async ({
   clubId,
@@ -30,11 +28,12 @@ export const writeClubCompetitionWon = async ({
       .collection("feed")
       .doc()
       .set({
-        type: "competition_won",
-        title: "Competition winner",
-        message: `${winnerName} won the ${competitionType} "${name}"`,
-        icon: "trophy-outline",
-        data: { competitionId, competitionType },
+        ...buildCompetitionWonEvent({
+          name,
+          competitionType,
+          competitionId,
+          winnerName,
+        }),
         createdAt: new Date(),
       });
   } catch (error) {
