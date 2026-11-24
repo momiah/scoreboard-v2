@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 # 9. The sign-up screen's pot and prize table match the shared prize helpers: a "Joint 5th" band per playoff round,
-#    and a CP-only last row showing "–" for cash; registrants show, or "Be the first …" when nobody has.
+#    and a cash ladder's table ending at its last cash place; registrants show, or "Be the first …" when nobody has.
 - runFlow:
     file: ../utilities/prereg/seed.yaml
     env:

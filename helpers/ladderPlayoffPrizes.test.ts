@@ -1,7 +1,7 @@
 import { getLadderPrizeTable } from "./ladderPlayoffPrizes";
 
 describe("getLadderPrizeTable", () => {
-  it("labels places like every other prize table: 1st to 4th, then Joint Nth per round", () => {
+  it("labels places like every other prize table, and a cash ladder's table ends at its last cash place", () => {
     const rows = getLadderPrizeTable({
       entryFee: 20,
       participantCount: 2048,
@@ -17,9 +17,7 @@ describe("getLadderPrizeTable", () => {
       "Joint 9th",
       "Joint 17th",
       "Joint 33rd",
-      "Joint 65th",
     ]);
-    expect(rows[rows.length - 1].cash).toBe(0);
-    expect(rows[rows.length - 1].cp).toBeGreaterThan(0);
+    expect(rows[rows.length - 1].cash).toBeGreaterThan(0);
   });
 });
