@@ -13,6 +13,7 @@ import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
 import { stripConfirmPassword } from "./stripConfirmPassword";
+import { declineSeededRequests } from "./declineSeededRequests";
 import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
 import { sendMail, retryMail } from "./sendMail";
 import {
@@ -48,4 +49,5 @@ export {
   checkEmailAvailable,
   checkUsernameAvailable,
   stripConfirmPassword,
+  declineSeededRequests,
 };

@@ -10,6 +10,7 @@ import {
   Image,
   Text,
   TouchableOpacity,
+  Alert,
   Platform,
   Linking,
   FlatList,
@@ -48,6 +49,7 @@ import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistra
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
+import { seedLiveActivity } from "@/devFunctions/liveActivity/seedLiveActivity";
 const MaestroHarness = __DEV__
   ? // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("../../maestro/MaestroHarness").default
@@ -248,6 +250,20 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
+
+        {__DEV__ && currentUser ? (
+          <TouchableOpacity
+            onPress={() =>
+              seedLiveActivity()
+                .then((result) =>
+                  Alert.alert("Seeded", JSON.stringify(result, null, 1)),
+                )
+                .catch((error) => Alert.alert("Seed failed", String(error)))
+            }
+          >
+            <Text style={{ color: "white" }}>Seed Live Activity</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {MaestroHarness && currentUser ? (
           <MaestroHarness currentUser={currentUser} />

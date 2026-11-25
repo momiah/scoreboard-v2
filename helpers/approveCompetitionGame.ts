@@ -1,10 +1,4 @@
-import {
-  doc,
-  increment,
-  runTransaction,
-  DocumentData,
-  UpdateData,
-} from "firebase/firestore";
+import { doc, increment, runTransaction } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { notificationTypes } from "@shared";
 import {
@@ -15,17 +9,13 @@ import {
   UserProfile,
 } from "@shared/types";
 import {
-  advanceBrackets,
   applyLeagueGameResults,
-  calculatePlayerPerformance,
   canRespondToGame,
-  calculateTeamPerformance,
   getGamePlayerIds,
-  getOrderedApprovedGames,
   isLeagueGamePending,
-  recalculateParticipantsFromFixtures,
 } from "@shared/helpers";
 import { buildCompetitionConfig } from "./getCompetitionConfig";
+import { applyApprovedTournamentGame } from "./Tournament/applyApprovedTournamentGame";
 
 export const findGameInCompetition = (
   competitionData: { fixtures?: Fixtures[]; games?: Game[] },
@@ -177,61 +167,18 @@ export const approveCompetitionGame = ({
       return outcome;
     }
 
-    const gameParticipants = participants.filter((p) =>
-      playerIds.includes(p.userId!),
-    );
-
-    if (data.tournamentMode === "Knockout") {
-      const { playersToUpdate, usersToUpdate } = calculatePlayerPerformance(
-        updatedGame,
-        gameParticipants,
-        users,
-      );
-      const updatePayload: UpdateData<DocumentData> = {
-        fixtures: advanceBrackets({
-          fixtures: fixturesWithGame,
-          numberOfCourts: data.numberOfCourts || 1,
-        }),
-        gamesCompleted: increment(1),
-        [config.participantsKey]: participants.map(
-          (p) => playersToUpdate.find((u) => u.userId === p.userId) ?? p,
-        ),
-      };
-      if (isDoubles) {
-        const [winnerTeam, loserTeam] = await calculateTeamPerformance({
-          game: updatedGame,
-          allTeams: teams,
-        });
-        updatePayload[config.teamKey] = teams.map((team) => {
-          if (team.teamKey === winnerTeam.teamKey) return winnerTeam;
-          if (team.teamKey === loserTeam.teamKey) return loserTeam;
-          return team;
-        });
-      }
-      transaction.update(competitionRef, updatePayload);
-      writeUsers(usersToUpdate);
-      return outcome;
-    }
-
-    const { updatedParticipants, updatedTeams } =
-      await recalculateParticipantsFromFixtures(
-        getOrderedApprovedGames(fixturesWithGame),
-        participants,
-        teams,
-        isDoubles,
-      );
-    transaction.update(competitionRef, {
-      fixtures: fixturesWithGame,
-      gamesCompleted: increment(1),
-      [config.participantsKey]: updatedParticipants,
-      ...(isDoubles && { [config.teamKey]: updatedTeams }),
-    });
-    const { usersToUpdate } = calculatePlayerPerformance(
-      updatedGame,
-      gameParticipants,
+    const applied = await applyApprovedTournamentGame({
+      tournament: { ...data, fixtures: fixturesWithGame },
+      game: updatedGame,
       users,
-    );
-    writeUsers(usersToUpdate);
+    });
+    transaction.update(competitionRef, {
+      fixtures: applied.fixtures,
+      gamesCompleted: increment(1),
+      [config.participantsKey]: applied.participants,
+      ...(isDoubles && { [config.teamKey]: applied.teams }),
+    });
+    writeUsers(applied.usersToUpdate);
     return outcome;
   });
 };

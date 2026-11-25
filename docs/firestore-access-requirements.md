@@ -112,8 +112,9 @@ anyone else's registrant document.
 `mail` (Trigger Email queue), `signupRateLimits`, `deletionTokens` (website delete-account functions), `userRoles` (players read
 their own), `noShowClaims`, `maestroBackups`, `ladders/*/playoffTies` (read
 only), `ladders/*/prizePayouts` (players read their own), `ladders/*/reportCounts`
-(read only), `ladderEligibility` (players read and delete their own), and any
-collection not listed here.
+(read only), `ladderEligibility` (players read and delete their own),
+`seedRegistry` (devFunctions seed bookkeeping, written by staff and read by
+`declineSeededRequests`), and any collection not listed here.
 
 ## Courts and court submissions
 
