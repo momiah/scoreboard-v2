@@ -57,7 +57,10 @@ jest.mock("react-native-fbsdk-next", () => ({
       CompletedRegistration: "fb_mobile_complete_registration",
       Login: "fb_mobile_login",
     },
-    AppEventParams: { RegistrationMethod: "fb_registration_method" },
+    AppEventParams: {
+      ContentID: "fb_content_id",
+      RegistrationMethod: "fb_registration_method",
+    },
   },
 }));
 

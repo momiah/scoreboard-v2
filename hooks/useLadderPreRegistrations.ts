@@ -24,6 +24,7 @@ import type {
 } from "@shared/types";
 import { db } from "../services/firebase.config";
 import { UserContext } from "../context/UserContext";
+import { logPreRegistrationConversion } from "../helpers/logPreRegistrationConversion";
 
 interface UseLadderPreRegistrationsReturn {
   isSignedIn: boolean;
@@ -60,6 +61,7 @@ export const useLadderPreRegistrations =
     const userId = currentUser?.userId;
     const username = currentUser?.username ?? "";
     const profileImage = currentUser?.profileImage ?? "";
+    const provider = currentUser?.provider;
     const [preRegistrations, setPreRegistrations] = useState<
       LadderPreRegistration[]
     >([]);
@@ -129,8 +131,13 @@ export const useLadderPreRegistrations =
           notifiedAt: null,
         });
         registrantsWritten(preRegistrationId);
+        await logPreRegistrationConversion({
+          userId,
+          preRegistrationId,
+          provider,
+        });
       },
-      [userId, username, profileImage],
+      [userId, username, profileImage, provider],
     );
 
     const leave = useCallback(
