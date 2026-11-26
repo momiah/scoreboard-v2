@@ -218,7 +218,7 @@ export const createScenarioLeague = async ({
 };
 
 // The owner invites each player from InvitePlayer and they accept.
-const invitePlayers = async ({
+export const invitePlayers = async ({
   leagueId,
   scenario,
   owner,

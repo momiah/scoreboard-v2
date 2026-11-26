@@ -10,6 +10,7 @@ import TournamentPerformance from "./performance/TournamentPerformance";
 import { UserContext } from "../../../../context/UserContext";
 import { enrichPlayers } from "../../../../helpers/enrichPlayers";
 import {
+  buildClubFormLogs,
   buildClubPlayerMap,
   ClubPlayerStat,
 } from "../../../../helpers/clubPlayerStats";
@@ -138,6 +139,15 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
         (data.tournamentTeams ?? data.teams ?? []).forEach(
           (t: AggregatedTeam) => mergeIntoTeam(teamMap, t),
         );
+      });
+
+      const teamForm = buildClubFormLogs([
+        ...leaguesSnap.docs.map((d) => d.data()),
+        ...tournamentsSnap.docs.map((d) => d.data()),
+      ]).teams;
+      teamMap.forEach((team) => {
+        const log = teamForm.get(team.teamKey);
+        if (log) team.resultLog = log;
       });
 
       const sortedTeams = Array.from(teamMap.values()).sort(

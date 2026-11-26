@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -8,6 +8,12 @@ const screenAdjustedFontSize = screenWidth <= 405 ? 16 : 18;
 const ResultLog = ({ resultLog }) => {
   return (
     <LogContainer>
+      <View
+        testID="result-log"
+        accessibilityLabel={resultLog.join(" ")}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
       {resultLog.map((result, index) => (
         <Result
           key={index}

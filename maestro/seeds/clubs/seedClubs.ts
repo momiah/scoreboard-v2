@@ -23,7 +23,9 @@ import {
   clubLeftMessage,
 } from "../../../helpers/clubs/clubNotifications";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
-import { createScenarioLeague } from "../leagues/bulkPublish";
+import { createScenarioLeague, invitePlayers } from "../leagues/bulkPublish";
+import { reportLeagueGame } from "../../../helpers/League/reportLeagueGame";
+import type { useFixtureCompetitionActions } from "../competitions/fixtureActions";
 import {
   buildFixtureUser,
   deleteFixtureUsers,
@@ -95,6 +97,7 @@ export type ClubServices = Pick<
   | "declineClubJoinRequest"
   | "addCompetition"
   | "getCourts"
+  | "updatePendingInvites"
 > & {
   sendNotification: (notification: Notification) => Promise<void>;
 };
@@ -575,6 +578,120 @@ export const seedClubTournament = async ({
   return { clubId, tournament: outcome, expected: await clubExpected(clubId) };
 };
 
+const CLUB_STANDINGS_LEAGUE = {
+  key: "clubStandings",
+  scenario: { name: `${CLUB_NAME_PREFIX} Club Standings League`, type: "Singles" },
+};
+
+type ClubParticipant = Player & {
+  numberOfWins?: number;
+  totalPointDifference?: number;
+  resultLog?: string[];
+};
+
+const FORM_LENGTH = 10;
+const form = (log: string[]) => log.slice(-FORM_LENGTH).join(" ");
+
+// After the club tournament, the test user plays two games in a league of the
+// same club: reported from the app's Add Game path, approved by the opponent.
+// The results are picked so the club form in play order differs from the
+// league's results put before the tournament's, so the form check means
+// something. The club standings must add the league and tournament together.
+export const playClubStandingsLeague = async ({
+  services,
+  testUser,
+  fixtureActions,
+}: {
+  services: ClubServices;
+  testUser: UserProfile;
+  fixtureActions: ReturnType<typeof useFixtureCompetitionActions>;
+}) => {
+  const clubId = await findTestUserClubId(testUser);
+  const tournaments = await getDocs(
+    query(
+      collection(db, COLLECTION_NAMES.tournaments),
+      where("clubId", "==", clubId),
+    ),
+  );
+  const tournament = tournaments.docs[0]?.data();
+  if (!tournament) throw new Error(`No tournament in ${clubId}`);
+  const entrants: ClubParticipant[] = tournament.tournamentParticipants ?? [];
+  const inTournament = entrants.find((p) => p.userId === testUser.userId);
+  const opponents = entrants
+    .filter((p) => p.userId !== testUser.userId)
+    .slice(0, 2);
+  if (!inTournament || opponents.length < 2) {
+    throw new Error("The club tournament needs the test user and two others");
+  }
+
+  const tournamentLog = inTournament.resultLog ?? [];
+  const outcomes = [
+    ["W", "L"],
+    ["L", "W"],
+    ["W", "W"],
+    ["L", "L"],
+  ].find(
+    (games) =>
+      form([...tournamentLog, ...games]) !== form([...games, ...tournamentLog]),
+  );
+  if (!outcomes) throw new Error("No league results change the club form");
+
+  const owner = (await getDoc(doc(db, "users", testUser.userId))).data();
+  const leagueId = await createScenarioLeague({
+    ...CLUB_STANDINGS_LEAGUE,
+    owner,
+    actions: services,
+    clubId,
+  });
+  await invitePlayers({
+    leagueId,
+    scenario: { ...CLUB_STANDINGS_LEAGUE.scenario, users: opponents },
+    owner,
+    actions: services,
+    fixtureActions,
+  });
+
+  const reporter = asPlayer(testUser);
+  for (const [index, opponent] of opponents.entries()) {
+    const won = outcomes[index] === "W";
+    const reported = await reportLeagueGame({
+      leagueId,
+      team1Players: [reporter],
+      team2Players: [asPlayer(opponent as UserProfile)],
+      score1: won ? 21 : 15,
+      score2: won ? 15 : 21,
+      reporter: testUser,
+      sendNotification: (payload) =>
+        services.sendNotification(payload as unknown as Notification),
+    });
+    if (!reported.game) throw new Error(reported.error);
+    await fixtureActions.approveLeagueGame({
+      userId: opponent.userId,
+      game: reported.game,
+      leagueId,
+    });
+  }
+
+  const league = (await getDoc(doc(db, COLLECTION_NAMES.leagues, leagueId))).data();
+  const inLeague = (league?.leagueParticipants ?? []).find(
+    (p: ClubParticipant) => p.userId === testUser.userId,
+  ) as ClubParticipant | undefined;
+  if (!inLeague) throw new Error("The test user is not in the club league");
+  const played = [inTournament, inLeague];
+  const sum = (key: "numberOfWins" | "totalPointDifference") =>
+    played.reduce((total, p) => total + (p[key] ?? 0), 0);
+
+  return {
+    leagueId,
+    expected: {
+      standingsUserId: testUser.userId,
+      standingsWins: sum("numberOfWins"),
+      standingsPd: sum("totalPointDifference"),
+      standingsForm: form([...tournamentLog, ...(inLeague.resultLog ?? [])]),
+    },
+  };
+};
+
 export const clubWinnerMessage = async ({
   winnerIds,
   tournamentName,
@@ -640,6 +757,16 @@ export const cleanupClubTestData = async ({
       await deleteDoc(
         doc(db, "users", testUser.userId, "chats", competition.id),
       );
+    }
+    const leagueIds = competitions[0].docs.map((league) => league.id);
+    if (leagueIds.length > 0) {
+      const leagueNotices = await getDocs(
+        query(
+          collection(db, "users", testUser.userId, "notifications"),
+          where("data.leagueId", "in", leagueIds.slice(0, 30)),
+        ),
+      );
+      await Promise.all(leagueNotices.docs.map((notice) => deleteDoc(notice.ref)));
     }
     const batch = writeBatch(db);
     competitionDocs.forEach((competition) => batch.delete(competition.ref));
