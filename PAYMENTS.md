@@ -109,7 +109,7 @@ The non-refundable platform fee must be disclosed. It currently appears in:
 - **`AddLadderMatchModal`** — disclaimer under the court-fee input, shown only
   for paid matches: *"A 10% non refundable platform fee is deducted from this
   fee."*
-- **`LadderTermsContent`** — the "Court fees" section states the
+- **`LADDER_TERMS`** (`courtchamps-shared`, `src/legal/ladderTerms.ts`) — the "Court fees" section states the
   charge-at-accept + refund-on-non-completion terms and that the 10% is
   non-refundable and retained to cover processing.
 
@@ -172,5 +172,5 @@ Court Champs.
 
 ## Where users are told
 
-`LadderTermsContent` sections 3 (entry fees), 4 (prizes and payouts) and 7
-(disqualification). Keep them in sync with any change here.
+`LADDER_TERMS` in `courtchamps-shared` (`src/legal/ladderTerms.ts`): "Entry fees & service charge",
+"Prizes & payouts" and "Reports, strikes & disqualification". Keep them in sync with any change here.

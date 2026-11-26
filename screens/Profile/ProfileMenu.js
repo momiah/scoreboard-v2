@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Linking,
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,6 +15,7 @@ import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 import { BlurView } from "expo-blur";
+import { PRIVACY_POLICY_URL } from "@shared";
 
 const ProfileMenu = ({ navigation }) => {
   const { Logout, currentUser, isLoggingOut, deleteAccount } =
@@ -55,6 +57,16 @@ const ProfileMenu = ({ navigation }) => {
     // FAQ
     { label: "FAQ", icon: "help-buoy-outline", action: "FAQ" },
     {
+      label: "Terms of Use",
+      icon: "document-text-outline",
+      action: "TermsOfUse",
+    },
+    {
+      label: "Privacy Policy",
+      icon: "shield-checkmark-outline",
+      action: "PrivacyPolicy",
+    },
+    {
       label: "Linked Accounts",
       icon: "link-outline",
       action: "LinkedAccounts",
@@ -83,6 +95,8 @@ const ProfileMenu = ({ navigation }) => {
     if (action === "logout") {
       console.log("Logging out...");
       await Logout();
+    } else if (action === "PrivacyPolicy") {
+      Linking.openURL(PRIVACY_POLICY_URL);
     } else if (action === "DeleteAccount") {
       Alert.alert(
         "Delete Account",
@@ -141,6 +155,7 @@ const ProfileMenu = ({ navigation }) => {
         {menuOptions.map((option) => (
           <MenuItem
             key={option.label}
+            testID={`profile-menu-${option.action}`}
             onPress={() => handlePress(option.action)}
           >
             <LeftContainer>

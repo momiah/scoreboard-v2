@@ -1,8 +1,8 @@
 import { Share } from "react-native";
 import {
   formatCurrency,
-  getLadderEntryPrice,
   getLadderPlayoffStructure,
+  getPlatformFeeFootnote as getSharedPlatformFeeFootnote,
 } from "@shared";
 import {
   formatLadderPrizePool,
@@ -49,13 +49,8 @@ export const formatEntryFee = (details: Details) => {
   return getEntrantNoun(details) === "team" ? `${fee} per team` : fee;
 };
 
-/** The platform fee disclosure for the asterisk on a cash ladder's entry fee. */
-export const getPlatformFeeFootnote = (details: Details) => {
-  const { entryFee, platformFee } = getLadderEntryPrice(details.entryFee);
-  const format = (amount: number) =>
-    formatCurrency(amount, details.currencyType);
-  return `*A ${format(platformFee)} platform fee is added on top of the ${format(entryFee)} entry. The full entry fee goes into the prize pool.`;
-};
+export const getPlatformFeeFootnote = (details: Details) =>
+  getSharedPlatformFeeFootnote(details.entryFee, details.currencyType);
 
 export const getLadderSummary = (details: Details) => {
   const noun = getEntrantNoun(details);

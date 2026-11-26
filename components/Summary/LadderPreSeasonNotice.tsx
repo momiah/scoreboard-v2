@@ -8,6 +8,7 @@ import {
   getLadderEntrantNoun,
   getLadderEntrantsNeededToStart,
 } from "@shared/helpers";
+import { LADDER_CANCELLED_REFUND } from "@shared";
 import type { Ladder } from "@shared/types";
 
 import { formatSeasonStart } from "../../helpers/ladderPhases";
@@ -22,7 +23,7 @@ export const getPreSeasonNoticeBody = (ladder: Ladder): string => {
     return `Enough ${noun}s have joined. Matches open when the season starts.`;
   }
   const outcome = ladder.seasonExtendedAt
-    ? "the ladder will be cancelled and any entry fees refunded in full"
+    ? `the ladder will be cancelled and any entry fees ${LADDER_CANCELLED_REFUND}`
     : `the season start moves back ${LADDER_SEASON_EXTENSION_DAYS} days`;
   return `${plural(needed, `more ${noun}`)} needed to start. If fewer than ${LADDER_MIN_ENTRANTS_TO_START} ${noun}s have joined by then, ${outcome}.`;
 };

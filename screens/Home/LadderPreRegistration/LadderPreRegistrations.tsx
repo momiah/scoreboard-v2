@@ -7,6 +7,7 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import styled from "styled-components/native";
+import { PAID_LADDER_AGE_DISCLAIMER } from "@shared";
 import type { LadderPreRegistration } from "@shared/types";
 import LineTabs from "../../../components/LineTabs";
 import LadderTicket, {
@@ -81,7 +82,7 @@ const LadderPreRegistrations: React.FC = () => {
 
         {activeTab === "cash" && visible[0] ? (
           <Footnote>
-            {`18+ only. ${getPlatformFeeFootnote(visible[0])}`}
+            {`${PAID_LADDER_AGE_DISCLAIMER} ${getPlatformFeeFootnote(visible[0])}`}
           </Footnote>
         ) : null}
       </ScrollView>

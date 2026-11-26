@@ -1,8 +1,8 @@
 # Payments: chargeback and dispute readiness
 
 Payments are not built yet. This is the checklist the payments work must meet so
-Court Champs can win chargebacks and enforce section 10 of the ladder terms
-(`components/ladder/LadderTermsContent.tsx`, "Chargebacks & payment disputes").
+Court Champs can win chargebacks and enforce section 11 of the ladder terms
+(`LADDER_TERMS` in `courtchamps-shared` `src/legal/ladderTerms.ts`, "Chargebacks & payment disputes").
 
 ## 1. Evidence captured at payment time
 
@@ -24,6 +24,9 @@ a Cloud Function, never the client:
 - Give the terms a version. Bump it on every wording change and keep each past
   version's text, so the evidence submitted matches what the customer agreed to.
   Keep the version in `courtchamps-shared` so the app and functions read one value.
+  It is `TERMS_VERSION` and `TERMS_EFFECTIVE_DATE` (`src/legal/version.ts`), and
+  `chargeLadderEntryFee` already returns it as `termsVersion`. Tag the shared
+  commit `terms-v<version>` on each bump so the past text stays retrievable.
 - Matches played, check-ins and results already exist in Firestore. The dispute
   pack reads them from there.
 
@@ -67,7 +70,7 @@ a Cloud Function, never the client:
 
 ## 5. Before launch
 
-- Have a solicitor review sections 9 and 10 of the ladder terms against UK
+- Have a solicitor review sections 10 and 11 of the ladder terms against UK
   consumer law (Consumer Rights Act 2015 and the Consumer Contracts Regulations
   14-day cancellation right for services).
 - Any new client write the payments flow adds needs a row in

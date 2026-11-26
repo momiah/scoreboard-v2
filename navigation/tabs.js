@@ -42,6 +42,7 @@ import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
 import AssignAdmin from "../screens/Home/Settings/AssignAdmin";
 import RemovePlayers from "../screens/Home/Settings/RemovePlayers";
 import AccountSupport from "../screens/Profile/AccountSupport";
+import TermsOfUse from "../screens/Profile/TermsOfUse";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
@@ -132,6 +133,7 @@ const HomeStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUse} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
       <Stack.Screen
@@ -215,6 +217,7 @@ const ProfileStack = () => {
       {renderLadderScreens()}
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUse} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
@@ -262,6 +265,7 @@ const ChatsStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUse} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
       <Stack.Screen
@@ -315,6 +319,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUse} />
       <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
       <Stack.Screen
         name="CompetitionPendingRequests"

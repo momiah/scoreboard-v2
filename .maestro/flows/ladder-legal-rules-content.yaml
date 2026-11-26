@@ -1,0 +1,86 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# The Ladder Rules render from courtchamps-shared: how the standings work, the
+# playoff places table by ladder size, playing to win, and the prizes line.
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-accepted"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Summary.*"
+- tapOn:
+    id: "ladder-burger"
+- tapOn:
+    id: "ladder-menu-LadderRules"
+- extendedWaitUntil:
+    visible: "Ladder Rules"
+    timeout: 10000
+- assertVisible:
+    id: "ladder-rules-version"
+    text: "Version ${MAESTRO_TERMS_VERSION}, effective .*"
+- scrollUntilVisible:
+    element: "How the standings work"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*A win earns \\d+ CP and a loss costs \\d+ CP, before multipliers.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*The standings are ordered by CP, then number of wins, then points difference.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "ladder-playoff-places"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "ladder-playoff-places-row-0"
+    direction: DOWN
+    speed: 40
+- assertVisible:
+    id: "ladder-playoff-places-row-0"
+    text: "${MAESTRO_LADDER_MIN_ENTRANTS}–.*"
+- assertVisible: "Places that win cash"
+- scrollUntilVisible:
+    element: ".*Playoff places are seeded from the final standings.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: "Playing to win"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*You must try to win every ladder game.*sandbagging.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "ladder-rules-section-prizes"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*The prize pot is the total of all entry fees.*"
+    direction: DOWN
+    speed: 40
+- tapOn:
+    id: "ladder-rules-back"
+- assertVisible:
+    id: "ladder-menu-LadderRules"

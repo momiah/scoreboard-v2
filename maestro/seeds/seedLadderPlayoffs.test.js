@@ -331,7 +331,7 @@ describe("seedLadderPlayoffs variants", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.",
+        "Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded in full, including the 10% platform fee.",
       data: { ladderId: MAESTRO_PO_LADDER_ID, tab: "Summary" },
     });
   });

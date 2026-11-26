@@ -38,7 +38,7 @@ describe("LadderPreSeasonNotice", () => {
         }),
       ),
     ).toBe(
-      "1 more team needed to start. If fewer than 128 teams have joined by then, the ladder will be cancelled and any entry fees refunded in full.",
+      "1 more team needed to start. If fewer than 128 teams have joined by then, the ladder will be cancelled and any entry fees refunded in full, including the 10% platform fee.",
     );
   });
 

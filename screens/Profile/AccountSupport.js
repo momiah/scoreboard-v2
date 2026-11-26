@@ -12,6 +12,7 @@ import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
+import { SUPPORT_REQUEST_SENT_MESSAGE } from "@shared";
 
 const AccountSupport = ({ navigation }) => {
   const { sendSupportRequest, currentUser } = useContext(UserContext);
@@ -28,9 +29,7 @@ const AccountSupport = ({ navigation }) => {
     setLoading(true);
     try {
       await sendSupportRequest({ subject, message, currentUser });
-      setPopupMessage(
-        "Support Request sent, we'll aim to get back to you within 72 hours",
-      );
+      setPopupMessage(SUPPORT_REQUEST_SENT_MESSAGE);
       setShowPopup(true);
       setSubject("");
       setMessage("");

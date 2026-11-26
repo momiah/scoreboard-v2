@@ -29,6 +29,7 @@ import {
   deriveExtendedLadderDates,
   getDisqualification,
   getLadderPlayoffQualifiers,
+  getLadderRegistrationClosedCancelledNotification,
   getLadderSeasonCancelledNotification,
   getLadderSeasonExtendedNotification,
   getLadderSeasonStartStep,
@@ -36,10 +37,7 @@ import {
   isLadderSeasonStarted,
   isLadderStandingsFinal,
 } from "courtchamps-shared/helpers";
-import type {
-  LadderNotificationCopy,
-  LadderPlayoffEntrant,
-} from "courtchamps-shared/helpers";
+import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
 import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
@@ -358,11 +356,6 @@ const loadEntrants = async (
   };
 };
 
-const registrationClosedCancellation = (ladder: Ladder): LadderNotificationCopy => ({
-  title: "Ladder cancelled",
-  message: `${ladder.name} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
-});
-
 const sendCancellationNotifications = async ({
   ladderRef,
   ladder,
@@ -371,7 +364,7 @@ const sendCancellationNotifications = async ({
   ladder: Ladder;
 }): Promise<void> => {
   const { title, message } = ladder.seasonStartedAt
-    ? registrationClosedCancellation(ladder)
+    ? getLadderRegistrationClosedCancelledNotification(ladder)
     : getLadderSeasonCancelledNotification(ladder);
   await notifyLadderPlayers({
     userIds: await loadEntrantPlayerIds(ladderRef, ladder),

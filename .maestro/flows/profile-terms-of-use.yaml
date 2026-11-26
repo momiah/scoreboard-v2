@@ -1,0 +1,44 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Profile Settings opens the Terms of Use from courtchamps-shared, with the
+# version and effective date and a link to the Privacy Policy.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-settings-button"
+    timeout: 15000
+- tapOn:
+    id: "profile-settings-button"
+- extendedWaitUntil:
+    visible: "Profile Settings"
+    timeout: 10000
+- assertVisible:
+    id: "profile-menu-PrivacyPolicy"
+- tapOn:
+    id: "profile-menu-TermsOfUse"
+- extendedWaitUntil:
+    visible: "Terms of Use"
+    timeout: 10000
+- assertVisible:
+    id: "terms-of-use-version"
+    text: "Version ${MAESTRO_TERMS_VERSION}, effective .*"
+- assertVisible: "1. Who we are"
+- scrollUntilVisible:
+    element: ".*Acceptable use"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*Governing law"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "terms-of-use-privacy-link"
+    direction: DOWN
+    speed: 40
+- tapOn:
+    id: "terms-of-use-back"
+- assertVisible: "Profile Settings"

@@ -18,9 +18,9 @@ onFlowStart:
 - tapOn:
     id: "competitions-notifications-button"
 - extendedWaitUntil:
-    visible: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full..*"
+    visible: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded in full, including the ${MAESTRO_PLATFORM_FEE_PERCENT} platform fee.*"
     timeout: 20000
-- tapOn: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full..*"
+- tapOn: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded in full, including the ${MAESTRO_PLATFORM_FEE_PERCENT} platform fee.*"
 - extendedWaitUntil:
     visible:
       id: "ladder-summary"

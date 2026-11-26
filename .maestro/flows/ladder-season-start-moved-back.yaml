@@ -19,7 +19,7 @@ onFlowStart:
     text: "Season start moved back .*"
 - assertVisible:
     id: "ladder-preseason-body"
-    text: ".*If fewer than ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined by then, the ladder will be cancelled and any entry fees refunded in full.*"
+    text: ".*If fewer than ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined by then, the ladder will be cancelled and any entry fees refunded in full, including the ${MAESTRO_PLATFORM_FEE_PERCENT} platform fee.*"
 - tapOn:
     id: "ladder-tab-Matchmaking"
 - extendedWaitUntil:

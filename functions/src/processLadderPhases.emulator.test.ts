@@ -318,7 +318,7 @@ describe("a ladder with fewer than 128 registrations", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Emulator 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.",
+        "Emulator 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded in full, including the 10% platform fee.",
       data: { ladderId: "L127", tab: "Summary" },
     });
     expect(pushRequests).toHaveLength(127);

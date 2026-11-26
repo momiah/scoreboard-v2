@@ -21,6 +21,7 @@ import {
   createRootTeam,
   getLadderPlayoffBracketSize,
   getLadderPlayoffQualifiers,
+  getLadderRegistrationClosedCancelledNotification,
   LADDER_MIN_PLAYOFF_SIZE,
   notificationSchema,
   notificationTypes,
@@ -370,8 +371,10 @@ const writePlayoffNotifications = async ({
       data: {
         ...base,
         senderId: "system",
-        title: "Ladder cancelled",
-        message: `${ladderName} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
+        ...getLadderRegistrationClosedCancelledNotification({
+          name: ladderName,
+          ladderType: LADDER_TYPE.SINGLES,
+        }),
         data: { ladderId, tab: "Summary" },
       },
     });

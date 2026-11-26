@@ -1,0 +1,95 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# The Ladder Terms render from courtchamps-shared: version and effective date,
+# Who we are, the Linear and Progressive payout tables, the full refund of a
+# cancelled ladder including the platform fee, complaints and governing law.
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-accepted"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Summary.*"
+- tapOn:
+    id: "ladder-burger"
+- tapOn:
+    id: "ladder-menu-LadderTerms"
+- extendedWaitUntil:
+    visible: ".*Terms.*Conditions.*"
+    timeout: 10000
+- assertVisible:
+    id: "ladder-terms-version"
+    text: "Version ${MAESTRO_TERMS_VERSION}, effective .*"
+- assertVisible: "1. Who we are"
+- assertVisible: ".*Contact: ${MAESTRO_CONTACT_EMAIL}.*"
+- scrollUntilVisible:
+    element: ".*You must be 18 or over to enter a paid ladder.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: "Linear structure \\(cash\\):"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "ladder-payouts-linear-row-0"
+    direction: DOWN
+    speed: 40
+- assertVisible:
+    id: "ladder-payouts-linear-row-0"
+    text: "1st"
+- scrollUntilVisible:
+    element: "Progressive structure \\(cash\\):"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element:
+      id: "ladder-payouts-progressive-row-4"
+    direction: DOWN
+    speed: 40
+- assertVisible:
+    id: "ladder-payouts-progressive-row-4"
+    text: "5th–8th \\(shared\\)"
+- scrollUntilVisible:
+    element:
+      id: "ladder-terms-section-refunds"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*If there are still too few, the ladder is cancelled and every entry is refunded in full, including the ${MAESTRO_PLATFORM_FEE_PERCENT} platform fee.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*Complaints"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*We aim to reply within ${MAESTRO_SUPPORT_REPLY_HOURS} hours.*"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*Governing law"
+    direction: DOWN
+    speed: 40
+- scrollUntilVisible:
+    element: ".*These terms are governed by the law of England and Wales.*"
+    direction: DOWN
+    speed: 40
+- tapOn:
+    id: "ladder-terms-back"
+- assertVisible:
+    id: "ladder-menu-LadderRules"

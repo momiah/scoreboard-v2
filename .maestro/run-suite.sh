@@ -16,6 +16,10 @@ export MAESTRO_LADDER_HOST_ARRANGE_HOURS="$(node -p "require('courtchamps-shared
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
 export MAESTRO_LADDER_MIN_ENTRANTS="$(node -p "require('courtchamps-shared').LADDER_MIN_ENTRANTS_TO_START")"
 export MAESTRO_LADDER_SEASON_EXTENSION_DAYS="$(node -p "require('courtchamps-shared').LADDER_SEASON_EXTENSION_DAYS")"
+export MAESTRO_PLATFORM_FEE_PERCENT="$(node -p "require('courtchamps-shared').PLATFORM_FEE_PERCENT")"
+export MAESTRO_TERMS_VERSION="$(node -p "require('courtchamps-shared').TERMS_VERSION")"
+export MAESTRO_SUPPORT_REPLY_HOURS="$(node -p "require('courtchamps-shared').SUPPORT_REPLY_HOURS")"
+export MAESTRO_CONTACT_EMAIL="$(node -p "require('courtchamps-shared').COURT_CHAMPS_CONTACT_EMAIL")"
 pattern="${1:-}"
 device=(); [ -n "${MAESTRO_DEVICE:-}" ] && device=(--device "$MAESTRO_DEVICE")
 forward() {

@@ -887,7 +887,7 @@ describe("notifications", () => {
       senderId: "system",
       title: "Ladder cancelled",
       message:
-        "North London Ladder has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.",
+        "North London Ladder has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded in full, including the 10% platform fee.",
       type: "ladder",
       data: { ladderId: "L1", tab: "Summary" },
     });

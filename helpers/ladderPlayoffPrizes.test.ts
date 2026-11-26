@@ -59,7 +59,7 @@ describe("getLadderTiePrizes", () => {
 });
 
 describe("getLadderPrizeTable", () => {
-  it("labels places 1st to 4th, then Joint Nth for each playoff round", () => {
+  it("labels places 1st to 4th, then Joint Nth for each round, ending a cash table at its last cash place", () => {
     expect(getLadderPrizeTable(paid256).map((row) => row.label)).toEqual([
       "1st",
       "2nd",
@@ -84,7 +84,6 @@ describe("getLadderPrizeTable", () => {
       "Joint 9th",
       "Joint 17th",
       "Joint 33rd",
-      "Joint 65th",
     ]);
   });
 
