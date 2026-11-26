@@ -178,6 +178,16 @@ describe("seeded tournaments", () => {
     });
   });
 
+  it("show the score on every played bracket game", () => {
+    activity.tournaments.forEach((t) =>
+      tournamentGames(t)
+        .filter(isApproved)
+        .forEach((g) =>
+          expect([g.team1.score, g.team2.score]).toEqual(scoresOf(g)),
+        ),
+    );
+  });
+
   it("keep game ids on the day the fixtures were drawn", () => {
     activity.tournaments.forEach((t) =>
       tournamentGames(t).forEach((g) =>

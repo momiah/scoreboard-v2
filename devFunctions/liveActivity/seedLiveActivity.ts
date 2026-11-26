@@ -7,11 +7,12 @@ import {
   getDocs,
   query,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
 } from "firebase/firestore";
 import { ccImageEndpoint, courtSchema, locationSchema } from "@shared";
-import type { CompetitionLocation, Court } from "@shared/types";
+import type { CompetitionLocation, Court, Fixtures } from "@shared/types";
 import { db } from "../../services/firebase.config";
 import { generateCourtId } from "../../helpers/generateCourtId";
 import { ROSTER, SeedCity, SEED_CITY_LOCATIONS } from "./roster";
@@ -300,4 +301,35 @@ export const deleteLiveActivity = async () => {
     deletedUsers: registry.userIds.length - keptUsers.size,
     kept,
   };
+};
+
+// advanceBrackets used to refill played games' teams from the previous
+// round's winners, dropping their scores; gamescore still holds them.
+export const restoreKnockoutScores = async () => {
+  const snap = await getDoc(registryRef());
+  if (!snap.exists()) throw new Error("No live activity seeded");
+  const { tournamentIds } = snap.data() as SeedRegistry;
+  let restored = 0;
+  for (const id of tournamentIds) {
+    const ref = doc(db, "tournaments", id);
+    const tournament = (await getDoc(ref)).data();
+    if (tournament?.tournamentMode !== "Knockout") continue;
+    const fixtures = (tournament.fixtures as Fixtures[]).map((round) => ({
+      ...round,
+      games: round.games.map((game) => {
+        if (game.approvalStatus !== "approved" || game.team1.score != null) {
+          return game;
+        }
+        const [score1, score2] = game.gamescore.split("-").map(Number);
+        restored++;
+        return {
+          ...game,
+          team1: { ...game.team1, score: score1 },
+          team2: { ...game.team2, score: score2 },
+        };
+      }),
+    }));
+    await updateDoc(ref, { fixtures });
+  }
+  return { restored };
 };
