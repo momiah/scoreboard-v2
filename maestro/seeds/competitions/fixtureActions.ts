@@ -96,27 +96,35 @@ export const useFixtureCompetitionActions = () => {
     });
   };
 
-  const approveTournamentGame = async ({
+  const approveAs = async ({
     userId,
     game,
-    tournamentId,
+    competitionId,
+    collectionName,
   }: {
     userId: string;
     game: Game;
-    tournamentId: string;
+    competitionId: string;
+    collectionName: CollectionName;
   }) => {
-    const notificationType = notificationTypes.ACTION.ADD_GAME.TOURNAMENT;
+    const notificationType =
+      collectionName === COLLECTION_NAMES.leagues
+        ? notificationTypes.ACTION.ADD_GAME.LEAGUE
+        : notificationTypes.ACTION.ADD_GAME.TOURNAMENT;
     const notification = await findNotification({
       userId,
       type: notificationType,
-      data: { tournamentId, gameId: game.gameId },
+      data: {
+        [competitionIdKey(collectionName)]: competitionId,
+        gameId: game.gameId,
+      },
     });
     if (!notification) {
       throw new Error(`${userId} has no approval request for ${game.gameId}`);
     }
     await approveGame({
       gameId: game.gameId,
-      competitionId: tournamentId,
+      competitionId,
       userId,
       senderId: game.reporter,
       notificationId: notification.id,
@@ -124,5 +132,37 @@ export const useFixtureCompetitionActions = () => {
     });
   };
 
-  return { acceptInvite, reportGame, approveTournamentGame };
+  const approveTournamentGame = ({
+    userId,
+    game,
+    tournamentId,
+  }: {
+    userId: string;
+    game: Game;
+    tournamentId: string;
+  }) =>
+    approveAs({
+      userId,
+      game,
+      competitionId: tournamentId,
+      collectionName: COLLECTION_NAMES.tournaments as CollectionName,
+    });
+
+  const approveLeagueGame = ({
+    userId,
+    game,
+    leagueId,
+  }: {
+    userId: string;
+    game: Game;
+    leagueId: string;
+  }) =>
+    approveAs({
+      userId,
+      game,
+      competitionId: leagueId,
+      collectionName: COLLECTION_NAMES.leagues as CollectionName,
+    });
+
+  return { acceptInvite, reportGame, approveTournamentGame, approveLeagueGame };
 };

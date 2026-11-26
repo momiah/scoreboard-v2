@@ -61,6 +61,50 @@ onFlowStart:
       - evalScript: ${output.tries = output.tries + 1}
 - assertVisible: ".*Competition winner.*"
 
+# A league in the same club, played after the tournament. The club standings
+# add the test user's league and tournament wins and point difference, and the
+# form shows the club's games in the order they were played.
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-play-standings-league"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-standingsUserId"
+- evalScript: ${output.standingsUser = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-standingsWins"
+- evalScript: ${output.standingsWins = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-standingsPd"
+- evalScript: ${output.standingsPd = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-standingsForm"
+- evalScript: ${output.standingsForm = maestro.copiedText}
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- tapOn: "Club Performance"
+- scrollUntilVisible:
+    element:
+      id: "performance-row-${output.standingsUser}"
+- extendedWaitUntil:
+    visible:
+      id: "performance-row-${output.standingsUser}"
+      text: ".*Wins,? ${output.standingsWins}(,? .*)?"
+    timeout: 20000
+- assertVisible:
+    id: "performance-row-${output.standingsUser}"
+    text: ".*PD,? ${output.standingsPd}(,? .*)?"
+- tapOn:
+    id: "performance-row-${output.standingsUser}"
+- assertVisible:
+    id: "result-log"
+    text: "${output.standingsForm}"
+- tapOn:
+    id: "player-details-close"
+
 # The round-robin cleanup restores the test user's profile from the
 # snapshot its seed took on this device, then the club cleanup runs
 - runFlow:

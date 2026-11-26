@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../services/firebase.config";
-import { COLLECTION_NAMES } from "@shared";
+import { COLLECTION_NAMES, normalizeTeamKey } from "@shared";
 import { getPlayerRankInCompetition } from "@shared/helpers/getRankInCompetition";
 import type { ScoreboardProfile } from "@shared/types";
 
@@ -48,11 +48,112 @@ interface RawParticipant {
   numberOfLosses?: number;
 }
 
+interface RawGamePlayer {
+  userId?: string;
+}
+
+interface RawGame {
+  approvalStatus?: string;
+  reportedAt?: unknown;
+  createdAt?: unknown;
+  date?: string;
+  createdTime?: string;
+  team1?: { player1?: RawGamePlayer | null; player2?: RawGamePlayer | null };
+  team2?: { player1?: RawGamePlayer | null; player2?: RawGamePlayer | null };
+  result?: { winner?: { team?: string } } | null;
+}
+
 interface RawCompetitionData {
   leagueParticipants?: RawParticipant[];
   tournamentParticipants?: RawParticipant[];
   participants?: RawParticipant[];
+  games?: RawGame[];
+  fixtures?: { games?: RawGame[] }[];
 }
+
+const FORM_LENGTH = 10;
+
+const toMillis = (value: unknown): number | null => {
+  if (!value) return null;
+  const v = value as { toMillis?: () => number; seconds?: number };
+  if (typeof v.toMillis === "function") return v.toMillis();
+  if (typeof v.seconds === "number") return v.seconds * 1000;
+  const ms = new Date(value as string | Date).getTime();
+  return Number.isNaN(ms) ? null : ms;
+};
+
+const playedDateMillis = (game: RawGame): number | null => {
+  const match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(game.date ?? "");
+  if (!match) return null;
+  const [hours, minutes] = (game.createdTime ?? "00:00").split(":").map(Number);
+  return new Date(
+    Number(match[3]),
+    Number(match[2]) - 1,
+    Number(match[1]),
+    hours || 0,
+    minutes || 0,
+  ).getTime();
+};
+
+const gameMillis = (game: RawGame): number =>
+  toMillis(game.reportedAt) ??
+  toMillis(game.createdAt) ??
+  playedDateMillis(game) ??
+  0;
+
+const competitionGames = (data: RawCompetitionData): RawGame[] => [
+  ...(Array.isArray(data.games) ? data.games : []),
+  ...(Array.isArray(data.fixtures)
+    ? data.fixtures.flatMap((f) => (Array.isArray(f?.games) ? f.games : []))
+    : []),
+];
+
+const teamIds = (team: RawGame["team1"]): string[] =>
+  [team?.player1?.userId, team?.player2?.userId].filter(
+    (id): id is string => !!id,
+  );
+
+const pushResult = (logs: Map<string, string[]>, key: string, result: string) => {
+  const log = logs.get(key) ?? [];
+  log.push(result);
+  logs.set(key, log.slice(-FORM_LENGTH));
+};
+
+/**
+ * Club form (last 10 results, oldest first) for every player and team, built
+ * from the approved games of all the club's leagues and tournaments in the
+ * order they were played. Each competition's stored resultLog only covers that
+ * competition, so joining them would not give the club's most recent games.
+ */
+export const buildClubFormLogs = (
+  competitions: RawCompetitionData[],
+): { players: Map<string, string[]>; teams: Map<string, string[]> } => {
+  const players = new Map<string, string[]>();
+  const teams = new Map<string, string[]>();
+
+  competitions
+    .flatMap(competitionGames)
+    .filter(
+      (game) =>
+        String(game?.approvalStatus ?? "").toLowerCase() === "approved" &&
+        !!game.result?.winner?.team,
+    )
+    .map((game, index) => ({ game, index, at: gameMillis(game) }))
+    .sort((a, b) => a.at - b.at || a.index - b.index)
+    .forEach(({ game }) => {
+      const team1Won = game.result?.winner?.team === "Team 1";
+      [
+        { ids: teamIds(game.team1), result: team1Won ? "W" : "L" },
+        { ids: teamIds(game.team2), result: team1Won ? "L" : "W" },
+      ].forEach(({ ids, result }) => {
+        if (!ids.length) return;
+        ids.forEach((id) => pushResult(players, id, result));
+        pushResult(teams, normalizeTeamKey(ids), result);
+      });
+    });
+
+  return { players, teams };
+};
 
 interface RawMember {
   userId?: string;
@@ -85,8 +186,10 @@ const mergeIntoPlayer = (
     existing.totalPointDifference += stats.totalPointDifference ?? 0;
     existing.numberOfGamesPlayed += stats.numberOfGamesPlayed ?? 0;
     existing.numberOfLosses += stats.numberOfLosses ?? 0;
-    const combined = [...existing.resultLog, ...(stats.resultLog ?? [])];
-    existing.resultLog = combined.slice(-10);
+    existing.resultLog = [
+      ...existing.resultLog,
+      ...(stats.resultLog ?? []),
+    ].slice(-FORM_LENGTH);
   }
 };
 
@@ -141,7 +244,11 @@ export const buildClubPlayerMap = ({
     });
   });
 
-  return Array.from(playerMap.values());
+  const form = buildClubFormLogs([...leagues, ...tournaments]).players;
+  return Array.from(playerMap.values()).map((player) => {
+    const log = form.get(player.userId);
+    return log ? { ...player, resultLog: log } : player;
+  });
 };
 
 /**
@@ -220,16 +327,8 @@ const isApprovedGame = (game: unknown): boolean =>
     .toLowerCase() === "approved";
 
 // League games live on `games`; tournament games are nested in `fixtures[].games`.
-const countApprovedGames = (data: {
-  games?: unknown[];
-  fixtures?: { games?: unknown[] }[];
-}): number => {
-  const direct = Array.isArray(data.games) ? data.games : [];
-  const fixtureGames = Array.isArray(data.fixtures)
-    ? data.fixtures.flatMap((f) => (Array.isArray(f?.games) ? f.games : []))
-    : [];
-  return [...direct, ...fixtureGames].filter(isApprovedGame).length;
-};
+const countApprovedGames = (data: RawCompetitionData): number =>
+  competitionGames(data).filter(isApprovedGame).length;
 
 /**
  * Club-level headline stats for the Summary tab: the top player, top team, and
@@ -309,7 +408,7 @@ export const getClubSummaryStats = async ({
       .find((t) => t.numberOfWins > 0) ?? null;
 
   const totalGamesPlayed = [...leagues, ...tournaments].reduce(
-    (sum, data) => sum + countApprovedGames(data as never),
+    (sum, data) => sum + countApprovedGames(data),
     0,
   );
 

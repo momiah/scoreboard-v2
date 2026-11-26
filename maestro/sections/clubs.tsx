@@ -19,6 +19,7 @@ import {
   fixtureRequestToJoin,
   fixtureRespondToInvite,
   newestNotificationData,
+  playClubStandingsLeague,
   seedClubFixtureUsers,
   seedCompetitionClub,
   seedFixtureOwnedClub,
@@ -63,6 +64,7 @@ export const useClubServices = (): ClubServices => {
     declineClubJoinRequest: league.declineClubJoinRequest,
     addCompetition: league.addCompetition,
     getCourts: league.getCourts,
+    updatePendingInvites: league.updatePendingInvites,
     sendNotification,
   };
 };
@@ -216,6 +218,17 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
             },
           };
         }}
+      />
+      <SeedButton
+        id="maestro-clubs-play-standings-league"
+        label="Play a club league after the tournament"
+        run={() =>
+          playClubStandingsLeague({
+            services,
+            testUser: currentUser,
+            fixtureActions,
+          })
+        }
       />
       <SeedButton
         id="maestro-clubs-count-request-replies"
