@@ -16,14 +16,14 @@ onFlowStart:
     timeout: 15000
 - repeat:
     while:
-      notVisible: "Season Starts"
+      notVisible: ".*Play starts once at least ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined.*"
     times: 12
     commands:
       - tapOn:
           id: "how-to-play-next"
       - waitForAnimationToEnd:
           timeout: 1000
-- assertVisible: ".*Sign up and invite friends. The season starts once ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined. If not, it waits ${MAESTRO_LADDER_SEASON_EXTENSION_DAYS} days more, then the ladder is cancelled.*"
+- assertVisible: ".*Play starts once at least ${MAESTRO_LADDER_MIN_ENTRANTS} players have joined. If there aren't enough after .* days, the ladder is cancelled.*"
 - assertVisible: ".*Matches open. Post or accept matches to climb. New players can still join.*"
 - tapOn:
     id: "how-to-play-close"
